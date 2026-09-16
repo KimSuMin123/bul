@@ -41,7 +41,7 @@ export default function Footer() {
               />
             </div>
             <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '15px', color: '#FFFFFF', marginBottom: '10px' }}>
-              사단법인 세화불학원 온라인 아카데미
+              사단법인 세화붓다아카데미
             </h4>
             <p style={{ fontSize: '13px', color: '#94A3B8', lineHeight: '1.7', marginBottom: '16px' }}>
               인류의 성자 붓다의 교학을 근본으로 정통 불교 인문학 및 명상 강좌를 제공합니다.

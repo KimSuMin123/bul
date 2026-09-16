@@ -1,14 +1,8 @@
-import { getStored, setStored, STORAGE_KEYS } from './storage.js';
-
 /**
  * 과정별 민간 자격증 종목, 등급, 직무역량 및 등록정보 매핑
  */
 export function getCourseQualificationDetails(courseId, courseTitle = '', courseObj = null) {
   let course = courseObj;
-  if (!course && courseId) {
-    const courses = getStored(STORAGE_KEYS.COURSES) || [];
-    course = courses.find(c => c.id === courseId);
-  }
 
   // 1. If course has custom certificate configuration, respect it directly!
   if (course && (course.certType || course.certTypeFull || course.certRegNo)) {
@@ -65,7 +59,7 @@ export function getCourseQualificationDetails(courseId, courseTitle = '', course
       certEnTitle: 'Buddhist Ritual Master (Level 2)',
       regOffice: '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
       customCertRegNo: '',
-      competency: '전통 불교의례(하단시식, 칠칠재 영혼식, 각 칠재의례 및 영반 실수) 집행 및 봉행'
+      competency: '영가천도 및 사찰 기본 불교의례(하단시식, 칠칠재 영혼식, 각 칠재의례) 집행'
     };
   }
 }
@@ -73,28 +67,13 @@ export function getCourseQualificationDetails(courseId, courseTitle = '', course
 /**
  * 수료증/자격증 객체 정규화 및 민간 자격증 필수 메타데이터 보강
  */
-export function enrichCertificate(cert) {
+export function enrichCertificate(cert, courseObj = null) {
   if (!cert) return null;
-  const qual = getCourseQualificationDetails(cert.courseId, cert.courseTitle);
-  const rawSeq = (cert.certNo || '').match(/\d+$/)?.[0] || '1';
-  const seqStr = String(parseInt(rawSeq, 10) || 1).padStart(4, '0');
-  const currentYear = cert.issuedAt ? cert.issuedAt.slice(0, 4) : new Date().getFullYear();
-
-  let certRegNo = cert.certRegNo;
-  if (!certRegNo) {
-    if (qual.customCertRegNo) {
-      certRegNo = qual.customCertRegNo.includes('00')
-        ? qual.customCertRegNo.replace(/(\d{4,5})(?=[^\d]*$)/, seqStr)
-        : (qual.customCertRegNo.includes('호') ? qual.customCertRegNo : `제 ${currentYear}-${qual.customCertRegNo}-${seqStr} 호`);
-    } else {
-      certRegNo = `제 ${currentYear}-${qual.certGradeCode}-${seqStr} 호`;
-    }
-  }
+  const qual = getCourseQualificationDetails(cert.courseId, cert.courseTitle, courseObj);
 
   return {
     ...qual,
     ...cert,
-    certRegNo,
     certType: cert.certType || qual.certType,
     certGrade: cert.certGrade || qual.certGrade,
     certTypeFull: cert.certTypeFull || qual.certTypeFull,
@@ -106,20 +85,16 @@ export function enrichCertificate(cert) {
   };
 }
 
-export function generateCertNumber() {
+export function generateCertNumber(seqCount = 0) {
   const currentYear = new Date().getFullYear();
-  let nextSeq = parseInt(getStored(STORAGE_KEYS.NEXT_CERT_SEQ) || '1', 10);
-  const certNo = `CERT-${currentYear}-${String(nextSeq).padStart(4, '0')}`;
-  setStored(STORAGE_KEYS.NEXT_CERT_SEQ, (nextSeq + 1).toString());
-  return certNo;
+  const nextSeq = (seqCount || 0) + 1;
+  return `CERT-${currentYear}-${String(nextSeq).padStart(4, '0')}`;
 }
 
-export function generateMemberNumber() {
+export function generateMemberNumber(seqCount = 0) {
   const currentYear = new Date().getFullYear();
-  let nextSeq = parseInt(getStored(STORAGE_KEYS.NEXT_MEMBER_SEQ) || '30', 10);
-  const memberNo = `BUDDHA-${currentYear}-${String(nextSeq).padStart(5, '0')}`;
-  setStored(STORAGE_KEYS.NEXT_MEMBER_SEQ, (nextSeq + 1).toString());
-  return memberNo;
+  const nextSeq = (seqCount || 30) + 1;
+  return `BUDDHA-${currentYear}-${String(nextSeq).padStart(5, '0')}`;
 }
 
 import { hasPassedCourseExam } from './examService.js';
@@ -127,11 +102,7 @@ import { hasPassedCourseExam } from './examService.js';
 /**
  * Check if a student has completed all lectures in a course (100% progress)
  */
-export function checkLecturesCompleted(userId, courseId) {
-  const courses = getStored(STORAGE_KEYS.COURSES) || [];
-  const lectures = getStored(STORAGE_KEYS.LECTURES) || [];
-  const progressList = getStored(STORAGE_KEYS.PROGRESS) || [];
-
+export function checkLecturesCompleted(userId, courseId, courses = [], lectures = [], progressList = []) {
   const course = courses.find(c => c.id === courseId);
   if (!course) return false;
 
@@ -153,48 +124,26 @@ export function checkLecturesCompleted(userId, courseId) {
 /**
  * Check if a student has completed all lectures in a course AND passed the exam (>= 60점)
  */
-export function checkCourseCompletion(userId, courseId) {
-  const lecturesDone = checkLecturesCompleted(userId, courseId);
-  const examPassed = hasPassedCourseExam(userId, courseId);
+export function checkCourseCompletion(userId, courseId, courses = [], lectures = [], progressList = [], attemptsList = []) {
+  const lecturesDone = checkLecturesCompleted(userId, courseId, courses, lectures, progressList);
+  const examPassed = hasPassedCourseExam(userId, courseId, attemptsList);
 
-  const enrollments = getStored(STORAGE_KEYS.ENROLLMENTS) || [];
-  if (lecturesDone && examPassed) {
-    const enrIndex = enrollments.findIndex(e => e.userId === userId && e.courseId === courseId);
-    if (enrIndex !== -1 && enrollments[enrIndex].status !== 'completed') {
-      enrollments[enrIndex].status = 'completed';
-      setStored(STORAGE_KEYS.ENROLLMENTS, enrollments);
-    }
-    return true;
-  }
-
-  return false;
+  return Boolean(lecturesDone && examPassed);
 }
 
 /**
- * Issue or retrieve existing certificate for user and course
+ * Issue or retrieve existing certificate for user and course (100% Supabase / Pure state)
  */
-export function issueCertificate(user, course) {
-  const certificates = getStored(STORAGE_KEYS.CERTIFICATES) || [];
-  
+export function issueCertificate(user, course, certsList = [], certCount = 0) {
   // Check if already issued
-  const existing = certificates.find(c => c.userId === user.id && c.courseId === course.id);
+  const existing = certsList.find(c => c.userId === user.id && c.courseId === course.id);
   if (existing) {
-    return enrichCertificate(existing);
-  }
-
-  // 1. Must have completed all lectures
-  if (!checkLecturesCompleted(user.id, course.id)) {
-    throw new Error('모든 강의 차시(진도율 100%)를 완강하셔야 수료증 발급이 가능합니다.');
-  }
-
-  // 2. Must have passed the course qualification exam (>= 60점)
-  if (!hasPassedCourseExam(user.id, course.id)) {
-    throw new Error('자격 검정 시험(수료 기준 60점 이상)에 합격하셔야 공인 자격증이 발급됩니다.');
+    return enrichCertificate(existing, course);
   }
 
   const qual = getCourseQualificationDetails(course.id, course.title, course);
   const currentYear = new Date().getFullYear();
-  let nextSeq = parseInt(getStored(STORAGE_KEYS.NEXT_CERT_SEQ) || '1', 10);
+  const nextSeq = (certCount || certsList.length || 0) + 1;
   const seqStr = String(nextSeq).padStart(4, '0');
   const certNo = `CERT-${currentYear}-${seqStr}`;
 
@@ -206,8 +155,6 @@ export function issueCertificate(user, course) {
   } else {
     certRegNo = `제 ${currentYear}-${qual.certGradeCode}-${seqStr} 호`;
   }
-
-  setStored(STORAGE_KEYS.NEXT_CERT_SEQ, (nextSeq + 1).toString());
 
   const today = new Date();
   const todayStr = `${today.getFullYear()}년 ${String(today.getMonth() + 1).padStart(2, '0')}월 ${String(today.getDate()).padStart(2, '0')}일`;
@@ -235,8 +182,6 @@ export function issueCertificate(user, course) {
     status: 'valid'
   };
 
-  certificates.push(newCert);
-  setStored(STORAGE_KEYS.CERTIFICATES, certificates);
   return newCert;
 }
 
@@ -289,9 +234,9 @@ const DEMO_CERTIFICATES = [
 /**
  * Public Verification function: supports certNo, certRegNo, memberNo, or student name
  */
-export function verifyCertificate(query) {
+export function verifyCertificate(query, certificatesList = []) {
   if (!query) return null;
-  const certificates = getStored(STORAGE_KEYS.CERTIFICATES) || [];
+  const certificates = Array.isArray(certificatesList) ? certificatesList : [];
   const allPool = [...certificates, ...DEMO_CERTIFICATES];
   const clean = query.trim().toUpperCase().replace(/\s+/g, '');
 

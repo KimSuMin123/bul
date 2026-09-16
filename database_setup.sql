@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS courses (
     thumbnail TEXT,
     default_period_days INT DEFAULT 90,
     sequential_unlock BOOLEAN DEFAULT true,
-    price INT DEFAULT 150000,
+    price INT DEFAULT 50000,
     instructor VARCHAR(100)
 );
 
@@ -172,7 +172,27 @@ CREATE POLICY "QA answers can be updated" ON qa_answers FOR UPDATE USING (true);
 CREATE POLICY "Certificates are readable by everyone" ON certificates FOR SELECT USING (true);
 CREATE POLICY "Certificates can be inserted" ON certificates FOR INSERT WITH CHECK (true);
 
--- 10. storage.buckets 및 storage.objects (동영상 VOD 스토리지) 정책
+-- 10. 자격 시험 응시 기록 및 채점 대장 테이블
+CREATE TABLE IF NOT EXISTS exam_attempts (
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) REFERENCES users(id) ON DELETE CASCADE,
+    course_id VARCHAR(50) REFERENCES courses(id) ON DELETE CASCADE,
+    score INT NOT NULL,
+    passed BOOLEAN NOT NULL DEFAULT false,
+    correct_count INT NOT NULL,
+    total_count INT NOT NULL,
+    question_results JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- courses 테이블에 raw_exam_text 컬럼 추가 (코스별 커스텀 시험 문제 텍스트 보관)
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS raw_exam_text TEXT;
+
+ALTER TABLE exam_attempts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Exam attempts are readable by everyone" ON exam_attempts FOR SELECT USING (true);
+CREATE POLICY "Exam attempts can be inserted" ON exam_attempts FOR INSERT WITH CHECK (true);
+
+-- 11. storage.buckets 및 storage.objects (동영상 VOD 스토리지) 정책
 -- Supabase Storage 'lectures' 버킷 생성 및 실시간 비디오 스트리밍 / 업로드 허용
 INSERT INTO storage.buckets (id, name, public) 
 VALUES ('lectures', 'lectures', true) 
@@ -197,4 +217,5 @@ USING (bucket_id = 'lectures');
 CREATE POLICY "Allow video delete in lectures" 
 ON storage.objects FOR DELETE 
 USING (bucket_id = 'lectures');
+
 

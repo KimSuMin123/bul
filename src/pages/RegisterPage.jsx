@@ -95,7 +95,7 @@ export default function RegisterPage({ onNavigate }) {
               신규 회원가입
             </h2>
             <p className="text-caption">
-              세화불학원 온라인 아카데미의 정통 강좌를 수강하기 위한 계정을 생성합니다.
+              세화붓다아카데미의 정통 강좌를 수강하기 위한 계정을 생성합니다.
             </p>
           </div>
 

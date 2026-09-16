@@ -1,4 +1,4 @@
-import { getStored, setStored, STORAGE_KEYS } from './storage.js';
+// Exam Service - Pure Supabase & Memory Data Flow
 
 export const DEFAULT_RAW_EXAM_TEXT = `1. 불학의범의 불전권공의에서, 봉안된 불보살께 올리는 상단 변공(變供)의 진언 짜임으로 옳은 것은?
   ① 변식진언ㆍ시감로수진언ㆍ일자수륜관진언ㆍ유해진언
@@ -306,11 +306,13 @@ export function evaluateExam(questions, userAnswers) {
   };
 }
 
+import { remoteDb, isExternalDbConfigured } from './apiClient.js';
+
 /**
  * 코스별 문제 풀 반환 (커스텀 등록 문제가 있으면 우선, 없으면 기본 20문제)
  */
-export function getCourseExamPool(courseId, coursesList = null) {
-  const courses = coursesList || getStored(STORAGE_KEYS.COURSES) || [];
+export function getCourseExamPool(courseId, coursesList = []) {
+  const courses = Array.isArray(coursesList) ? coursesList : [];
   const course = courses.find(c => c.id === courseId);
 
   if (course && Array.isArray(course.examQuestions) && course.examQuestions.length > 0) {
@@ -325,29 +327,38 @@ export function getCourseExamPool(courseId, coursesList = null) {
 }
 
 /**
- * 시험 응시 결과 저장 (재응시 가능, 최신 및 최고점 보관)
+ * 시험 응시 결과 저장 (100% Supabase Direct)
  */
-export function saveExamAttempt(userId, courseId, attemptData) {
-  const attempts = getStored(STORAGE_KEYS.EXAM_ATTEMPTS) || [];
+export async function saveExamAttempt(userId, courseId, attemptData) {
   const newAttempt = {
     id: `attempt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     userId,
     courseId,
-    ...attemptData,
-    createdAt: new Date().toISOString()
+    score: attemptData.score,
+    passed: attemptData.passed,
+    correctCount: attemptData.correctCount,
+    totalCount: attemptData.totalCount,
+    questionResults: attemptData.questionResults,
+    createdAt: attemptData.submittedAt || new Date().toISOString()
   };
 
-  attempts.push(newAttempt);
-  setStored(STORAGE_KEYS.EXAM_ATTEMPTS, attempts);
+  if (isExternalDbConfigured) {
+    try {
+      await remoteDb.insertExamAttempt(newAttempt);
+    } catch (e) {
+      console.warn('remoteDb.insertExamAttempt error:', e);
+    }
+  }
+
   return newAttempt;
 }
 
 /**
- * 사용자의 해당 코스 최신 응시 결과 조회
+ * 사용자의 해당 코스 최신 응시 결과 조회 (attemptsList가 주어지면 메모리 조회, 아니면 remoteDb 비동기 조회)
  */
-export function getLatestExamAttempt(userId, courseId) {
-  const attempts = getStored(STORAGE_KEYS.EXAM_ATTEMPTS) || [];
-  const userAttempts = attempts
+export function getLatestExamAttempt(userId, courseId, attemptsList = []) {
+  if (!Array.isArray(attemptsList)) return null;
+  const userAttempts = attemptsList
     .filter(a => a.userId === userId && a.courseId === courseId)
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
@@ -357,8 +368,11 @@ export function getLatestExamAttempt(userId, courseId) {
 /**
  * 사용자가 해당 코스의 시험에 60점 이상 합격했는지 확인
  */
-export function hasPassedCourseExam(userId, courseId) {
+export function hasPassedCourseExam(userId, courseId, attemptsList = []) {
   if (!userId || !courseId) return false;
-  const attempts = getStored(STORAGE_KEYS.EXAM_ATTEMPTS) || [];
-  return attempts.some(a => a.userId === userId && a.courseId === courseId && a.passed === true);
+  if (Array.isArray(attemptsList) && attemptsList.length > 0) {
+    return attemptsList.some(a => a.userId === userId && a.courseId === courseId && a.passed === true);
+  }
+  return false;
 }
+

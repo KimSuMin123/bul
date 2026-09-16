@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getStored, setStored, STORAGE_KEYS, initStorage } from '../services/storage';
 import { generateMemberNumber } from '../services/certService';
 import { remoteDb, isExternalDbConfigured } from '../services/apiClient';
@@ -7,41 +7,54 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sessionConflict, setSessionConflict] = useState(false);
 
+  // Fetch users from Supabase Cloud DB
+  const refreshUsers = useCallback(async () => {
+    if (!isExternalDbConfigured) return [];
+    try {
+      const remoteUsers = await remoteDb.getUsers();
+      if (Array.isArray(remoteUsers)) {
+        setUsers(remoteUsers);
+        return remoteUsers;
+      }
+    } catch (e) {
+      console.warn('Supabase users fetch warning:', e);
+    }
+    return [];
+  }, []);
+
   useEffect(() => {
+    // 1. Purge legacy local database tables (keep only current user session ticket)
     initStorage();
 
-    // Sync users from Supabase Cloud DB
-    if (isExternalDbConfigured) {
-      remoteDb.getUsers().then(remoteUsers => {
-        if (remoteUsers && remoteUsers.length > 0) {
-          const localUsers = getStored(STORAGE_KEYS.USERS) || [];
-          // Merge remote users with local, remote takes precedence
-          const merged = [...remoteUsers];
-          localUsers.forEach(lu => {
-            if (!merged.some(mu => mu.id === lu.id)) {
-              merged.push(lu);
-            }
-          });
-          setStored(STORAGE_KEYS.USERS, merged);
-        }
-      }).catch(e => console.warn('Supabase users sync warning:', e));
-    }
+    // 2. Load latest users from Supabase and validate current session
+    async function initAuth() {
+      try {
+        const remoteUsers = await refreshUsers();
+        const storedUser = getStored(STORAGE_KEYS.CURRENT_USER);
 
-    const storedUser = getStored(STORAGE_KEYS.CURRENT_USER);
-    if (storedUser) {
-      // Validate user still exists
-      const users = getStored(STORAGE_KEYS.USERS) || [];
-      const matched = users.find(u => u.id === storedUser.id);
-      if (matched) {
-        setCurrentUser({ ...matched, activeSessionToken: storedUser.activeSessionToken });
-      } else {
-        localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+        if (storedUser && Array.isArray(remoteUsers)) {
+          const matched = remoteUsers.find(u => u.id === storedUser.id);
+          if (matched) {
+            // Restore session with latest profile from Supabase
+            setCurrentUser({ ...matched, activeSessionToken: storedUser.activeSessionToken });
+          } else {
+            // User no longer exists in Supabase, clear session ticket
+            localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+            setCurrentUser(null);
+          }
+        }
+      } catch (err) {
+        console.warn('Auth initialization error:', err);
+      } finally {
+        setLoading(false);
       }
     }
-    setLoading(false);
+
+    initAuth();
 
     // Single device / Concurrent login detection via BroadcastChannel
     let authChannel;
@@ -66,29 +79,31 @@ export function AuthProvider({ children }) {
     return () => {
       if (authChannel) authChannel.close();
     };
-  }, []);
+  }, [refreshUsers]);
 
   // Check ID availability
   const checkIdAvailable = (id) => {
-    const users = getStored(STORAGE_KEYS.USERS) || [];
     return !users.some(u => u.id.toLowerCase() === id.trim().toLowerCase());
   };
 
   // Check Phone availability (prevent duplicate sign up)
   const checkPhoneAvailable = (phone) => {
-    const users = getStored(STORAGE_KEYS.USERS) || [];
     const cleanPhone = phone.replace(/[^0-9]/g, '');
-    return !users.some(u => u.phone.replace(/[^0-9]/g, '') === cleanPhone);
+    return !users.some(u => u.phone && u.phone.replace(/[^0-9]/g, '') === cleanPhone);
   };
 
-  // Register New Member
-  const register = ({ id, password, name, birthDate, phone }) => {
-    // Validation
+  // Register New Member (100% Supabase Direct)
+  const register = async ({ id, password, name, birthDate, phone }) => {
     const cleanId = id.trim();
     if (!cleanId) throw new Error('아이디를 입력해 주세요.');
-    if (!checkIdAvailable(cleanId)) throw new Error('이미 사용 중인 아이디입니다.');
 
-    // Password validation: 8+ chars, must include letters, numbers, and special symbols
+    // Ensure latest users loaded
+    const latestUsers = (await refreshUsers()) || users;
+    if (latestUsers.some(u => u.id.toLowerCase() === cleanId.toLowerCase())) {
+      throw new Error('이미 사용 중인 아이디입니다.');
+    }
+
+    // Password validation: 8+ chars, letters, numbers, special symbols
     const hasLetters = /[A-Za-z]/.test(password || '');
     const hasNumbers = /\d/.test(password || '');
     const hasSpecial = /[@$!%*#?&~^_\-+=\[\]{}();:'",.<>\/\\|`~]/.test(password || '');
@@ -101,11 +116,11 @@ export function AuthProvider({ children }) {
     if (!birthDate) throw new Error('생년월일을 선택해 주세요.');
 
     const cleanPhone = phone.trim();
-    if (!checkPhoneAvailable(cleanPhone)) {
+    if (latestUsers.some(u => u.phone && u.phone.replace(/[^0-9]/g, '') === cleanPhone.replace(/[^0-9]/g, ''))) {
       throw new Error('해당 휴대전화 번호로 이미 가입된 계정이 존재합니다. (1인 1계정 원칙)');
     }
 
-    const memberNo = generateMemberNumber();
+    const memberNo = generateMemberNumber(latestUsers.length);
     const newUser = {
       id: cleanId,
       password,
@@ -117,22 +132,22 @@ export function AuthProvider({ children }) {
       createdAt: new Date().toISOString().split('T')[0]
     };
 
-    const users = getStored(STORAGE_KEYS.USERS) || [];
-    users.push(newUser);
-    setStored(STORAGE_KEYS.USERS, users);
-
-    // Sync to Supabase Cloud DB
-    if (isExternalDbConfigured) {
-      remoteDb.insertUser(newUser).catch(err => console.warn('Remote insertUser error:', err));
+    // Save directly to Supabase Cloud DB
+    const res = await remoteDb.insertUser(newUser);
+    if (!res && isExternalDbConfigured) {
+      throw new Error('클라우드 데이터베이스에 회원 등록을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.');
     }
 
+    await refreshUsers();
     return newUser;
   };
 
-  // Login
-  const login = (id, password) => {
-    const users = getStored(STORAGE_KEYS.USERS) || [];
-    const user = users.find(u => u.id === id.trim() && u.password === password);
+  // Login (100% Supabase Direct Authentication)
+  const login = async (id, password) => {
+    const cleanId = id.trim();
+    const latestUsers = (await refreshUsers()) || users;
+    const user = latestUsers.find(u => u.id.toLowerCase() === cleanId.toLowerCase() && u.password === password);
+
     if (!user) {
       throw new Error('아이디 또는 비밀번호가 일치하지 않습니다.');
     }
@@ -141,9 +156,7 @@ export function AuthProvider({ children }) {
     const sessionToken = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const sessionUser = { ...user, activeSessionToken: sessionToken };
 
-    // Update in users store
-    const updatedUsers = users.map(u => u.id === user.id ? { ...u, activeSessionToken: sessionToken } : u);
-    setStored(STORAGE_KEYS.USERS, updatedUsers);
+    // Store ONLY the session ticket in browser storage for refresh persistence
     setStored(STORAGE_KEYS.CURRENT_USER, sessionUser);
     setCurrentUser(sessionUser);
     setSessionConflict(false);
@@ -158,21 +171,25 @@ export function AuthProvider({ children }) {
     return sessionUser;
   };
 
-  // Logout
+  // Logout (Clear session ticket)
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
   };
 
-  // Find / Reset Password
-  const resetPassword = ({ id, name, phone, newPassword }) => {
-    const users = getStored(STORAGE_KEYS.USERS) || [];
+  // Find / Reset Password (100% Supabase Direct)
+  const resetPassword = async ({ id, name, phone, newPassword }) => {
+    const cleanId = id.trim();
     const cleanPhone = phone.replace(/[^0-9]/g, '');
-    const userIndex = users.findIndex(
-      u => u.id === id.trim() && u.name.trim() === name.trim() && u.phone.replace(/[^0-9]/g, '') === cleanPhone
+    const latestUsers = (await refreshUsers()) || users;
+    
+    const user = latestUsers.find(
+      u => u.id.toLowerCase() === cleanId.toLowerCase() && 
+           u.name.trim() === name.trim() && 
+           u.phone && u.phone.replace(/[^0-9]/g, '') === cleanPhone
     );
 
-    if (userIndex === -1) {
+    if (!user) {
       throw new Error('입력하신 회원 정보와 일치하는 계정을 찾을 수 없습니다.');
     }
 
@@ -184,22 +201,20 @@ export function AuthProvider({ children }) {
       throw new Error('새 비밀번호는 영문, 숫자, 기호를 모두 포함하여 8자 이상이어야 합니다.');
     }
 
-    users[userIndex].password = newPassword;
-    setStored(STORAGE_KEYS.USERS, users);
-
-    // Sync to Supabase Cloud DB
-    if (isExternalDbConfigured) {
-      remoteDb.updateUserPassword(users[userIndex].id, newPassword).catch(err => console.warn('Remote updateUserPassword error:', err));
-    }
-
+    await remoteDb.updateUserPassword(user.id, newPassword);
+    await refreshUsers();
     return true;
   };
 
-  // Admin: Arbitrarily register user (Student or Admin)
-  const adminRegisterUser = ({ id, password, name, birthDate, phone, role = 'student', memberNo }) => {
+  // Admin: Arbitrarily register user (100% Supabase Direct)
+  const adminRegisterUser = async ({ id, password, name, birthDate, phone, role = 'student', memberNo }) => {
     const cleanId = id?.trim();
     if (!cleanId) throw new Error('아이디를 입력해 주세요.');
-    if (!checkIdAvailable(cleanId)) throw new Error('이미 등록되어 사용 중인 아이디입니다.');
+
+    const latestUsers = (await refreshUsers()) || users;
+    if (latestUsers.some(u => u.id.toLowerCase() === cleanId.toLowerCase())) {
+      throw new Error('이미 등록되어 사용 중인 아이디입니다.');
+    }
 
     if (!password || password.trim().length < 4) {
       throw new Error('비밀번호는 최소 4자 이상이어야 합니다.');
@@ -210,11 +225,11 @@ export function AuthProvider({ children }) {
 
     const cleanPhone = phone?.trim();
     if (!cleanPhone) throw new Error('휴대전화 번호를 입력해 주세요.');
-    if (!checkPhoneAvailable(cleanPhone)) {
+    if (latestUsers.some(u => u.phone && u.phone.replace(/[^0-9]/g, '') === cleanPhone.replace(/[^0-9]/g, ''))) {
       throw new Error('해당 휴대전화 번호로 이미 가입된 계정이 존재합니다. (1인 1계정 원칙)');
     }
 
-    const assignedMemberNo = memberNo?.trim() || generateMemberNumber();
+    const assignedMemberNo = memberNo?.trim() || generateMemberNumber(latestUsers.length);
     const newUser = {
       id: cleanId,
       password: password.trim(),
@@ -226,20 +241,13 @@ export function AuthProvider({ children }) {
       createdAt: new Date().toISOString().split('T')[0]
     };
 
-    const users = getStored(STORAGE_KEYS.USERS) || [];
-    users.push(newUser);
-    setStored(STORAGE_KEYS.USERS, users);
-
-    // Sync to Supabase Cloud DB
-    if (isExternalDbConfigured) {
-      remoteDb.insertUser(newUser).catch(err => console.warn('Remote insertUser error:', err));
-    }
-
+    await remoteDb.insertUser(newUser);
+    await refreshUsers();
     return newUser;
   };
 
-  // Admin: Delete user and clean related data
-  const adminDeleteUser = (userId) => {
+  // Admin: Delete user (100% Supabase Direct Cascade)
+  const adminDeleteUser = async (userId) => {
     if (userId === 'admin') {
       throw new Error('최고관리자(admin) 계정은 안전을 위해 삭제할 수 없습니다.');
     }
@@ -247,55 +255,19 @@ export function AuthProvider({ children }) {
       throw new Error('현재 로그인 중인 본인 관리자 계정은 삭제할 수 없습니다.');
     }
 
-    const users = getStored(STORAGE_KEYS.USERS) || [];
-    const exists = users.some(u => u.id === userId);
-    if (!exists) throw new Error('존재하지 않는 회원입니다.');
-
-    // 1. Remove from local users
-    const updatedUsers = users.filter(u => u.id !== userId);
-    setStored(STORAGE_KEYS.USERS, updatedUsers);
-
-    // 2. Cascade delete enrollments, payments, progress, certificates locally
-    const enrollments = getStored(STORAGE_KEYS.ENROLLMENTS) || [];
-    setStored(STORAGE_KEYS.ENROLLMENTS, enrollments.filter(e => e.userId !== userId));
-
-    const payments = getStored(STORAGE_KEYS.PAYMENTS) || [];
-    setStored(STORAGE_KEYS.PAYMENTS, payments.filter(p => p.userId !== userId));
-
-    const progress = getStored(STORAGE_KEYS.PROGRESS) || [];
-    setStored(STORAGE_KEYS.PROGRESS, progress.filter(pr => pr.userId !== userId));
-
-    const certs = getStored(STORAGE_KEYS.CERTIFICATES) || [];
-    setStored(STORAGE_KEYS.CERTIFICATES, certs.filter(c => c.userId !== userId));
-
-    // 3. Sync to Supabase Cloud DB
-    if (isExternalDbConfigured) {
-      remoteDb.deleteUser(userId).catch(err => console.warn('Remote deleteUser error:', err));
-    }
-
+    await remoteDb.deleteUser(userId);
+    await refreshUsers();
     return true;
   };
 
-  // Admin: Directly reset any user password
-  const adminResetPassword = (userId, newPassword) => {
+  // Admin: Reset any user password (100% Supabase Direct)
+  const adminResetPassword = async (userId, newPassword) => {
     if (!newPassword || newPassword.trim().length < 4) {
       throw new Error('새 비밀번호는 최소 4자 이상이어야 합니다.');
     }
 
-    const users = getStored(STORAGE_KEYS.USERS) || [];
-    const idx = users.findIndex(u => u.id === userId);
-    if (idx === -1) {
-      throw new Error('회원을 찾을 수 없습니다.');
-    }
-
-    users[idx].password = newPassword.trim();
-    setStored(STORAGE_KEYS.USERS, users);
-
-    // Sync to Supabase Cloud DB
-    if (isExternalDbConfigured) {
-      remoteDb.updateUserPassword(userId, newPassword.trim()).catch(err => console.warn('Remote updateUserPassword error:', err));
-    }
-
+    await remoteDb.updateUserPassword(userId, newPassword.trim());
+    await refreshUsers();
     return true;
   };
 
@@ -307,9 +279,11 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider
       value={{
         currentUser,
+        users,
         loading,
         sessionConflict,
         clearConflictAlert,
+        refreshUsers,
         login,
         logout,
         register,

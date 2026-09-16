@@ -71,7 +71,7 @@ export default function LoginPage({ onNavigate }) {
               온라인 강의실 로그인
             </h2>
             <p className="text-caption">
-              세화불학원 온라인 아카데미에 오신 것을 환영합니다.
+              세화붓다아카데미에 오신 것을 환영합니다.
             </p>
           </div>
 

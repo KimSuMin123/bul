@@ -171,11 +171,26 @@ export const remoteDb = {
         sequentialUnlock: c.sequential_unlock,
         price: c.price,
         instructor: c.instructor,
+        rawExamText: c.raw_exam_text || null,
         lectureIds: []
       }));
     } catch (err) {
       console.warn('Remote getCourses failed:', err);
       return null;
+    }
+  },
+
+  async updateCourseExamText(courseId, rawExamText) {
+    if (!isExternalDbConfigured) return false;
+    try {
+      await supabaseFetch(`/courses?id=eq.${encodeURIComponent(courseId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ raw_exam_text: rawExamText })
+      });
+      return true;
+    } catch (err) {
+      console.warn('Remote updateCourseExamText failed:', err);
+      return false;
     }
   },
 
@@ -605,6 +620,72 @@ export const remoteDb = {
       return true;
     } catch (err) {
       console.warn('Remote deleteQAPost failed:', err);
+      return false;
+    }
+  },
+
+  // ================= EXAM ATTEMPTS =================
+  async getExamAttempts(userId = null, courseId = null) {
+    if (!isExternalDbConfigured) return [];
+    try {
+      let query = '/exam_attempts?select=*&order=created_at.desc';
+      if (userId && courseId) {
+        query += `&user_id=eq.${encodeURIComponent(userId)}&course_id=eq.${encodeURIComponent(courseId)}`;
+      } else if (userId) {
+        query += `&user_id=eq.${encodeURIComponent(userId)}`;
+      } else if (courseId) {
+        query += `&course_id=eq.${encodeURIComponent(courseId)}`;
+      }
+      const rows = await supabaseFetch(query);
+      return rows.map(r => ({
+        id: r.id,
+        userId: r.user_id,
+        courseId: r.course_id,
+        score: r.score,
+        passed: r.passed,
+        correctCount: r.correct_count,
+        totalCount: r.total_count,
+        questionResults: r.question_results,
+        createdAt: r.created_at
+      }));
+    } catch (err) {
+      console.warn('Remote getExamAttempts warning (table might be initializing):', err.message);
+      return [];
+    }
+  },
+
+  async insertExamAttempt(attemptData) {
+    if (!isExternalDbConfigured) return null;
+    try {
+      const payload = {
+        id: attemptData.id || `attempt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        user_id: attemptData.userId,
+        course_id: attemptData.courseId,
+        score: attemptData.score,
+        passed: attemptData.passed,
+        correct_count: attemptData.correctCount,
+        total_count: attemptData.totalCount,
+        question_results: attemptData.questionResults || null
+      };
+      const [inserted] = await supabaseFetch('/exam_attempts', {
+        method: 'POST',
+        prefer: 'resolution=merge-duplicates',
+        body: JSON.stringify(payload)
+      });
+      return inserted;
+    } catch (err) {
+      console.warn('Remote insertExamAttempt failed:', err);
+      return null;
+    }
+  },
+
+  async hasPassedExam(userId, courseId) {
+    if (!isExternalDbConfigured || !userId || !courseId) return false;
+    try {
+      const rows = await supabaseFetch(`/exam_attempts?select=id&user_id=eq.${encodeURIComponent(userId)}&course_id=eq.${encodeURIComponent(courseId)}&passed=eq.true&limit=1`);
+      return Array.isArray(rows) && rows.length > 0;
+    } catch (err) {
+      console.warn('Remote hasPassedExam failed:', err);
       return false;
     }
   }

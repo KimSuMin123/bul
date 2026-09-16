@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { Search, Award, CheckCircle2, XCircle, ShieldCheck, ArrowRight, Calendar, User } from 'lucide-react';
 import { verifyCertificate } from '../services/certService';
+import { useCourse } from '../context/CourseContext';
 import SealGraphic from '../components/certificate/SealGraphic';
 
 export default function CertificateVerifyPage({ onNavigate }) {
+  const { certificates } = useCourse();
   const [searchQuery, setSearchQuery] = useState('CERT-2026-00088');
-  const [verifyResult, setVerifyResult] = useState(() => verifyCertificate('CERT-2026-00088'));
+  const [verifyResult, setVerifyResult] = useState(() => verifyCertificate('CERT-2026-00088', certificates));
   const [hasSearched, setHasSearched] = useState(true);
 
   const handleSearch = (e) => {
     if (e) e.preventDefault();
     if (!searchQuery.trim()) return;
 
-    const result = verifyCertificate(searchQuery);
+    const result = verifyCertificate(searchQuery, certificates);
     setVerifyResult(result);
     setHasSearched(true);
   };
@@ -84,7 +86,7 @@ export default function CertificateVerifyPage({ onNavigate }) {
               style={{ color: 'var(--color-sage)', padding: 0, textDecoration: 'underline', fontSize: '12.5px' }}
               onClick={() => {
                 setSearchQuery('CERT-2026-00088');
-                setVerifyResult(verifyCertificate('CERT-2026-00088'));
+                setVerifyResult(verifyCertificate('CERT-2026-00088', certificates));
                 setHasSearched(true);
               }}
             >

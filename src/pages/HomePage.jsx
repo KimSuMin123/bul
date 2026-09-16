@@ -34,7 +34,7 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
                 className="badge badge-sage"
                 style={{ marginBottom: '16px', padding: '6px 14px', fontSize: '13px' }}
               >
-                사단법인 세화불학원 온라인 아카데미
+                세화붓다아카데미
               </div>
 
               <h1

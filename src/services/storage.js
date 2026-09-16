@@ -237,72 +237,46 @@ const SEED_CERTIFICATES = [];
 
 const SEED_QA_POSTS = [];
 
-// Initialize Storage with seed data and purge legacy dummy data
-export function initStorage() {
-  const dummyUserIds = ['student1', 'bodhi'];
+// Purge legacy localStorage database tables, keeping ONLY the active session ticket
+export function purgeLegacyLocalStorage() {
+  const legacyKeys = [
+    STORAGE_KEYS.USERS,
+    STORAGE_KEYS.COURSES,
+    STORAGE_KEYS.LECTURES,
+    STORAGE_KEYS.ENROLLMENTS,
+    STORAGE_KEYS.PAYMENTS,
+    STORAGE_KEYS.PROGRESS,
+    STORAGE_KEYS.CERTIFICATES,
+    STORAGE_KEYS.QA_POSTS,
+    STORAGE_KEYS.EXAM_ATTEMPTS,
+    STORAGE_KEYS.NEXT_MEMBER_SEQ,
+    STORAGE_KEYS.NEXT_CERT_SEQ,
+    'buddha_users',
+    'buddha_courses',
+    'buddha_lectures',
+    'buddha_enrollments',
+    'buddha_payments',
+    'buddha_progress',
+    'buddha_certificates',
+    'buddha_qa_posts'
+  ];
 
-  // Purge dummy users and ensure admin exists
-  const existingUsers = getStored(STORAGE_KEYS.USERS) || [];
-  const curUsers = existingUsers.filter(u => !dummyUserIds.includes(u.id));
-  if (!curUsers.some(u => u.id === 'admin')) {
-    curUsers.unshift(SEED_USERS[0]);
-  }
-  setStored(STORAGE_KEYS.USERS, curUsers);
+  legacyKeys.forEach(key => {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {}
+  });
 
-  // If current session was one of the dummy users, clear it
+  // Verify current user is not a dummy test account
   const curUser = getStored(STORAGE_KEYS.CURRENT_USER);
-  if (curUser && dummyUserIds.includes(curUser.id)) {
+  if (curUser && (curUser.id === 'student1' || curUser.id === 'bodhi')) {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
   }
+}
 
-  const dummyCourseIds = ['course-1', 'course-2', 'bundle-all'];
-  const dummyLecIds = ['lec-101', 'lec-102', 'lec-103', 'lec-201', 'lec-202', 'lec-203'];
-
-  // Purge legacy courses and ensure real courses
-  const curCourses = (getStored(STORAGE_KEYS.COURSES) || []).filter(c => !dummyCourseIds.includes(c.id));
-  SEED_COURSES.forEach(sc => {
-    const existing = curCourses.find(c => c.id === sc.id);
-    if (!existing) {
-      curCourses.push(sc);
-    } else {
-      existing.price = sc.price; // Update price to 50000
-    }
-  });
-  setStored(STORAGE_KEYS.COURSES, curCourses);
-
-  // Purge legacy lectures and ensure real lectures (also clear any legacy fake attachments)
-  const curLecs = (getStored(STORAGE_KEYS.LECTURES) || [])
-    .filter(l => !dummyLecIds.includes(l.id))
-    .map(l => ({ ...l, attachments: [] }));
-  SEED_LECTURES.forEach(sl => {
-    if (!curLecs.some(l => l.id === sl.id)) {
-      curLecs.push(sl);
-    }
-  });
-  setStored(STORAGE_KEYS.LECTURES, curLecs);
-
-  // Purge dummy enrollments, payments, progress, certificates, Q&A (including dummy users)
-  const curEnrs = (getStored(STORAGE_KEYS.ENROLLMENTS) || []).filter(e => !dummyCourseIds.includes(e.courseId) && !dummyUserIds.includes(e.userId));
-  setStored(STORAGE_KEYS.ENROLLMENTS, curEnrs);
-
-  const curPays = (getStored(STORAGE_KEYS.PAYMENTS) || []).filter(p => !dummyCourseIds.includes(p.courseId) && !dummyUserIds.includes(p.userId));
-  setStored(STORAGE_KEYS.PAYMENTS, curPays);
-
-  const curProg = (getStored(STORAGE_KEYS.PROGRESS) || []).filter(p => !dummyLecIds.includes(p.lectureId) && !dummyUserIds.includes(p.userId));
-  setStored(STORAGE_KEYS.PROGRESS, curProg);
-
-  const curCerts = (getStored(STORAGE_KEYS.CERTIFICATES) || []).filter(c => !dummyCourseIds.includes(c.courseId) && !dummyUserIds.includes(c.userId));
-  setStored(STORAGE_KEYS.CERTIFICATES, curCerts);
-
-  const curQA = (getStored(STORAGE_KEYS.QA_POSTS) || []).filter(q => !dummyCourseIds.includes(q.courseId) && !dummyUserIds.includes(q.authorId));
-  setStored(STORAGE_KEYS.QA_POSTS, curQA);
-
-  if (!localStorage.getItem(STORAGE_KEYS.NEXT_MEMBER_SEQ)) {
-    localStorage.setItem(STORAGE_KEYS.NEXT_MEMBER_SEQ, '30');
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.NEXT_CERT_SEQ) || localStorage.getItem(STORAGE_KEYS.NEXT_CERT_SEQ) === '100') {
-    localStorage.setItem(STORAGE_KEYS.NEXT_CERT_SEQ, '1');
-  }
+// Initialize Storage: 100% Supabase-first mode (clean up local DB cache)
+export function initStorage() {
+  purgeLegacyLocalStorage();
 }
 
 // Helpers to get and set

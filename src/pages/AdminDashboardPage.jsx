@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useCourse } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
-import { getStored, STORAGE_KEYS } from '../services/storage';
 import { uploadLectureVideo, extractVideoMetadata, isStorageConfigured, uploadThumbnailImage } from '../services/apiClient';
 import { generateMemberNumber } from '../services/certService';
 import { parseExamText, DEFAULT_RAW_EXAM_TEXT } from '../services/examService';
@@ -26,6 +25,8 @@ export default function AdminDashboardPage() {
   } = useCourse();
   const { 
     currentUser, 
+    users,
+    refreshUsers,
     adminRegisterUser, 
     adminDeleteUser, 
     adminResetPassword, 
@@ -688,13 +689,13 @@ export default function AdminDashboardPage() {
 
   const handleCopyUserInfo = () => {
     if (!createdUserInfo) return;
-    const msg = `[세화불학원 온라인 아카데미 학인 계정 등록 안내]
+    const msg = `[세화붓다아카데미 학인 계정 등록 안내]
 - 성명: ${createdUserInfo.name}
 - 학번/식별번호: ${createdUserInfo.memberNo}
 - 아이디: ${createdUserInfo.id}
 - 임시 비밀번호: ${createdUserInfo.password}
 ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assignedCourseTitle} (${createdUserInfo.assignedStatusText})` : ''}
-* 세화불학원 온라인 아카데미에 오신 것을 환영합니다. 로그인 후 상단 [내 강의실]에서 강의를 시청하실 수 있습니다.`;
+* 세화붓다아카데미에 오신 것을 환영합니다. 로그인 후 상단 [내 강의실]에서 강의를 시청하실 수 있습니다.`;
 
     navigator.clipboard.writeText(msg).then(() => {
       setCopiedInfo(true);
@@ -751,10 +752,10 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
     }
   };
 
-  // Get all users from storage
+  // Get all users from Supabase-backed AuthContext
   const allUsers = useMemo(() => {
-    return getStored(STORAGE_KEYS.USERS) || [];
-  }, [enrollments, usersVersion]);
+    return users || [];
+  }, [users]);
 
   // Filtered users by search keyword (name or phone)
   const filteredUsers = useMemo(() => {

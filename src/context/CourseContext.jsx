@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getStored, setStored, STORAGE_KEYS } from '../services/storage.js';
 import { checkCourseCompletion, issueCertificate, enrichCertificate, checkLecturesCompleted } from '../services/certService.js';
 import { 
   parseExamText, 
@@ -25,142 +24,59 @@ export function CourseProvider({ children }) {
   const [progressList, setProgressList] = useState([]);
   const [certificates, setCertificates] = useState([]);
   const [qaPosts, setQaPosts] = useState([]);
+  const [examAttempts, setExamAttempts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Reload all state from storage and sync in real-time with Supabase Cloud DB
+  // 100% Supabase Cloud DB Direct Fetch
   const refreshData = useCallback(async () => {
-    // 1. Instant local render from storage cache
-    const localCourses = getStored(STORAGE_KEYS.COURSES) || [];
-    const localLecs = getStored(STORAGE_KEYS.LECTURES) || [];
-    const localEnrs = getStored(STORAGE_KEYS.ENROLLMENTS) || [];
-    const localPays = getStored(STORAGE_KEYS.PAYMENTS) || [];
-    const localProg = getStored(STORAGE_KEYS.PROGRESS) || [];
-    const localCerts = getStored(STORAGE_KEYS.CERTIFICATES) || [];
-    const localQA = getStored(STORAGE_KEYS.QA_POSTS) || [];
+    if (!isExternalDbConfigured) {
+      setLoading(false);
+      return;
+    }
 
-    setCourses(localCourses);
-    setLectures(localLecs);
-    setEnrollments(localEnrs);
-    setPayments(localPays);
-    setProgressList(localProg);
-    setCertificates(localCerts);
-    setQaPosts(localQA);
+    try {
+      const [rCourses, rLecs, rEnrs, rPays, rProg, rCerts, rQA, rAttempts] = await Promise.all([
+        remoteDb.getCourses(),
+        remoteDb.getLectures(),
+        remoteDb.getEnrollments(),
+        remoteDb.getPayments(),
+        remoteDb.getProgress(),
+        remoteDb.getCertificates(),
+        remoteDb.getQAPosts(),
+        remoteDb.getExamAttempts()
+      ]);
 
-    // 2. Cloud DB real-time sync if Supabase is configured
-    if (isExternalDbConfigured) {
-      try {
-        const [rCourses, rLecs, rEnrs, rPays, rProg, rCerts, rQA] = await Promise.all([
-          remoteDb.getCourses(),
-          remoteDb.getLectures(),
-          remoteDb.getEnrollments(),
-          remoteDb.getPayments(),
-          remoteDb.getProgress(),
-          remoteDb.getCertificates(),
-          remoteDb.getQAPosts()
-        ]);
+      const activeLecs = Array.isArray(rLecs) ? rLecs : [];
+      setLectures(activeLecs);
 
-        const activeLecs = rLecs && rLecs.length > 0 ? rLecs : localLecs;
-        if (rLecs && rLecs.length > 0) {
-          setLectures(rLecs);
-          setStored(STORAGE_KEYS.LECTURES, rLecs);
-        }
-
-        if (rCourses && rCourses.length > 0) {
-          const populated = rCourses.map(c => ({
+      if (Array.isArray(rCourses)) {
+        const populated = rCourses.map(c => {
+          let parsedExam = [];
+          if (c.rawExamText && c.rawExamText.trim()) {
+            parsedExam = parseExamText(c.rawExamText);
+          } else {
+            parsedExam = PRESET_EXAM_QUESTIONS;
+          }
+          return {
             ...c,
+            examQuestions: parsedExam,
             lectureIds: activeLecs.filter(l => l.courseId === c.id).map(l => l.id)
-          }));
-          setCourses(populated);
-          setStored(STORAGE_KEYS.COURSES, populated);
-        }
-
-        if (rEnrs) {
-          const localNow = getStored(STORAGE_KEYS.ENROLLMENTS) || [];
-          const mergedEnrs = [...(rEnrs || [])];
-          localNow.forEach(le => {
-            const idx = mergedEnrs.findIndex(me => me.id === le.id || (me.userId === le.userId && me.courseId === le.courseId));
-            if (idx === -1) {
-              mergedEnrs.push(le);
-              if (isExternalDbConfigured) {
-                remoteDb.upsertEnrollment(le).catch(() => {});
-              }
-            } else {
-              // Preserve local status if local has status and remote differs
-              if (le.status && mergedEnrs[idx].status !== le.status) {
-                mergedEnrs[idx] = { ...mergedEnrs[idx], ...le };
-              }
-            }
-          });
-          setEnrollments(mergedEnrs);
-          setStored(STORAGE_KEYS.ENROLLMENTS, mergedEnrs);
-        }
-
-        if (rPays) {
-          const localNow = getStored(STORAGE_KEYS.PAYMENTS) || [];
-          const mergedPays = [...(rPays || [])];
-          localNow.forEach(lp => {
-            const idx = mergedPays.findIndex(mp => mp.id === lp.id);
-            if (idx === -1) {
-              mergedPays.push(lp);
-              if (isExternalDbConfigured) {
-                remoteDb.insertPayment(lp).catch(() => {});
-              }
-            }
-          });
-          setPayments(mergedPays);
-          setStored(STORAGE_KEYS.PAYMENTS, mergedPays);
-        }
-
-        if (rProg) {
-          const localNow = getStored(STORAGE_KEYS.PROGRESS) || [];
-          const mergedProg = [...(rProg || [])];
-          localNow.forEach(lp => {
-            const idx = mergedProg.findIndex(mp => mp.id === lp.id || (mp.userId === lp.userId && mp.lectureId === lp.lectureId));
-            if (idx === -1) {
-              mergedProg.push(lp);
-              if (isExternalDbConfigured) {
-                remoteDb.upsertProgress(lp).catch(() => {});
-              }
-            } else {
-              if ((lp.progressRate || 0) > (mergedProg[idx].progressRate || 0) || lp.completed) {
-                mergedProg[idx] = { ...mergedProg[idx], ...lp };
-              }
-            }
-          });
-          setProgressList(mergedProg);
-          setStored(STORAGE_KEYS.PROGRESS, mergedProg);
-        }
-
-        if (rCerts) {
-          const localNow = getStored(STORAGE_KEYS.CERTIFICATES) || [];
-          const mergedCerts = [...(rCerts || [])];
-          localNow.forEach(lc => {
-            const idx = mergedCerts.findIndex(mc => mc.id === lc.id || (mc.userId === lc.userId && mc.courseId === lc.courseId));
-            if (idx === -1) {
-              mergedCerts.push(lc);
-              if (isExternalDbConfigured) {
-                remoteDb.insertCertificate(lc).catch(() => {});
-              }
-            }
-          });
-          setCertificates(mergedCerts);
-          setStored(STORAGE_KEYS.CERTIFICATES, mergedCerts);
-        }
-
-        if (rQA) {
-          const localNow = getStored(STORAGE_KEYS.QA_POSTS) || [];
-          const mergedQA = [...(rQA || [])];
-          localNow.forEach(lq => {
-            const idx = mergedQA.findIndex(mq => mq.id === lq.id);
-            if (idx === -1) {
-              mergedQA.push(lq);
-            }
-          });
-          setQaPosts(mergedQA);
-          setStored(STORAGE_KEYS.QA_POSTS, mergedQA);
-        }
-      } catch (err) {
-        console.warn('Supabase full sync error:', err);
+          };
+        });
+        setCourses(populated);
       }
+
+      if (Array.isArray(rEnrs)) setEnrollments(rEnrs);
+      if (Array.isArray(rPays)) setPayments(rPays);
+      if (Array.isArray(rProg)) setProgressList(rProg);
+      if (Array.isArray(rCerts)) setCertificates(rCerts);
+      if (Array.isArray(rQA)) setQaPosts(rQA);
+      if (Array.isArray(rAttempts)) setExamAttempts(rAttempts);
+
+    } catch (err) {
+      console.warn('Supabase pure data fetch warning:', err);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -172,32 +88,22 @@ export function CourseProvider({ children }) {
   // RBAC & Access Control Logic
   // =========================================================================
 
-  /**
-   * Checks if a user has valid access to a course (Active or Completed)
-   * If user is enrolled in 'bundle-all', they also have access to course-1 and course-2
-   */
   const hasCourseAccess = useCallback((userId, courseId) => {
     if (!userId) return false;
     if (isAdmin) return true; // Admins have full preview access
 
     const userEnrs = enrollments.filter(e => e.userId === userId && (e.status === 'active' || e.status === 'completed'));
-    
-    // Direct enrollment check
     const directMatch = userEnrs.find(e => e.courseId === courseId);
     if (directMatch) return true;
 
-    // Bundle enrollment check
     const hasBundle = userEnrs.some(e => e.courseId === 'bundle-all');
-    if (hasBundle && (courseId === 'course-1' || courseId === 'course-2')) {
+    if (hasBundle && (courseId === 'course-1' || courseId === 'course-2' || courseId === 'course-ritual-8-11' || courseId === 'course-ritual-12-15')) {
       return true;
     }
 
     return false;
   }, [enrollments, isAdmin]);
 
-  /**
-   * Checks if user has access to a specific lecture
-   */
   const hasLectureAccess = useCallback((userId, lectureId) => {
     if (!userId) return false;
     if (isAdmin) return true;
@@ -208,34 +114,28 @@ export function CourseProvider({ children }) {
     return hasCourseAccess(userId, lec.courseId);
   }, [lectures, hasCourseAccess, isAdmin]);
 
-  /**
-   * Checks if a lecture is locked by the sequential unlock rule
-   * Rule: If course.sequentialUnlock is true, lecture N is locked unless lecture (N-1) is 100% completed
-   */
   const isLectureLocked = useCallback((userId, lectureId) => {
-    if (isAdmin) return false; // Admin can preview all
+    if (isAdmin) return false;
     const currentLec = lectures.find(l => l.id === lectureId);
     if (!currentLec) return false;
 
     const course = courses.find(c => c.id === currentLec.courseId);
     if (!course || !course.sequentialUnlock) return false;
 
-    // Get all lectures in this course sorted by orderIndex
     const courseLecs = lectures
       .filter(l => l.courseId === currentLec.courseId)
       .sort((a, b) => a.orderIndex - b.orderIndex);
 
     const currentIndex = courseLecs.findIndex(l => l.id === lectureId);
-    if (currentIndex <= 0) return false; // First lecture is always unlocked
+    if (currentIndex <= 0) return false;
 
-    // Check if the previous lecture was completed
     const prevLec = courseLecs[currentIndex - 1];
     const prevProg = progressList.find(p => p.userId === userId && p.lectureId === prevLec.id);
     return !(prevProg && (prevProg.completed || prevProg.progressRate >= 99));
   }, [lectures, courses, progressList, isAdmin]);
 
   // =========================================================================
-  // Video Progress & Auto-Completion Tracking
+  // Video Progress Tracking (100% Supabase Direct)
   // =========================================================================
 
   const getLectureProgress = useCallback((userId, lectureId) => {
@@ -248,12 +148,11 @@ export function CourseProvider({ children }) {
     };
   }, [progressList]);
 
-  const updateProgress = useCallback((userId, lectureId, currentSeconds, totalDuration) => {
+  const updateProgress = useCallback(async (userId, lectureId, currentSeconds, totalDuration) => {
     if (!userId || !lectureId) return;
 
-    const allProgress = getStored(STORAGE_KEYS.PROGRESS) || [];
-    const existingIndex = allProgress.findIndex(p => p.userId === userId && p.lectureId === lectureId);
-    const existing = existingIndex !== -1 ? allProgress[existingIndex] : null;
+    const existingIndex = progressList.findIndex(p => p.userId === userId && p.lectureId === lectureId);
+    const existing = existingIndex !== -1 ? progressList[existingIndex] : null;
 
     const lastPlayed = Math.round(currentSeconds);
     const maxDuration = totalDuration || 1;
@@ -272,33 +171,40 @@ export function CourseProvider({ children }) {
       updatedAt: new Date().toISOString()
     };
 
-    if (existingIndex !== -1) {
-      allProgress[existingIndex] = updatedItem;
-    } else {
-      allProgress.push(updatedItem);
-    }
+    // Update memory state immediately
+    setProgressList(prev => {
+      const idx = prev.findIndex(p => p.userId === userId && p.lectureId === lectureId);
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = updatedItem;
+        return next;
+      }
+      return [...prev, updatedItem];
+    });
 
-    setStored(STORAGE_KEYS.PROGRESS, allProgress);
-    setProgressList(allProgress);
-
-    // Sync progress to Supabase Cloud DB
+    // Save directly to Supabase Cloud DB
     if (isExternalDbConfigured) {
-      remoteDb.upsertProgress(updatedItem).catch(err => console.warn('Remote upsertProgress warning:', err));
+      await remoteDb.upsertProgress(updatedItem).catch(err => console.warn('Supabase upsertProgress warning:', err));
     }
 
-    // If lecture reached completion, check if the entire course is completed!
+    // If lecture reached completion, check if full course is completed
     if (isCompleted) {
       const lec = lectures.find(l => l.id === lectureId);
       if (lec) {
-        checkCourseCompletion(userId, lec.courseId);
-        // Also check bundle-all if enrolled
-        checkCourseCompletion(userId, 'bundle-all');
-        refreshData();
+        const nextProgress = progressList.map(p => (p.userId === userId && p.lectureId === lectureId ? updatedItem : p));
+        const allDone = checkCourseCompletion(userId, lec.courseId, courses, lectures, nextProgress, examAttempts);
+        if (allDone) {
+          const enr = enrollments.find(e => e.userId === userId && e.courseId === lec.courseId);
+          if (enr && enr.status !== 'completed') {
+            const updatedEnr = { ...enr, status: 'completed' };
+            setEnrollments(prev => prev.map(e => e.id === enr.id ? updatedEnr : e));
+            remoteDb.upsertEnrollment(updatedEnr).catch(() => {});
+          }
+        }
       }
     }
-  }, [lectures, refreshData]);
+  }, [progressList, lectures, courses, enrollments, examAttempts]);
 
-  // Overall course progress percentage
   const getCourseProgress = useCallback((userId, courseId) => {
     if (!userId) return 0;
     let targetLecs = [];
@@ -320,11 +226,10 @@ export function CourseProvider({ children }) {
   }, [lectures, progressList]);
 
   // =========================================================================
-  // Admin & Enrollment Operations
+  // Admin & Enrollment Operations (100% Supabase Direct)
   // =========================================================================
 
-  const enrollStudent = useCallback((userId, courseId, status = 'active') => {
-    const allEnrs = getStored(STORAGE_KEYS.ENROLLMENTS) || [];
+  const enrollStudent = useCallback(async (userId, courseId, status = 'active') => {
     const course = courses.find(c => c.id === courseId);
     const periodDays = course ? course.defaultPeriodDays : 90;
 
@@ -332,9 +237,9 @@ export function CourseProvider({ children }) {
     const expireDate = new Date();
     expireDate.setDate(today.getDate() + periodDays);
 
-    const existingIndex = allEnrs.findIndex(e => e.userId === userId && e.courseId === courseId);
+    const existing = enrollments.find(e => e.userId === userId && e.courseId === courseId);
     const item = {
-      id: existingIndex !== -1 ? allEnrs[existingIndex].id : `enr_${Date.now()}`,
+      id: existing ? existing.id : `enr_${Date.now()}`,
       userId,
       courseId,
       status,
@@ -343,25 +248,24 @@ export function CourseProvider({ children }) {
       expireAt: expireDate.toISOString().split('T')[0]
     };
 
-    if (existingIndex !== -1) {
-      allEnrs[existingIndex] = { ...allEnrs[existingIndex], ...item };
-    } else {
-      allEnrs.push(item);
-    }
+    setEnrollments(prev => {
+      const idx = prev.findIndex(e => e.userId === userId && e.courseId === courseId);
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = item;
+        return next;
+      }
+      return [...prev, item];
+    });
 
-    setStored(STORAGE_KEYS.ENROLLMENTS, allEnrs);
-    setEnrollments(allEnrs);
-
-    // Sync enrollment to Supabase Cloud DB
     if (isExternalDbConfigured) {
-      remoteDb.upsertEnrollment(item).catch(err => console.warn('Remote upsertEnrollment warning:', err));
+      await remoteDb.upsertEnrollment(item).catch(err => console.warn('Supabase upsertEnrollment warning:', err));
     }
 
     return item;
-  }, [courses]);
+  }, [courses, enrollments]);
 
-  const recordPayment = useCallback(({ userId, courseId, manager, amount, methodMemo, paidAt }) => {
-    const allPayments = getStored(STORAGE_KEYS.PAYMENTS) || [];
+  const recordPayment = useCallback(async ({ userId, courseId, manager, amount, methodMemo, paidAt }) => {
     const newPay = {
       id: `pay_${Date.now()}`,
       userId,
@@ -371,55 +275,43 @@ export function CourseProvider({ children }) {
       amount: Number(amount) || 0,
       methodMemo: methodMemo.trim()
     };
-    allPayments.push(newPay);
-    setStored(STORAGE_KEYS.PAYMENTS, allPayments);
-    setPayments(allPayments);
 
-    // Sync payment to Supabase Cloud DB
+    setPayments(prev => [...prev, newPay]);
+
     if (isExternalDbConfigured) {
-      remoteDb.insertPayment(newPay).catch(err => console.warn('Remote insertPayment warning:', err));
+      await remoteDb.insertPayment(newPay).catch(err => console.warn('Supabase insertPayment warning:', err));
     }
 
-    // Update enrollment to 'active'
-    enrollStudent(userId, courseId, 'active');
-    refreshData();
+    // Activate enrollment
+    await enrollStudent(userId, courseId, 'active');
+    await refreshData();
     return newPay;
   }, [enrollStudent, refreshData]);
 
-  const updateCourseSettings = useCallback((courseId, updates) => {
-    const allCourses = getStored(STORAGE_KEYS.COURSES) || [];
-    const index = allCourses.findIndex(c => c.id === courseId);
-    if (index !== -1) {
-      let finalUpdates = { ...updates };
-      if (updates.rawExamText !== undefined) {
-        finalUpdates.examQuestions = updates.rawExamText.trim() 
-          ? parseExamText(updates.rawExamText) 
-          : [];
-      }
-      allCourses[index] = { ...allCourses[index], ...finalUpdates };
-      setStored(STORAGE_KEYS.COURSES, allCourses);
-      setCourses(allCourses);
+  const updateCourseSettings = useCallback(async (courseId, updates) => {
+    let finalUpdates = { ...updates };
+    if (updates.rawExamText !== undefined) {
+      finalUpdates.examQuestions = updates.rawExamText.trim() 
+        ? parseExamText(updates.rawExamText) 
+        : PRESET_EXAM_QUESTIONS;
+    }
 
-      // Sync course updates to Supabase Cloud DB
-      if (isExternalDbConfigured) {
-        remoteDb.updateCourse(courseId, finalUpdates).catch(err => console.warn('Remote updateCourse warning:', err));
-      }
+    setCourses(prev => prev.map(c => c.id === courseId ? { ...c, ...finalUpdates } : c));
+
+    if (isExternalDbConfigured) {
+      await remoteDb.updateCourse(courseId, finalUpdates).catch(err => console.warn('Supabase updateCourse warning:', err));
     }
   }, []);
 
-  const addCourse = useCallback((courseData) => {
-    const allCourses = getStored(STORAGE_KEYS.COURSES) || [];
+  const addCourse = useCallback(async (courseData) => {
     const certType = courseData.certType?.trim() || '불교의례법사';
     const certGrade = courseData.certGrade?.trim() || '2급';
     const certTypeFull = courseData.certTypeFull?.trim() || (certGrade ? `${certType} ${certGrade}` : certType);
     const certRegNo = courseData.certRegNo?.trim() || '';
 
-    // Parse exam questions if raw text is provided
     let parsedExamQuestions = [];
     if (courseData.rawExamText && courseData.rawExamText.trim()) {
       parsedExamQuestions = parseExamText(courseData.rawExamText);
-    } else if (Array.isArray(courseData.examQuestions) && courseData.examQuestions.length > 0) {
-      parsedExamQuestions = courseData.examQuestions;
     } else {
       parsedExamQuestions = PRESET_EXAM_QUESTIONS;
     }
@@ -443,140 +335,94 @@ export function CourseProvider({ children }) {
       examQuestions: parsedExamQuestions,
       lectureIds: []
     };
-    allCourses.push(newCourse);
-    setStored(STORAGE_KEYS.COURSES, allCourses);
-    setCourses(allCourses);
 
-    // Sync course to Supabase Cloud DB
+    setCourses(prev => [...prev, newCourse]);
+
     if (isExternalDbConfigured) {
-      remoteDb.insertCourse(newCourse).catch(err => console.warn('Remote insertCourse warning:', err));
+      await remoteDb.insertCourse(newCourse).catch(err => console.warn('Supabase insertCourse warning:', err));
     }
 
     return newCourse;
   }, []);
 
-  const deleteCourse = useCallback((courseId) => {
-    const allCourses = getStored(STORAGE_KEYS.COURSES) || [];
-    const updatedCourses = allCourses.filter(c => c.id !== courseId);
-    setStored(STORAGE_KEYS.COURSES, updatedCourses);
-    setCourses(updatedCourses);
+  const deleteCourse = useCallback(async (courseId) => {
+    setCourses(prev => prev.filter(c => c.id !== courseId));
+    setLectures(prev => prev.filter(l => l.courseId !== courseId));
 
-    // Sync course deletion to Supabase Cloud DB
     if (isExternalDbConfigured) {
-      remoteDb.deleteCourse(courseId).catch(err => console.warn('Remote deleteCourse warning:', err));
+      await remoteDb.deleteCourse(courseId).catch(err => console.warn('Supabase deleteCourse warning:', err));
     }
-
-    // Also remove associated lectures
-    const allLecs = getStored(STORAGE_KEYS.LECTURES) || [];
-    const lecsToDelete = allLecs.filter(l => l.courseId === courseId);
-    const updatedLecs = allLecs.filter(l => l.courseId !== courseId);
-    setStored(STORAGE_KEYS.LECTURES, updatedLecs);
-    setLectures(updatedLecs);
-
-    // Clean up videos in background
-    lecsToDelete.forEach(l => {
-      if (l.videoUrl && l.videoUrl.includes('/storage/v1/object/public/lectures/')) {
-        try {
-          const parts = l.videoUrl.split('/lectures/');
-          if (parts[1]) {
-            const fileName = decodeURIComponent(parts[1].split('?')[0]);
-            deleteLectureVideo(fileName).catch(() => {});
-          }
-        } catch (e) {}
-      }
-    });
 
     return true;
   }, []);
 
-  const addLecture = useCallback((lectureData) => {
-    const allLecs = getStored(STORAGE_KEYS.LECTURES) || [];
+  const addLecture = useCallback(async (lectureData) => {
     const newLec = {
       ...lectureData,
       id: lectureData.id || `lec_${Date.now()}`
     };
-    allLecs.push(newLec);
-    setStored(STORAGE_KEYS.LECTURES, allLecs);
-    setLectures(allLecs);
 
-    // Sync lecture to Supabase Cloud DB
-    if (isExternalDbConfigured) {
-      remoteDb.insertLecture(newLec).catch(err => console.warn('Remote insertLecture warning:', err));
-    }
-
-    // Add to course's lectureIds
-    const allCourses = getStored(STORAGE_KEYS.COURSES) || [];
-    const course = allCourses.find(c => c.id === newLec.courseId);
-    if (course) {
-      if (!course.lectureIds) course.lectureIds = [];
-      if (!course.lectureIds.includes(newLec.id)) {
-        course.lectureIds.push(newLec.id);
-        setStored(STORAGE_KEYS.COURSES, allCourses);
-        setCourses(allCourses);
+    setLectures(prev => [...prev, newLec]);
+    setCourses(prev => prev.map(c => {
+      if (c.id === newLec.courseId) {
+        const nextIds = c.lectureIds ? [...c.lectureIds] : [];
+        if (!nextIds.includes(newLec.id)) nextIds.push(newLec.id);
+        return { ...c, lectureIds: nextIds };
       }
+      return c;
+    }));
+
+    if (isExternalDbConfigured) {
+      await remoteDb.insertLecture(newLec).catch(err => console.warn('Supabase insertLecture warning:', err));
     }
 
     return newLec;
   }, []);
 
-  const updateLecture = useCallback((lectureId, updates) => {
-    const allLecs = getStored(STORAGE_KEYS.LECTURES) || [];
-    const index = allLecs.findIndex(l => l.id === lectureId);
-    if (index !== -1) {
-      allLecs[index] = { ...allLecs[index], ...updates };
-      setStored(STORAGE_KEYS.LECTURES, allLecs);
-      setLectures(allLecs);
+  const updateLecture = useCallback(async (lectureId, updates) => {
+    setLectures(prev => prev.map(l => l.id === lectureId ? { ...l, ...updates } : l));
 
-      // Sync lecture updates to Supabase Cloud DB
-      if (isExternalDbConfigured) {
-        remoteDb.updateLecture(lectureId, updates).catch(err => console.warn('Remote updateLecture warning:', err));
-      }
+    if (isExternalDbConfigured) {
+      await remoteDb.updateLecture(lectureId, updates).catch(err => console.warn('Supabase updateLecture warning:', err));
     }
   }, []);
 
-  const deleteLecture = useCallback((lectureId) => {
-    const allLecs = getStored(STORAGE_KEYS.LECTURES) || [];
-    const targetLec = allLecs.find(l => l.id === lectureId);
-    const updatedLecs = allLecs.filter(l => l.id !== lectureId);
-    setStored(STORAGE_KEYS.LECTURES, updatedLecs);
-    setLectures(updatedLecs);
-
-    // Sync lecture deletion to Supabase Cloud DB
-    if (isExternalDbConfigured) {
-      remoteDb.deleteLecture(lectureId).catch(err => console.warn('Remote deleteLecture warning:', err));
-    }
+  const deleteLecture = useCallback(async (lectureId) => {
+    const targetLec = lectures.find(l => l.id === lectureId);
+    setLectures(prev => prev.filter(l => l.id !== lectureId));
 
     if (targetLec) {
-      const allCourses = getStored(STORAGE_KEYS.COURSES) || [];
-      const course = allCourses.find(c => c.id === targetLec.courseId);
-      if (course && course.lectureIds) {
-        course.lectureIds = course.lectureIds.filter(id => id !== lectureId);
-        setStored(STORAGE_KEYS.COURSES, allCourses);
-        setCourses(allCourses);
-      }
-      if (targetLec.videoUrl && targetLec.videoUrl.includes('/storage/v1/object/public/lectures/')) {
-        try {
-          const parts = targetLec.videoUrl.split('/lectures/');
-          if (parts[1]) {
-            const fileName = decodeURIComponent(parts[1].split('?')[0]);
-            deleteLectureVideo(fileName).catch(() => {});
-          }
-        } catch (e) {}
-      }
+      setCourses(prev => prev.map(c => {
+        if (c.id === targetLec.courseId && c.lectureIds) {
+          return { ...c, lectureIds: c.lectureIds.filter(id => id !== lectureId) };
+        }
+        return c;
+      }));
+    }
+
+    if (isExternalDbConfigured) {
+      await remoteDb.deleteLecture(lectureId).catch(err => console.warn('Supabase deleteLecture warning:', err));
+    }
+
+    if (targetLec && targetLec.videoUrl && targetLec.videoUrl.includes('/storage/v1/object/public/lectures/')) {
+      try {
+        const parts = targetLec.videoUrl.split('/lectures/');
+        if (parts[1]) {
+          const fileName = decodeURIComponent(parts[1].split('?')[0]);
+          deleteLectureVideo(fileName).catch(() => {});
+        }
+      } catch (e) {}
     }
 
     return true;
-  }, []);
-
-
+  }, [lectures]);
 
   // =========================================================================
-  // Q&A Community Operations
+  // Q&A Community Operations (100% Supabase Direct)
   // =========================================================================
 
-  const addQAPost = useCallback(({ courseId, lectureId, title, content, timestampSeconds = null, isPrivate = false }) => {
+  const addQAPost = useCallback(async ({ courseId, lectureId, title, content, timestampSeconds = null, isPrivate = false }) => {
     if (!currentUser) throw new Error('질문을 작성하려면 로그인이 필요합니다.');
-    const allPosts = getStored(STORAGE_KEYS.QA_POSTS) || [];
     const now = new Date();
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     
@@ -595,23 +441,17 @@ export function CourseProvider({ children }) {
       answers: []
     };
 
-    allPosts.unshift(newPost);
-    setStored(STORAGE_KEYS.QA_POSTS, allPosts);
-    setQaPosts(allPosts);
+    setQaPosts(prev => [newPost, ...prev]);
 
     if (isExternalDbConfigured) {
-      remoteDb.insertQAPost(newPost).catch(err => console.log('Remote post error:', err));
+      await remoteDb.insertQAPost(newPost).catch(err => console.log('Supabase post error:', err));
     }
 
     return newPost;
   }, [currentUser]);
 
-  const addQAAnswer = useCallback((postId, { content, authorName = '지산 스님', badgeTitle = '담당 지도교수' }) => {
+  const addQAAnswer = useCallback(async (postId, { content, authorName = '지산 스님', badgeTitle = '담당 지도교수' }) => {
     if (!currentUser) throw new Error('답변을 작성하려면 로그인이 필요합니다.');
-    const allPosts = getStored(STORAGE_KEYS.QA_POSTS) || [];
-    const postIndex = allPosts.findIndex(p => p.id === postId);
-    if (postIndex === -1) throw new Error('존재하지 않는 질문입니다.');
-
     const now = new Date();
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
@@ -625,71 +465,77 @@ export function CourseProvider({ children }) {
       createdAt: dateStr
     };
 
-    allPosts[postIndex].answers.push(newAnswer);
-    setStored(STORAGE_KEYS.QA_POSTS, allPosts);
-    setQaPosts(allPosts);
+    setQaPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        return { ...p, answers: [...(p.answers || []), newAnswer] };
+      }
+      return p;
+    }));
 
     if (isExternalDbConfigured) {
-      remoteDb.insertQAAnswer(postId, newAnswer).catch(err => console.log('Remote answer error:', err));
+      await remoteDb.insertQAAnswer(postId, newAnswer).catch(err => console.log('Supabase answer error:', err));
     }
 
     return newAnswer;
   }, [currentUser]);
 
-  const deleteQAPost = useCallback((postId) => {
-    const allPosts = getStored(STORAGE_KEYS.QA_POSTS) || [];
-    const post = allPosts.find(p => p.id === postId);
+  const deleteQAPost = useCallback(async (postId) => {
+    const post = qaPosts.find(p => p.id === postId);
     if (!post) return;
 
     if (!isAdmin && post.authorId !== currentUser?.id) {
       throw new Error('질문 삭제 권한이 없습니다.');
     }
 
-    const filtered = allPosts.filter(p => p.id !== postId);
-    setStored(STORAGE_KEYS.QA_POSTS, filtered);
-    setQaPosts(filtered);
+    setQaPosts(prev => prev.filter(p => p.id !== postId));
 
     if (isExternalDbConfigured) {
-      remoteDb.deleteQAPost(postId).catch(err => console.log('Remote delete error:', err));
+      await remoteDb.deleteQAPost(postId).catch(err => console.log('Supabase delete error:', err));
     }
-  }, [currentUser, isAdmin]);
+  }, [currentUser, isAdmin, qaPosts]);
 
   const getLectureQAPosts = useCallback((lectureId) => {
     return qaPosts.filter(p => p.lectureId === lectureId);
   }, [qaPosts]);
 
   // =========================================================================
-  // Certificate & Qualification Exam Operations
+  // Certificate & Qualification Exam Operations (100% Supabase Direct)
   // =========================================================================
 
   const getCertificate = useCallback((userId, courseId) => {
-    const certs = getStored(STORAGE_KEYS.CERTIFICATES) || [];
-    const found = certs.find(c => c.userId === userId && c.courseId === courseId);
-    return found ? enrichCertificate(found) : null;
-  }, []);
+    const found = certificates.find(c => c.userId === userId && c.courseId === courseId);
+    const course = courses.find(c => c.id === courseId);
+    return found ? enrichCertificate(found, course) : null;
+  }, [certificates, courses]);
 
-  const claimCertificate = useCallback((courseId) => {
+  const checkCourseAllLecturesDone = useCallback((userId, courseId) => {
+    return checkLecturesCompleted(userId, courseId, courses, lectures, progressList);
+  }, [courses, lectures, progressList]);
+
+  const claimCertificate = useCallback(async (courseId) => {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
     const course = courses.find(c => c.id === courseId);
     if (!course) throw new Error('존재하지 않는 코스입니다.');
 
     // 1. Must complete lectures 100%
-    if (!checkLecturesCompleted(currentUser.id, courseId)) {
+    if (!checkLecturesCompleted(currentUser.id, courseId, courses, lectures, progressList)) {
       throw new Error('모든 강의 차시(진도율 100%)를 먼저 완강하셔야 합니다.');
     }
 
     // 2. Must pass exam with >= 60 points
-    if (!hasPassedCourseExam(currentUser.id, courseId)) {
+    if (!hasPassedCourseExam(currentUser.id, courseId, examAttempts)) {
       throw new Error('자격 검정 시험(수료 기준 60점 이상)에 합격하셔야 공인 자격증이 발급됩니다.');
     }
 
-    const newCert = issueCertificate(currentUser, course);
+    const newCert = issueCertificate(currentUser, course, certificates, certificates.length);
+    setCertificates(prev => [...prev, newCert]);
+
     if (isExternalDbConfigured) {
-      remoteDb.insertCertificate(newCert).catch(err => console.warn('Remote insertCertificate warning:', err));
+      await remoteDb.insertCertificate(newCert).catch(err => console.warn('Supabase insertCertificate warning:', err));
     }
-    refreshData();
+
     return newCert;
-  }, [currentUser, courses, refreshData]);
+  }, [currentUser, courses, lectures, progressList, examAttempts, certificates]);
 
   // Exam helpers
   const getExamPool = useCallback((courseId) => {
@@ -697,24 +543,35 @@ export function CourseProvider({ children }) {
   }, [courses]);
 
   const getExamResult = useCallback((userId, courseId) => {
-    return getLatestExamAttempt(userId, courseId);
-  }, []);
+    return getLatestExamAttempt(userId, courseId, examAttempts);
+  }, [examAttempts]);
 
   const isExamPassed = useCallback((userId, courseId) => {
-    return hasPassedCourseExam(userId, courseId);
-  }, []);
+    return hasPassedCourseExam(userId, courseId, examAttempts);
+  }, [examAttempts]);
 
-  const submitExam = useCallback((userId, courseId, questions, answers) => {
+  const submitExam = useCallback(async (userId, courseId, questions, answers) => {
     const evaluation = evaluateExam(questions, answers);
-    saveExamAttempt(userId, courseId, evaluation);
+    
+    // Save to Supabase and update memory state
+    const savedAttempt = await saveExamAttempt(userId, courseId, evaluation);
+    setExamAttempts(prev => [savedAttempt, ...prev]);
 
     // If both lectures completed and exam passed, update enrollment to completed!
-    if (evaluation.passed && checkLecturesCompleted(userId, courseId)) {
-      checkCourseCompletion(userId, courseId);
+    const lecturesDone = checkLecturesCompleted(userId, courseId, courses, lectures, progressList);
+    if (evaluation.passed && lecturesDone) {
+      const enr = enrollments.find(e => e.userId === userId && e.courseId === courseId);
+      if (enr && enr.status !== 'completed') {
+        const updatedEnr = { ...enr, status: 'completed' };
+        setEnrollments(prev => prev.map(e => e.id === enr.id ? updatedEnr : e));
+        if (isExternalDbConfigured) {
+          remoteDb.upsertEnrollment(updatedEnr).catch(() => {});
+        }
+      }
     }
-    refreshData();
+
     return evaluation;
-  }, [refreshData]);
+  }, [courses, lectures, progressList, enrollments]);
 
   return (
     <CourseContext.Provider
@@ -726,6 +583,8 @@ export function CourseProvider({ children }) {
         progressList,
         certificates,
         qaPosts,
+        examAttempts,
+        loading,
         refreshData,
         hasCourseAccess,
         hasLectureAccess,
@@ -743,7 +602,7 @@ export function CourseProvider({ children }) {
         deleteLecture,
         getCertificate,
         claimCertificate,
-        checkLecturesCompleted,
+        checkLecturesCompleted: checkCourseAllLecturesDone,
         getExamPool,
         getExamResult,
         isExamPassed,
