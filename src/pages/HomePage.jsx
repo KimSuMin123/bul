@@ -231,7 +231,7 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
                       style={{ flex: 1 }}
                       onClick={() => onSelectCourse(course.id)}
                     >
-                      <span>강좌 상세 및 차시 보기</span>
+                      <span>강의 목차 보기</span>
                       <ChevronRight size={16} />
                     </button>
                   </div>
@@ -247,7 +247,7 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
         <div className="container" style={{ maxWidth: '840px' }}>
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <span className="badge badge-sage" style={{ marginBottom: '8px' }}>GUIDE & FAQ</span>
-            <h2 className="heading-1 font-serif">수강생 이용 안내 및 학사 FAQ</h2>
+            <h2 className="heading-1 font-serif">수강생 이용 안내 FAQ</h2>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -268,8 +268,7 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
                 <span>수료증은 언제 발급되나요?</span>
               </h4>
               <p style={{ fontSize: '14px', color: '#4A5568', lineHeight: '1.7' }}>
-                해당 코스의 모든 차시 동영상을 100% 완강하시면 시스템 내부에서 자동으로 '수료' 상태로 전환되며,
-                내 강의실의 [수료증 보기/인쇄] 버튼이 활성화됩니다. 고유 발급번호와 직인이 날인된 A4 규격 수료증을 PDF로 저장하거나 인쇄할 수 있습니다.
+                모든 강의를 끝까지 들으시면 내 강의실에서 수료증을 내려받거나 인쇄하실 수 있습니다.
               </p>
             </div>
 
@@ -279,8 +278,7 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
                 <span>중복 로그인은 가능한가요?</span>
               </h4>
               <p style={{ fontSize: '14px', color: '#4A5568', lineHeight: '1.7' }}>
-                교육 콘텐츠의 저작권 보호 및 공정한 학사 관리를 위해 <strong>1개 계정당 1개 기기 접속</strong>만 허용됩니다.
-                다른 기기나 탭에서 로그인 시 기존 세션은 자동으로 만료 처리됩니다.
+                한 계정에 한 기기만 접속됩니다. 다른 기기에서 로그인하시면 먼저 접속된 쪽이 끊깁니다.
               </p>
             </div>
           </div>
