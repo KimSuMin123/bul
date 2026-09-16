@@ -1,0 +1,54 @@
+# ==============================================================================
+# Sehwa Buddha Academy - Robots.txt (Search Engine & Generative AI Optimization)
+# ==============================================================================
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /#admin
+Disallow: /api/
+Disallow: /scratch/
+
+# ==============================================================================
+# Generative AI & LLM Search Crawlers (ChatGPT, Perplexity, Claude, Gemini)
+# Explicitly ALLOW full access to public educational contents for AI citation
+# ==============================================================================
+
+# OpenAI ChatGPT & SearchGPT
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# Perplexity AI Search Engine
+User-agent: PerplexityBot
+Allow: /
+
+# Anthropic Claude Search & AI
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# Google Gemini / Extended Crawlers
+User-agent: Google-Extended
+Allow: /
+
+# Apple Intelligence
+User-agent: Applebot-Extended
+Allow: /
+
+# Naver Yeti & Daum / Bing
+User-agent: Yeti
+Allow: /
+
+User-agent: Daumoa
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Sitemaps & AI Index
+Sitemap: https://sehwa-buddha-academy.netlify.app/sitemap.xml

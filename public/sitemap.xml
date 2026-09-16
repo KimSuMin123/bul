@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <!-- Main Homepage -->
+  <url>
+    <loc>https://sehwa-buddha-academy.netlify.app/</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://sehwa-buddha-academy.netlify.app/images/namo_buddhaya.png</image:loc>
+      <image:title>사단법인 세화불학원 세화붓다아카데미</image:title>
+    </image:image>
+  </url>
+
+  <!-- Course Detail 1: 불교의례법사 과정 I (8강~11강) -->
+  <url>
+    <loc>https://sehwa-buddha-academy.netlify.app/#courseDetail?id=course-ritual-8-11</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Course Detail 2: 불교의례법사 과정 II (12강~15강) -->
+  <url>
+    <loc>https://sehwa-buddha-academy.netlify.app/#courseDetail?id=course-ritual-12-15</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Student Dashboard / My Classroom -->
+  <url>
+    <loc>https://sehwa-buddha-academy.netlify.app/#dashboard</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Certificate Verification Public Portal -->
+  <url>
+    <loc>https://sehwa-buddha-academy.netlify.app/#verify</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- User Login Portal -->
+  <url>
+    <loc>https://sehwa-buddha-academy.netlify.app/#login</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- User Registration Portal -->
+  <url>
+    <loc>https://sehwa-buddha-academy.netlify.app/#register</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+</urlset>

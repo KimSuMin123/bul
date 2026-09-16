@@ -14,6 +14,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 
 import { useAuth } from './context/AuthContext';
 import { useModalAlert } from './context/ModalAlertContext';
+import { updatePageSEO } from './services/seoService';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
 // Global Error Boundary to prevent White Screen on any runtime error
@@ -96,9 +97,10 @@ export default function App() {
     return () => window.removeEventListener('hashchange', parseHash);
   }, []);
 
-  // Scroll to top on view change
+  // Scroll to top & update SEO meta tags on view change
   useEffect(() => {
     window.scrollTo(0, 0);
+    updatePageSEO(currentView);
   }, [currentView, selectedLectureId, selectedCourseId]);
 
   const handleNavigate = (view) => {
