@@ -51,7 +51,7 @@ export default function CertificateModal({ certificate: rawCert, onClose }) {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <Award size={19} color="var(--color-amber)" />
-            <span style={{ fontSize: '15px', fontWeight: 700 }}>공인 민간자격증 발급</span>
+            <span style={{ fontSize: '15px', fontWeight: 700 }}>사단법인 정식 수료증 발급</span>
             <span className="badge badge-amber" style={{ fontSize: '11.5px', fontWeight: 600 }}>
               {cert.certTypeFull}
             </span>
@@ -62,7 +62,7 @@ export default function CertificateModal({ certificate: rawCert, onClose }) {
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button className="btn btn-amber btn-sm" onClick={handlePrint} style={{ fontWeight: 700, padding: '7px 14px' }}>
               <Printer size={15} />
-              <span>자격증 인쇄 / PDF 저장</span>
+              <span>수료증 인쇄 / PDF 저장</span>
             </button>
             <button 
               className="btn btn-ghost btn-sm" 

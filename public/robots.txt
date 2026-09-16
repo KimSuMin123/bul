@@ -51,4 +51,4 @@ User-agent: Bingbot
 Allow: /
 
 # Sitemaps & AI Index
-Sitemap: https://sehwa-buddha-academy.netlify.app/sitemap.xml
+Sitemap: https://세화붓다아카데미.com/sitemap.xml

@@ -125,10 +125,10 @@ export default function CertificateVerifyPage({ onNavigate }) {
                   <CheckCircle2 size={24} color="var(--color-sage)" />
                   <div>
                     <strong style={{ fontSize: '15px', color: 'var(--color-sage-dark)' }}>
-                      정상 등록된 공인 민간자격증입니다
+                      정상 발급된 사단법인 정식 수료증입니다
                     </strong>
                     <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                      사단법인 세화불학원 전산 학사시스템 및 주무부처 등록대장의 정본 기록과 100% 일치합니다.
+                      사단법인 세화불학원 전산 학사시스템 및 발급 대장의 정본 기록과 100% 일치합니다.
                     </div>
                   </div>
                 </div>

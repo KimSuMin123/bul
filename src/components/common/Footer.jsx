@@ -45,7 +45,7 @@ export default function Footer() {
             </h4>
             <p style={{ fontSize: '13px', color: '#94A3B8', lineHeight: '1.7', marginBottom: '16px' }}>
               인류의 성자 붓다의 교학을 근본으로 정통 불교 인문학 및 명상 강좌를 제공합니다.
-              체계적인 VOD 강의와 공인 수료증 발급 시스템을 통해 마음의 평안과 바른 지혜를 함께 닦아갑니다.
+              체계적인 VOD 강의와 정식 수료증 발급 시스템을 통해 마음의 평안과 바른 지혜를 함께 닦아갑니다.
             </p>
             <a
               href="https://www.xn--wr3bl1e16firr29a.org"

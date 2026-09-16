@@ -535,7 +535,7 @@ export function CourseProvider({ children }) {
 
     // 2. Must pass exam with >= 60 points
     if (!hasPassedCourseExam(currentUser.id, courseId, examAttempts)) {
-      throw new Error('자격 검정 시험(수료 기준 60점 이상)에 합격하셔야 공인 자격증이 발급됩니다.');
+      throw new Error('자격 평가 시험(수료 기준 60점 이상)에 합격하셔야 정식 수료증이 발급됩니다.');
     }
 
     const newCert = issueCertificate(currentUser, course, certificates, certificates.length);

@@ -322,7 +322,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                             <span>전 강좌 100% 완강 (자격 검정 시험 대상)</span>
                           </div>
                           <p style={{ margin: 0, fontSize: '12.5px', color: '#92400E', lineHeight: '1.5' }}>
-                            강의를 모두 이수하셨습니다! 공인 자격증을 취득하려면 <strong>[자격 검정 평가 시험]</strong>에서 <strong>60점 이상</strong>을 득점하셔야 합니다. (재응시 가능)
+                            강의를 모두 이수하셨습니다! 수료증을 취득하려면 <strong>[자격 검정 평가 시험]</strong>에서 <strong>60점 이상</strong>을 득점하셔야 합니다. (재응시 가능)
                           </p>
                           {latestExam && (
                             <div style={{ marginTop: '8px', fontSize: '12px', color: '#B91C1C', fontWeight: 600 }}>
@@ -340,7 +340,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                             <span>전 강좌 완강 및 자격 검정 합격 ({latestExam ? `${latestExam.score}점` : '합격'})</span>
                           </div>
                           <p style={{ margin: 0, fontSize: '12.5px', color: '#15803D', lineHeight: '1.5' }}>
-                            축하드립니다! 자격 검정 기준(60점)을 통과하여 사단법인 세화불학원 이사장 직인이 날인된 공인 자격증이 발급되었습니다.
+                            축하드립니다! 자격 검정 기준(60점)을 통과하여 사단법인 세화불학원 이사장 직인이 날인된 정식 수료증이 발급되었습니다.
                           </p>
                         </div>
                       )}
@@ -378,7 +378,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                               onClick={() => handleOpenCert(course)}
                             >
                               <Award size={20} />
-                              <span>🎓 공인 자격증 발급 및 출력</span>
+                              <span>🎓 정식 수료증 발급 및 출력</span>
                             </button>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                               <button
@@ -509,7 +509,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
             </div>
             <div>
               <strong>• 수료증 진위 확인</strong>
-              <p>발급된 수료증의 우측 하단 고유 발급번호(CERT-2026-XXXXX)는 외부 공인 검증 페이지를 통해 즉시 진위 조회가 가능합니다.</p>
+              <p>발급된 수료증의 우측 하단 고유 발급번호(CERT-2026-XXXXX)는 수료증 진위 확인 페이지를 통해 즉시 진위 조회가 가능합니다.</p>
             </div>
           </div>
         </div>

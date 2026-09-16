@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { 
-  Users, CreditCard, BookOpen, Search, Plus, Check, 
+import {
+  Users, CreditCard, BookOpen, Search, Plus, Check,
   CheckCircle, Clock, Shield, Award, Edit3, Trash2, ArrowRight,
-  MessageSquare, Lock, PlayCircle, UploadCloud, Film, FileVideo, 
+  MessageSquare, Lock, PlayCircle, UploadCloud, Film, FileVideo,
   Loader2, Play, ExternalLink, AlertCircle, RefreshCw, X, Info,
   Image as ImageIcon, Upload, Sparkles, CheckCircle2, FileText,
   UserPlus, KeyRound, Eye, EyeOff, Copy, CheckCheck, UserCheck,
@@ -15,34 +15,34 @@ import { generateMemberNumber } from '../services/certService';
 import { parseExamText, DEFAULT_RAW_EXAM_TEXT } from '../services/examService';
 import CertificateModal from '../components/certificate/CertificateModal';
 import { useModalAlert } from '../context/ModalAlertContext';
-import { 
-  getNotificationPermission, 
-  requestNotificationPermission, 
-  sendTestNotification, 
-  startAdminEnrollmentListener 
+import {
+  getNotificationPermission,
+  requestNotificationPermission,
+  sendTestNotification,
+  startAdminEnrollmentListener
 } from '../services/notificationService';
 
 export default function AdminDashboardPage() {
   const { showAlert, showConfirm } = useModalAlert();
-  const { 
-    courses, lectures, enrollments, payments, 
-    enrollStudent, recordPayment, updateCourseSettings, 
+  const {
+    courses, lectures, enrollments, payments,
+    enrollStudent, recordPayment, updateCourseSettings,
     addCourse, deleteCourse, addLecture, updateLecture, deleteLecture, refreshData, qaPosts, addQAAnswer, deleteQAPost,
-    certificates 
+    certificates
   } = useCourse();
-  const { 
-    currentUser, 
+  const {
+    currentUser,
     users,
     refreshUsers,
-    adminRegisterUser, 
-    adminDeleteUser, 
-    adminResetPassword, 
-    checkIdAvailable, 
-    checkPhoneAvailable 
+    adminRegisterUser,
+    adminDeleteUser,
+    adminResetPassword,
+    checkIdAvailable,
+    checkPhoneAvailable
   } = useAuth();
 
   const [activeTab, setActiveTab] = useState('enrollment'); // 'enrollment' | 'payment' | 'cms' | 'qa' | 'cert'
-  
+
   // PWA & Push Notification State
   const [notifPermission, setNotifPermission] = useState(() => getNotificationPermission());
   const [installPrompt, setInstallPrompt] = useState(null);
@@ -144,7 +144,7 @@ export default function AdminDashboardPage() {
   const filteredCertificates = useMemo(() => {
     if (!certKeyword.trim()) return certificates || [];
     const kw = certKeyword.trim().toLowerCase();
-    return (certificates || []).filter(c => 
+    return (certificates || []).filter(c =>
       c.certNo.toLowerCase().includes(kw) ||
       (c.memberNo && c.memberNo.toLowerCase().includes(kw)) ||
       c.studentName.toLowerCase().includes(kw) ||
@@ -234,7 +234,7 @@ export default function AdminDashboardPage() {
       }
     }
   };
-  
+
   // Manual grant modal state
   const [showGrantModal, setShowGrantModal] = useState(false);
   const [grantCourseId, setGrantCourseId] = useState('course-ritual-8-11');
@@ -748,8 +748,8 @@ export default function AdminDashboardPage() {
         enrollStudent(registered.id, newUserForm.courseId, newUserForm.status);
         const c = courses.find(item => item.id === newUserForm.courseId);
         assignedCourseTitle = c?.title || newUserForm.courseId;
-        assignedStatusText = newUserForm.status === 'active' ? '수강중 (결제완료)' : 
-                             newUserForm.status === 'pending' ? '결제대기' : '수강신청 접수';
+        assignedStatusText = newUserForm.status === 'active' ? '수강중 (결제완료)' :
+          newUserForm.status === 'pending' ? '결제대기' : '수강신청 접수';
 
         // 3. Record Payment in ledger if selected
         if (newUserForm.recordPayment && newUserForm.status === 'active') {
@@ -858,8 +858,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
   const filteredUsers = useMemo(() => {
     if (!searchKeyword.trim()) return allUsers;
     const kw = searchKeyword.trim().toLowerCase();
-    return allUsers.filter(u => 
-      u.name.toLowerCase().includes(kw) || 
+    return allUsers.filter(u =>
+      u.name.toLowerCase().includes(kw) ||
       u.phone.replace(/[^0-9]/g, '').includes(kw.replace(/[^0-9]/g, '')) ||
       u.id.toLowerCase().includes(kw) ||
       (u.memberNo && u.memberNo.toLowerCase().includes(kw))
@@ -1027,7 +1027,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
   return (
     <div style={{ padding: '36px 0 80px 0' }}>
       <div className="container">
-        
+
         {/* Admin Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
@@ -1039,7 +1039,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
           </div>
 
           <div className="admin-header-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <button 
+            <button
               className="btn btn-primary btn-sm"
               style={{ backgroundColor: 'var(--color-sage)', borderColor: 'var(--color-sage)' }}
               onClick={handleOpenNewUserModal}
@@ -1047,14 +1047,14 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               <UserPlus size={15} />
               <span>+ 신규 사용자 직접 등록</span>
             </button>
-            <button 
+            <button
               className="btn btn-amber btn-sm"
               onClick={() => setShowPaymentModal(true)}
             >
               <CreditCard size={15} />
               <span>+ 대면 수납 등록</span>
             </button>
-            <button 
+            <button
               className="btn btn-primary btn-sm"
               onClick={() => setShowNewLecModal(true)}
             >
@@ -1065,11 +1065,11 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
         </div>
 
         {/* PWA & Push Notification Control Banner */}
-        <div 
-          className="card" 
-          style={{ 
-            marginBottom: '24px', 
-            padding: '16px 20px', 
+        <div
+          className="card"
+          style={{
+            marginBottom: '24px',
+            padding: '16px 20px',
             background: 'linear-gradient(135deg, rgba(31, 58, 51, 0.04) 0%, rgba(200, 150, 62, 0.06) 100%)',
             border: '1px solid rgba(31, 58, 51, 0.12)',
             display: 'flex',
@@ -1080,15 +1080,15 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div 
-              style={{ 
-                width: '42px', 
-                height: '42px', 
-                borderRadius: '10px', 
-                backgroundColor: notifPermission === 'granted' ? 'var(--color-sage)' : 'var(--color-gold)', 
-                color: '#fff', 
-                display: 'flex', 
-                alignItems: 'center', 
+            <div
+              style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '10px',
+                backgroundColor: notifPermission === 'granted' ? 'var(--color-sage)' : 'var(--color-gold)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}
@@ -1116,7 +1116,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 )}
               </div>
               <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                {notifPermission === 'granted' 
+                {notifPermission === 'granted'
                   ? '수강생이 강좌를 신청하면 관리자 기기(모바일/PC)로 즉시 맑은 알림음과 함께 OS 푸시 알림이 발송됩니다.'
                   : '스마트폰 홈화면에 앱(PWA)으로 설치하고 알림을 켜두시면 수강생이 수강신청을 접수할 때 실시간 푸시 알림을 받으실 수 있습니다.'}
               </p>
@@ -1125,7 +1125,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             {notifPermission !== 'granted' ? (
-              <button 
+              <button
                 className="btn btn-primary btn-sm"
                 onClick={handleRequestPushPermission}
                 style={{ backgroundColor: 'var(--color-sage)', borderColor: 'var(--color-sage)' }}
@@ -1134,7 +1134,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <span>🔔 푸시 알림 켜기</span>
               </button>
             ) : (
-              <button 
+              <button
                 className="btn btn-secondary btn-sm"
                 onClick={handleSendTestPush}
                 disabled={isSendingTestNotif}
@@ -1146,7 +1146,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             )}
 
             {!isStandalone && (
-              <button 
+              <button
                 className="btn btn-secondary btn-sm"
                 onClick={handleInstallPwaApp}
                 title="홈 화면 또는 바탕화면에 관리자 앱을 설치합니다"
@@ -1160,9 +1160,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
         {/* Tab Navigation */}
         <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--color-border)', marginBottom: '28px' }}>
-          <button 
-            className="btn btn-ghost" 
-            style={{ 
+          <button
+            className="btn btn-ghost"
+            style={{
               borderBottom: activeTab === 'enrollment' ? '3px solid var(--color-sage)' : '3px solid transparent',
               borderRadius: '0',
               fontWeight: activeTab === 'enrollment' ? 700 : 500,
@@ -1175,9 +1175,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             <span>수강생 및 권한 관리</span>
           </button>
 
-          <button 
-            className="btn btn-ghost" 
-            style={{ 
+          <button
+            className="btn btn-ghost"
+            style={{
               borderBottom: activeTab === 'payment' ? '3px solid var(--color-sage)' : '3px solid transparent',
               borderRadius: '0',
               fontWeight: activeTab === 'payment' ? 700 : 500,
@@ -1198,9 +1198,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             )}
           </button>
 
-          <button 
-            className="btn btn-ghost" 
-            style={{ 
+          <button
+            className="btn btn-ghost"
+            style={{
               borderBottom: activeTab === 'cms' ? '3px solid var(--color-sage)' : '3px solid transparent',
               borderRadius: '0',
               fontWeight: activeTab === 'cms' ? 700 : 500,
@@ -1213,9 +1213,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             <span>코스 & VOD 콘텐츠 관리</span>
           </button>
 
-          <button 
-            className="btn btn-ghost" 
-            style={{ 
+          <button
+            className="btn btn-ghost"
+            style={{
               borderBottom: activeTab === 'qa' ? '3px solid var(--color-sage)' : '3px solid transparent',
               borderRadius: '0',
               fontWeight: activeTab === 'qa' ? 700 : 500,
@@ -1236,9 +1236,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             )}
           </button>
 
-          <button 
-            className="btn btn-ghost" 
-            style={{ 
+          <button
+            className="btn btn-ghost"
+            style={{
               borderBottom: activeTab === 'cert' ? '3px solid var(--color-sage)' : '3px solid transparent',
               borderRadius: '0',
               fontWeight: activeTab === 'cert' ? 700 : 500,
@@ -1293,9 +1293,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
                   <Search size={17} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                  <input 
-                    type="text" 
-                    className="form-input" 
+                  <input
+                    type="text"
+                    className="form-input"
                     placeholder="수강생 검색 (이름, 휴대전화 번호, 아이디, 회원번호)"
                     style={{ paddingLeft: '38px' }}
                     value={searchKeyword}
@@ -1305,7 +1305,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <div className="text-caption" style={{ whiteSpace: 'nowrap' }}>
                   총 {filteredUsers.length}명 검색됨
                 </div>
-                <button 
+                <button
                   className="btn btn-primary"
                   style={{ backgroundColor: 'var(--color-sage)', borderColor: 'var(--color-sage)', display: 'flex', alignItems: 'center', gap: '6px' }}
                   onClick={handleOpenNewUserModal}
@@ -1313,7 +1313,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   <UserPlus size={16} />
                   <span>+ 신규 사용자 직접 등록</span>
                 </button>
-                <button 
+                <button
                   className="btn btn-secondary"
                   style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                   onClick={() => setActiveTab('payment')}
@@ -1367,13 +1367,12 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                 return (
                                   <div key={enr.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                                     <span style={{ fontWeight: 600 }}>{c ? c.title.substring(0, 18) + '...' : enr.courseId}</span>
-                                    <span className={`badge ${
-                                      enr.status === 'completed' ? 'badge-sage' : 
-                                      enr.status === 'active' ? 'badge-sage' : 'badge-amber'
-                                    }`}>
-                                      {enr.status === 'active' ? '수강중(결제완료)' : 
-                                       enr.status === 'completed' ? '수료' : 
-                                       enr.status === 'pending' ? '결제대기' : '수강신청'}
+                                    <span className={`badge ${enr.status === 'completed' ? 'badge-sage' :
+                                        enr.status === 'active' ? 'badge-sage' : 'badge-amber'
+                                      }`}>
+                                      {enr.status === 'active' ? '수강중(결제완료)' :
+                                        enr.status === 'completed' ? '수료' :
+                                          enr.status === 'pending' ? '결제대기' : '수강신청'}
                                     </span>
                                   </div>
                                 );
@@ -1383,7 +1382,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         </td>
                         <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', flexWrap: 'nowrap' }}>
-                            <button 
+                            <button
                               className="btn btn-secondary btn-sm"
                               title="수강 권한 부여/수정"
                               onClick={() => {
@@ -1394,7 +1393,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                               <Edit3 size={13} />
                               <span>권한 관리</span>
                             </button>
-                            <button 
+                            <button
                               className="btn btn-ghost btn-sm"
                               title="임시 비밀번호로 초기화"
                               style={{ color: 'var(--color-amber)', border: '1px solid rgba(217, 119, 6, 0.25)', padding: '5px 8px' }}
@@ -1407,7 +1406,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                               <span>비번 초기화</span>
                             </button>
                             {user.role !== 'admin' && (
-                              <button 
+                              <button
                                 className="btn btn-ghost btn-sm"
                                 title="회원 계정 영구 삭제"
                                 style={{ color: '#DC2626', border: '1px solid rgba(220, 38, 38, 0.2)', padding: '5px 8px' }}
@@ -1532,7 +1531,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                               </span>
                             </td>
                             <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                              <button 
+                              <button
                                 className="btn btn-amber btn-sm"
                                 style={{ backgroundColor: '#D49B4B', borderColor: '#B8860B', color: '#FFFFFF', fontWeight: 700 }}
                                 onClick={() => handleApprovePendingPayment(enr)}
@@ -1596,9 +1595,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             <p style={{ fontSize: '13px', margin: 0, maxWidth: '450px', lineHeight: '1.6' }}>
                               위 대면 수납 대기 목록에서 <strong>[대면 수납 확인 및 승인]</strong>을 누르시거나, 상단의 <strong>[신규 수납 직접 기록하기]</strong>를 통해 수납 내역을 등재해 주세요.
                             </p>
-                            <button 
+                            <button
                               type="button"
-                              className="btn btn-amber btn-sm" 
+                              className="btn btn-amber btn-sm"
                               style={{ marginTop: '8px' }}
                               onClick={() => setShowPaymentModal(true)}
                             >
@@ -1654,7 +1653,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   <h3 className="heading-3 font-serif">개설 코스 및 순차 학습 설정 ({courses.length})</h3>
                   <p className="text-caption">교육과정을 새롭게 추가하거나, 코스별 순차 학습 및 수강료를 관리합니다.</p>
                 </div>
-                <button 
+                <button
                   type="button"
                   className="btn btn-primary btn-sm"
                   onClick={() => setShowNewCourseModal(true)}
@@ -1673,8 +1672,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     <div key={course.id} className="card" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                       {/* Course Thumbnail Banner with Quick Actions */}
                       <div style={{ position: 'relative', height: '160px', backgroundColor: '#1E2022', overflow: 'hidden' }}>
-                        <img 
-                          src={course.thumbnail} 
+                        <img
+                          src={course.thumbnail}
                           alt={course.title}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
@@ -1687,9 +1686,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                           <button
                             type="button"
                             className="btn btn-ghost btn-sm"
-                            style={{ 
-                              backgroundColor: 'rgba(30,32,34,0.75)', 
-                              color: '#F87171', 
+                            style={{
+                              backgroundColor: 'rgba(30,32,34,0.75)',
+                              color: '#F87171',
                               padding: '5px 8px',
                               borderRadius: '6px',
                               backdropFilter: 'blur(4px)'
@@ -1703,13 +1702,13 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         <button
                           type="button"
                           className="btn btn-sm"
-                          style={{ 
-                            position: 'absolute', 
-                            bottom: '10px', 
-                            right: '10px', 
-                            backgroundColor: 'rgba(30,32,34,0.88)', 
-                            color: '#FFFFFF', 
-                            border: '1px solid rgba(255,255,255,0.25)', 
+                          style={{
+                            position: 'absolute',
+                            bottom: '10px',
+                            right: '10px',
+                            backgroundColor: 'rgba(30,32,34,0.88)',
+                            color: '#FFFFFF',
+                            border: '1px solid rgba(255,255,255,0.25)',
                             padding: '5px 12px',
                             fontSize: '12px',
                             borderRadius: '6px',
@@ -1730,7 +1729,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                       <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
                         <h4 className="heading-3 font-serif" style={{ marginBottom: '8px' }}>{course.title}</h4>
-                        
+
                         <div style={{ fontSize: '13px', color: '#64748B', marginBottom: '14px', lineHeight: '1.6', flex: 1 }}>
                           {course.subtitle || '과정 설명이 등록되지 않았습니다.'}
                         </div>
@@ -1748,14 +1747,14 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             <span>등록 차시:</span>
                             <strong>{courseLecs.length}개 차시</strong>
                           </div>
-                          
+
                           {/* Sequential Unlock Setting Toggle */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', paddingTop: '8px', borderTop: '1px dashed var(--color-border)' }}>
                             <div>
                               <span style={{ fontWeight: 600 }}>순차 학습 잠금</span>
                               <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>이전 차시 완강 시 다음 차시 열림</div>
                             </div>
-                            <button 
+                            <button
                               type="button"
                               className={`btn btn-sm ${course.sequentialUnlock ? 'btn-primary' : 'btn-secondary'}`}
                               onClick={() => handleToggleSequential(course.id, course.sequentialUnlock)}
@@ -1778,7 +1777,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                 {course.certRegNo || (course.id === 'course-ritual-12-15' ? '제 2026-법사1급-00100 호' : '제 2026-법사2급-00100 호')}
                               </div>
                             </div>
-                            <button 
+                            <button
                               type="button"
                               className="btn btn-secondary btn-sm"
                               style={{ fontSize: '11.5px', padding: '4px 8px', whiteSpace: 'nowrap' }}
@@ -1858,12 +1857,12 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             <td style={{ padding: '14px 16px' }}>{lec.orderIndex}강</td>
                             <td style={{ padding: '14px 16px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div 
-                                  style={{ 
-                                    width: '56px', 
-                                    height: '34px', 
-                                    borderRadius: '4px', 
-                                    overflow: 'hidden', 
+                                <div
+                                  style={{
+                                    width: '56px',
+                                    height: '34px',
+                                    borderRadius: '4px',
+                                    overflow: 'hidden',
                                     backgroundColor: '#1E2022',
                                     flexShrink: 0,
                                     position: 'relative',
@@ -1873,10 +1872,10 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                   title="차시 썸네일 수정"
                                   onClick={() => handleOpenLecThumbModal(lec)}
                                 >
-                                  <img 
-                                    src={lec.thumbnail || course?.thumbnail} 
-                                    alt={lec.title} 
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                  <img
+                                    src={lec.thumbnail || course?.thumbnail}
+                                    alt={lec.title}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                   />
                                 </div>
                                 <div>
@@ -1910,9 +1909,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                   </span>
                                 )}
 
-                                <button 
-                                  type="button" 
-                                  className="btn btn-secondary btn-sm" 
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary btn-sm"
                                   style={{ padding: '4px 9px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                                   title="동영상 미리보기 재생"
                                   onClick={() => setPreviewModalLec(lec)}
@@ -1921,9 +1920,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                   <span>재생 확인</span>
                                 </button>
 
-                                <button 
-                                  type="button" 
-                                  className="btn btn-primary btn-sm" 
+                                <button
+                                  type="button"
+                                  className="btn btn-primary btn-sm"
                                   style={{ padding: '4px 9px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                                   title="새 동영상 파일로 서버에 직접 업로드/교체"
                                   onClick={() => {
@@ -1939,9 +1938,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                   <span>영상 교체</span>
                                 </button>
 
-                                <button 
-                                  type="button" 
-                                  className="btn btn-secondary btn-sm" 
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary btn-sm"
                                   style={{ padding: '4px 9px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                                   title="차시별 썸네일 포스터 변경"
                                   onClick={() => handleOpenLecThumbModal(lec)}
@@ -1950,9 +1949,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                   <span>썸네일 수정</span>
                                 </button>
 
-                                <button 
-                                  type="button" 
-                                  className="btn btn-ghost btn-sm" 
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost btn-sm"
                                   style={{ padding: '4px 8px', fontSize: '12px', color: '#DC2626', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                                   title="강의 차시 삭제 (잘못 올린 경우 즉시 제거)"
                                   onClick={() => handleDeleteLecture(lec.id, lec.title)}
@@ -1994,19 +1993,19 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
               {/* Status Filter Buttons */}
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button 
+                <button
                   className={`btn btn-sm ${qaStatusFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setQaStatusFilter('all')}
                 >
                   전체 질의 ({qaPosts?.length || 0})
                 </button>
-                <button 
+                <button
                   className={`btn btn-sm ${qaStatusFilter === 'pending' ? 'btn-amber' : 'btn-secondary'}`}
                   onClick={() => setQaStatusFilter('pending')}
                 >
                   답변 대기 ({pendingQaCount})
                 </button>
-                <button 
+                <button
                   className={`btn btn-sm ${qaStatusFilter === 'answered' ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setQaStatusFilter('answered')}
                 >
@@ -2019,7 +2018,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             <div className="card" style={{ padding: '16px 20px', marginBottom: '20px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
               <div style={{ position: 'relative', flex: 2, minWidth: '240px' }}>
                 <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                <input 
+                <input
                   type="text"
                   className="form-input"
                   style={{ paddingLeft: '36px', fontSize: '13.5px' }}
@@ -2030,7 +2029,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               </div>
 
               <div style={{ flex: 1, minWidth: '200px' }}>
-                <select 
+                <select
                   className="form-select"
                   style={{ fontSize: '13.5px' }}
                   value={qaCourseFilter}
@@ -2097,7 +2096,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                           <span><strong>{post.authorName}</strong> ({post.authorMemberNo || post.authorId})</span>
                           <span>•</span>
                           <span>{post.createdAt}</span>
-                          <button 
+                          <button
                             className="btn btn-ghost btn-sm"
                             style={{ padding: '4px 6px', color: '#94A3B8' }}
                             onClick={() => handleDeleteQA(post.id)}
@@ -2136,7 +2135,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                       {/* Reply / Edit Button */}
                       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <button 
+                        <button
                           className="btn btn-amber btn-sm"
                           style={{ fontSize: '12.5px', padding: '5px 12px' }}
                           onClick={() => handleOpenReplyModal(post)}
@@ -2159,7 +2158,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '20px' }}>
               <div>
                 <h3 className="heading-2 font-serif" style={{ fontSize: '20px' }}>
-                  공인 수료증 발급 및 진위 확인 대장
+
+                  수료증 발급 및 진위 확인 대장
                 </h3>
                 <p className="text-caption">
                   전체 완강 학인에게 정식 발급된 수료증 번호 및 직인 내역을 관리하고 대외 진위를 확인합니다.
@@ -2171,7 +2171,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             <div className="card" style={{ padding: '16px 20px', marginBottom: '20px', display: 'flex', gap: '12px', alignItems: 'center' }}>
               <div style={{ position: 'relative', flex: 1 }}>
                 <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                <input 
+                <input
                   type="text"
                   className="form-input"
                   style={{ paddingLeft: '36px', fontSize: '13.5px' }}
@@ -2224,7 +2224,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         </span>
                       </td>
                       <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                        <button 
+                        <button
                           className="btn btn-secondary btn-sm"
                           style={{ fontSize: '12px', padding: '5px 10px' }}
                           onClick={() => setSelectedCert(cert)}
@@ -2253,9 +2253,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
       {/* 1. Admin Manual User Register Modal */}
       {showNewUserModal && (
         <div className="modal-backdrop" onClick={() => !isSubmittingUser && setShowNewUserModal(false)}>
-          <div 
-            className="modal-card" 
-            style={{ padding: '32px', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto' }} 
+          <div
+            className="modal-card"
+            style={{ padding: '32px', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
@@ -2268,9 +2268,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   신규 사용자(수강생/관리자) 직접 등록
                 </h2>
               </div>
-              <button 
-                type="button" 
-                className="btn btn-ghost" 
+              <button
+                type="button"
+                className="btn btn-ghost"
                 style={{ padding: '6px' }}
                 onClick={() => !isSubmittingUser && setShowNewUserModal(false)}
               >
@@ -2300,10 +2300,10 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '12px' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">성명 (실명 또는 법명) *</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      placeholder="예: 홍길동, 원행 스님" 
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="예: 홍길동, 원행 스님"
                       value={newUserForm.name}
                       onChange={(e) => setNewUserForm({ ...newUserForm, name: e.target.value })}
                       required
@@ -2312,9 +2312,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">생년월일 *</label>
-                    <input 
-                      type="date" 
-                      className="form-input" 
+                    <input
+                      type="date"
+                      className="form-input"
                       value={newUserForm.birthDate}
                       onChange={(e) => setNewUserForm({ ...newUserForm, birthDate: e.target.value })}
                       required
@@ -2325,10 +2325,10 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '12px' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">휴대전화 번호 (1인 1계정) *</label>
-                    <input 
-                      type="tel" 
-                      className="form-input" 
-                      placeholder="예: 010-1234-5678" 
+                    <input
+                      type="tel"
+                      className="form-input"
+                      placeholder="예: 010-1234-5678"
                       value={newUserForm.phone}
                       onChange={(e) => setNewUserForm({ ...newUserForm, phone: e.target.value })}
                       required
@@ -2338,19 +2338,19 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                       <label className="form-label" style={{ marginBottom: 0 }}>로그인 아이디 *</label>
-                      <button 
-                        type="button" 
-                        className="btn btn-ghost" 
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
                         style={{ fontSize: '11px', padding: '0 4px', color: 'var(--color-sage)' }}
                         onClick={handleSuggestId}
                       >
                         추천 ID 생성
                       </button>
                     </div>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      placeholder="예: wonkak01" 
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="예: wonkak01"
                       value={newUserForm.id}
                       onChange={(e) => setNewUserForm({ ...newUserForm, id: e.target.value })}
                       required
@@ -2361,7 +2361,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">회원 구분 (권한)</label>
-                    <select 
+                    <select
                       className="form-select"
                       value={newUserForm.role}
                       onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
@@ -2373,9 +2373,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">학번 / 회원 식별번호 (자동 채번)</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
+                    <input
+                      type="text"
+                      className="form-input"
                       value={newUserForm.memberNo}
                       onChange={(e) => setNewUserForm({ ...newUserForm, memberNo: e.target.value })}
                       placeholder="BUDDHA-2026-XXXXX"
@@ -2395,16 +2395,16 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <div className="form-group" style={{ marginBottom: '6px' }}>
                   <label className="form-label">임시 비밀번호 (최소 4자 이상) *</label>
                   <div style={{ position: 'relative' }}>
-                    <input 
-                      type={showNewUserPw ? "text" : "password"} 
-                      className="form-input" 
+                    <input
+                      type={showNewUserPw ? "text" : "password"}
+                      className="form-input"
                       value={newUserForm.password}
                       onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
                       placeholder="초기 비밀번호 입력 (기본: buddha1234!)"
                       required
                     />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="btn btn-ghost"
                       style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', padding: '6px' }}
                       onClick={() => setShowNewUserPw(!showNewUserPw)}
@@ -2426,8 +2426,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     <span>3. 원클릭 강좌 수강 권한 및 수납 연계 (원스톱)</span>
                   </h4>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}>
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={newUserForm.assignCourse}
                       onChange={(e) => setNewUserForm({ ...newUserForm, assignCourse: e.target.checked })}
                       style={{ accentColor: 'var(--color-sage)', width: '16px', height: '16px' }}
@@ -2441,7 +2441,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '12px' }}>
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label className="form-label">대상 교육과정(코스) *</label>
-                        <select 
+                        <select
                           className="form-select"
                           value={newUserForm.courseId}
                           onChange={(e) => handleNewUserCourseChange(e.target.value)}
@@ -2454,7 +2454,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label className="form-label">수강 상태 *</label>
-                        <select 
+                        <select
                           className="form-select"
                           value={newUserForm.status}
                           onChange={(e) => setNewUserForm({ ...newUserForm, status: e.target.value })}
@@ -2469,8 +2469,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     {newUserForm.status === 'active' && (
                       <div style={{ padding: '12px', backgroundColor: '#FFFFFF', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: 600, marginBottom: '10px' }}>
-                          <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             checked={newUserForm.recordPayment}
                             onChange={(e) => setNewUserForm({ ...newUserForm, recordPayment: e.target.checked })}
                             style={{ accentColor: 'var(--color-amber)', width: '16px', height: '16px' }}
@@ -2482,18 +2482,18 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                               <label className="form-label" style={{ fontSize: '12px' }}>수납 금액 (원)</label>
-                              <input 
-                                type="number" 
-                                className="form-input" 
+                              <input
+                                type="number"
+                                className="form-input"
                                 value={newUserForm.paymentAmount}
                                 onChange={(e) => setNewUserForm({ ...newUserForm, paymentAmount: e.target.value })}
                               />
                             </div>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                               <label className="form-label" style={{ fontSize: '12px' }}>결제 메모</label>
-                              <input 
-                                type="text" 
-                                className="form-input" 
+                              <input
+                                type="text"
+                                className="form-input"
                                 value={newUserForm.paymentMethodMemo}
                                 onChange={(e) => setNewUserForm({ ...newUserForm, paymentMethodMemo: e.target.value })}
                                 placeholder="예: 대면 카드 결제 / 현장 접수"
@@ -2508,18 +2508,18 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               </div>
 
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
-                  style={{ flex: 1 }} 
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
                   onClick={() => setShowNewUserModal(false)}
                   disabled={isSubmittingUser}
                 >
                   취소
                 </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary" 
+                <button
+                  type="submit"
+                  className="btn btn-primary"
                   style={{ flex: 1.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', backgroundColor: 'var(--color-sage)', borderColor: 'var(--color-sage)' }}
                   disabled={isSubmittingUser}
                 >
@@ -2589,18 +2589,18 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
+              <button
+                type="button"
+                className="btn btn-secondary"
                 style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 onClick={handleCopyUserInfo}
               >
                 {copiedInfo ? <CheckCheck size={16} color="var(--color-sage)" /> : <Copy size={16} />}
                 <span>{copiedInfo ? '안내 문구 복사됨!' : '안내 정보 전체 복사'}</span>
               </button>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
+              <button
+                type="button"
+                className="btn btn-primary"
                 style={{ flex: 1 }}
                 onClick={() => setCreatedUserInfo(null)}
               >
@@ -2625,9 +2625,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   {resetPwUser.name} 학인 비밀번호 초기화
                 </h3>
               </div>
-              <button 
-                type="button" 
-                className="btn btn-ghost" 
+              <button
+                type="button"
+                className="btn btn-ghost"
                 style={{ padding: '6px' }}
                 onClick={() => !isResettingPw && setResetPwUser(null)}
               >
@@ -2642,9 +2642,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             <form onSubmit={handleExecuteResetPassword}>
               <div className="form-group" style={{ marginBottom: '20px' }}>
                 <label className="form-label">새 임시 비밀번호 설정 (최소 4자 이상)</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
+                <input
+                  type="text"
+                  className="form-input"
                   value={newTempPassword}
                   onChange={(e) => setNewTempPassword(e.target.value)}
                   placeholder="예: buddha1234!"
@@ -2653,18 +2653,18 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               </div>
 
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
+                <button
+                  type="button"
+                  className="btn btn-secondary"
                   style={{ flex: 1 }}
                   onClick={() => setResetPwUser(null)}
                   disabled={isResettingPw}
                 >
                   취소
                 </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-amber" 
+                <button
+                  type="submit"
+                  className="btn btn-amber"
                   style={{ flex: 1.2 }}
                   disabled={isResettingPw}
                 >
@@ -2685,9 +2685,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <Shield size={20} color="var(--color-sage)" />
                 <span>수강 권한 및 상태 관리</span>
               </h3>
-              <button 
-                type="button" 
-                className="btn btn-ghost btn-sm" 
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
                 onClick={() => setShowGrantModal(false)}
                 style={{ padding: '4px' }}
               >
@@ -2727,14 +2727,14 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     const enr = enrollments.find(e => e.userId === selectedUser.id && e.courseId === c.id);
                     const statusText = !enr ? '미부여 (수강 권한 없음)' :
                       enr.status === 'active' ? '▶ 수강 중 (결제완료)' :
-                      enr.status === 'completed' ? '🏆 수료 완료 (완강)' :
-                      enr.status === 'pending' ? '⏳ 대기상태 (결제 대기)' : '수강신청 접수';
+                        enr.status === 'completed' ? '🏆 수료 완료 (완강)' :
+                          enr.status === 'pending' ? '⏳ 대기상태 (결제 대기)' : '수강신청 접수';
                     const badgeBg = !enr ? '#F1F5F9' :
                       enr.status === 'active' ? '#DCFCE7' :
-                      enr.status === 'completed' ? '#FEF3C7' : '#FFFBEB';
+                        enr.status === 'completed' ? '#FEF3C7' : '#FFFBEB';
                     const badgeColor = !enr ? '#94A3B8' :
                       enr.status === 'active' ? '#166534' :
-                      enr.status === 'completed' ? '#B45309' : '#D97706';
+                        enr.status === 'completed' ? '#B45309' : '#D97706';
 
                     return (
                       <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px', background: '#FFFFFF', padding: '8px 12px', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
@@ -2756,7 +2756,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               </div>
               <div className="form-group">
                 <label className="form-label">대상 코스 선택</label>
-                <select 
+                <select
                   className="form-select"
                   value={grantCourseId}
                   onChange={(e) => setGrantCourseId(e.target.value)}
@@ -2769,7 +2769,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
               <div className="form-group">
                 <label className="form-label">변경할 수강 상태</label>
-                <select 
+                <select
                   className="form-select"
                   value={grantStatus}
                   onChange={(e) => setGrantStatus(e.target.value)}
@@ -2808,7 +2808,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             <form onSubmit={handleRecordPayment}>
               <div className="form-group">
                 <label className="form-label">수강생 선택 *</label>
-                <select 
+                <select
                   className="form-select"
                   value={payUserId}
                   onChange={(e) => setPayUserId(e.target.value)}
@@ -2825,7 +2825,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
               <div className="form-group">
                 <label className="form-label">수납 대상 코스 *</label>
-                <select 
+                <select
                   className="form-select"
                   value={payCourseId}
                   onChange={(e) => setPayCourseId(e.target.value)}
@@ -2838,9 +2838,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
               <div className="form-group">
                 <label className="form-label">수납 금액 (원) *</label>
-                <input 
-                  type="number" 
-                  className="form-input" 
+                <input
+                  type="number"
+                  className="form-input"
                   value={payAmount}
                   onChange={(e) => setPayAmount(e.target.value)}
                   required
@@ -2849,9 +2849,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
               <div className="form-group">
                 <label className="form-label">수납 일자</label>
-                <input 
-                  type="date" 
-                  className="form-input" 
+                <input
+                  type="date"
+                  className="form-input"
                   value={payDate}
                   onChange={(e) => setPayDate(e.target.value)}
                   required
@@ -2860,9 +2860,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
               <div className="form-group">
                 <label className="form-label">수납 담당자 성명</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
+                <input
+                  type="text"
+                  className="form-input"
                   value={payManager}
                   onChange={(e) => setPayManager(e.target.value)}
                   required
@@ -2871,9 +2871,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
               <div className="form-group">
                 <label className="form-label">결제수단 및 메모</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
+                <input
+                  type="text"
+                  className="form-input"
                   placeholder="예: 대면 카드 결제 (국민 1024), 현금영수증 발급 등"
                   value={payMethodMemo}
                   onChange={(e) => setPayMethodMemo(e.target.value)}
@@ -2908,9 +2908,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   신규 VOD 차시 등록 (CMS)
                 </h3>
               </div>
-              <button 
-                type="button" 
-                className="btn btn-ghost" 
+              <button
+                type="button"
+                className="btn btn-ghost"
                 style={{ padding: '6px' }}
                 onClick={() => !isUploading && setShowNewLecModal(false)}
               >
@@ -2926,7 +2926,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: '220px' }}>
                   <label className="form-label">소속 코스 *</label>
-                  <select 
+                  <select
                     className="form-select"
                     value={lecForm.courseId}
                     onChange={(e) => setLecForm({ ...lecForm, courseId: e.target.value })}
@@ -2939,9 +2939,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                 <div style={{ width: '130px' }}>
                   <label className="form-label">차시 순서 (강) *</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
+                  <input
+                    type="number"
+                    className="form-input"
                     value={lecForm.orderIndex}
                     onChange={(e) => setLecForm({ ...lecForm, orderIndex: e.target.value })}
                     required
@@ -2951,9 +2951,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
               <div className="form-group">
                 <label className="form-label">강의 제목 *</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
+                <input
+                  type="text"
+                  className="form-input"
                   placeholder="예: 4강. 보살행과 일상 속 자비 실천"
                   value={lecForm.title}
                   onChange={(e) => setLecForm({ ...lecForm, title: e.target.value })}
@@ -2963,8 +2963,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
               <div className="form-group">
                 <label className="form-label">강의 상세 설명</label>
-                <textarea 
-                  className="form-textarea" 
+                <textarea
+                  className="form-textarea"
                   rows="2"
                   placeholder="강의 핵심 요약 및 학습 목표"
                   value={lecForm.description}
@@ -3010,8 +3010,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       </span>
                     </div>
 
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       ref={newFileInputRef}
                       accept="video/mp4,video/webm,video/ogg,video/quicktime,.mkv,.avi"
                       style={{ display: 'none' }}
@@ -3019,7 +3019,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     />
 
                     {!newVideoFile ? (
-                      <div 
+                      <div
                         style={{
                           border: '2px dashed var(--color-sage)',
                           borderRadius: '8px',
@@ -3081,10 +3081,10 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         {/* Local Video Preview Player */}
                         {newVideoPreviewUrl && (
                           <div style={{ marginTop: '12px', marginBottom: '12px', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#000' }}>
-                            <video 
-                              src={newVideoPreviewUrl} 
-                              controls 
-                              style={{ width: '100%', maxHeight: '180px', display: 'block' }} 
+                            <video
+                              src={newVideoPreviewUrl}
+                              controls
+                              style={{ width: '100%', maxHeight: '180px', display: 'block' }}
                             />
                           </div>
                         )}
@@ -3100,20 +3100,20 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                   : '서버로 영상 원본 파일 전송 중...'}
                               </span>
                               <span style={{ fontWeight: 700, color: 'var(--color-sage)', fontSize: '12px' }}>
-                                {uploadProgress.step === 'processing' 
-                                  ? `최적화 중 (${uploadProgress.compressSec || 0}초 경과)` 
+                                {uploadProgress.step === 'processing'
+                                  ? `최적화 중 (${uploadProgress.compressSec || 0}초 경과)`
                                   : `${uploadProgress.percent}% (${uploadProgress.speed})`}
                               </span>
                             </div>
                             <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--color-border)', borderRadius: '4px', overflow: 'hidden' }}>
-                              <div 
-                                style={{ 
-                                  width: `${uploadProgress.percent}%`, 
-                                  height: '100%', 
+                              <div
+                                style={{
+                                  width: `${uploadProgress.percent}%`,
+                                  height: '100%',
                                   backgroundColor: 'var(--color-sage)',
                                   opacity: uploadProgress.step === 'processing' ? 0.85 : 1,
                                   transition: 'width 0.2s ease'
-                                }} 
+                                }}
                               />
                             </div>
                             <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
@@ -3151,9 +3151,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   </div>
                 ) : (
                   <div>
-                    <input 
-                      type="text" 
-                      className="form-input" 
+                    <input
+                      type="text"
+                      className="form-input"
                       placeholder="https://... 또는 스트리밍 mp4 URL"
                       value={lecForm.videoUrl}
                       onChange={(e) => setLecForm({ ...lecForm, videoUrl: e.target.value })}
@@ -3168,9 +3168,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
                 <div style={{ flex: 1 }}>
                   <label className="form-label">강의 재생 시간 (초 단위)</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
+                  <input
+                    type="number"
+                    className="form-input"
                     value={lecForm.durationSeconds}
                     onChange={(e) => setLecForm({ ...lecForm, durationSeconds: Number(e.target.value) })}
                     required
@@ -3182,9 +3182,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                 <div style={{ flex: 1 }}>
                   <label className="form-label">강의 교재 첨부파일명 (PDF)</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
+                  <input
+                    type="text"
+                    className="form-input"
                     value={lecForm.attachmentName}
                     onChange={(e) => setLecForm({ ...lecForm, attachmentName: e.target.value })}
                   />
@@ -3192,18 +3192,18 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
-                  style={{ flex: 1 }} 
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
                   onClick={() => setShowNewLecModal(false)}
                   disabled={isUploading}
                 >
                   취소
                 </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary" 
+                <button
+                  type="submit"
+                  className="btn btn-primary"
                   style={{ flex: 1.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
                   disabled={isUploading}
                 >
@@ -3243,9 +3243,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   차시 동영상 파일 교체 업로드
                 </h3>
               </div>
-              <button 
-                type="button" 
-                className="btn btn-ghost" 
+              <button
+                type="button"
+                className="btn btn-ghost"
                 style={{ padding: '6px' }}
                 onClick={() => !isReplacing && setReplaceModalLec(null)}
               >
@@ -3270,8 +3270,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 </span>
               </div>
 
-              <input 
-                type="file" 
+              <input
+                type="file"
                 ref={replaceFileInputRef}
                 accept="video/mp4,video/webm,video/ogg,video/quicktime,.mkv,.avi"
                 style={{ display: 'none' }}
@@ -3279,7 +3279,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               />
 
               {!replaceVideoFile ? (
-                <div 
+                <div
                   style={{
                     border: '2px dashed var(--color-sage)',
                     borderRadius: '8px',
@@ -3336,10 +3336,10 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                   {replaceVideoPreviewUrl && (
                     <div style={{ marginTop: '12px', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#000' }}>
-                      <video 
-                        src={replaceVideoPreviewUrl} 
-                        controls 
-                        style={{ width: '100%', maxHeight: '160px', display: 'block' }} 
+                      <video
+                        src={replaceVideoPreviewUrl}
+                        controls
+                        style={{ width: '100%', maxHeight: '160px', display: 'block' }}
                       />
                     </div>
                   )}
@@ -3354,20 +3354,20 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             : '서버로 영상 원본 파일 전송 중...'}
                         </span>
                         <span style={{ fontWeight: 700, color: 'var(--color-sage)', fontSize: '12px' }}>
-                          {replaceProgress.step === 'processing' 
-                            ? `최적화 중 (${replaceProgress.compressSec || 0}초 경과)` 
+                          {replaceProgress.step === 'processing'
+                            ? `최적화 중 (${replaceProgress.compressSec || 0}초 경과)`
                             : `${replaceProgress.percent}% (${replaceProgress.speed})`}
                         </span>
                       </div>
                       <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--color-border)', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div 
-                          style={{ 
-                            width: `${replaceProgress.percent}%`, 
-                            height: '100%', 
+                        <div
+                          style={{
+                            width: `${replaceProgress.percent}%`,
+                            height: '100%',
                             backgroundColor: 'var(--color-sage)',
                             opacity: replaceProgress.step === 'processing' ? 0.85 : 1,
                             transition: 'width 0.2s ease'
-                          }} 
+                          }}
                         />
                       </div>
                       <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
@@ -3402,18 +3402,18 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               )}
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
-                  style={{ flex: 1 }} 
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
                   onClick={() => setReplaceModalLec(null)}
                   disabled={isReplacing}
                 >
                   취소
                 </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary" 
+                <button
+                  type="submit"
+                  className="btn btn-primary"
                   style={{ flex: 1.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
                   disabled={isReplacing || !replaceVideoFile}
                 >
@@ -3439,7 +3439,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
         </div>
       )}
 
-            {/* New Course Modal */}
+      {/* New Course Modal */}
       {showNewCourseModal && (
         <div className="modal-backdrop" onClick={() => setShowNewCourseModal(false)}>
           <div className="modal-card" style={{ padding: '30px', maxWidth: '720px', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
@@ -3453,9 +3453,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   새 교육과정(코스) 추가
                 </h3>
               </div>
-              <button 
-                type="button" 
-                className="btn btn-ghost" 
+              <button
+                type="button"
+                className="btn btn-ghost"
                 style={{ padding: '6px' }}
                 onClick={() => setShowNewCourseModal(false)}
               >
@@ -3466,20 +3466,20 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             <form onSubmit={handleCreateCourse}>
               <div className="form-group">
                 <label className="form-label">코스 제목 (필수)</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
+                <input
+                  type="text"
+                  className="form-input"
                   placeholder="예: 불교의례법사 과정 III (16강~19강)"
                   value={courseForm.title}
                   onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
-                  required 
+                  required
                 />
               </div>
 
               <div className="form-group">
                 <label className="form-label">코스 부제목 / 핵심 요약</label>
-                <textarea 
-                  className="form-textarea" 
+                <textarea
+                  className="form-textarea"
                   rows="2"
                   placeholder="예: 생전예수재 및 영산재 실습을 체계적으로 익히는 심화 의례 과정"
                   value={courseForm.subtitle}
@@ -3490,9 +3490,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
                 <div style={{ flex: 1 }}>
                   <label className="form-label">카테고리</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
+                  <input
+                    type="text"
+                    className="form-input"
                     placeholder="예: 불교의례법사"
                     value={courseForm.category}
                     onChange={(e) => setCourseForm({ ...courseForm, category: e.target.value })}
@@ -3500,9 +3500,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 </div>
                 <div style={{ flex: 1 }}>
                   <label className="form-label">담당 교수 / 법사</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
+                  <input
+                    type="text"
+                    className="form-input"
                     placeholder="예: 불교의례 전문 법사"
                     value={courseForm.instructor}
                     onChange={(e) => setCourseForm({ ...courseForm, instructor: e.target.value })}
@@ -3513,9 +3513,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
                 <div style={{ flex: 1 }}>
                   <label className="form-label">수강 인정 기간 (일 단위)</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
+                  <input
+                    type="number"
+                    className="form-input"
                     value={courseForm.defaultPeriodDays}
                     onChange={(e) => setCourseForm({ ...courseForm, defaultPeriodDays: Number(e.target.value) })}
                     required
@@ -3523,9 +3523,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 </div>
                 <div style={{ flex: 1 }}>
                   <label className="form-label">수강료 (원 단위)</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
+                  <input
+                    type="number"
+                    className="form-input"
                     value={courseForm.price}
                     onChange={(e) => setCourseForm({ ...courseForm, price: Number(e.target.value) })}
                     required
@@ -3539,14 +3539,14 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   <span>강좌 대표 썸네일 이미지</span>
                   <span style={{ fontSize: '11.5px', color: 'var(--color-text-muted)' }}>파일 업로드 또는 웹 URL 입력</span>
                 </label>
-                
+
                 {/* Thumbnail Preview */}
                 <div style={{ display: 'flex', gap: '14px', alignItems: 'center', marginBottom: '10px' }}>
                   <div style={{ width: '120px', height: '68px', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#1E2022', border: '1px solid var(--color-border)', flexShrink: 0 }}>
-                    <img 
-                      src={courseForm.thumbnail} 
-                      alt="Thumbnail Preview" 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    <img
+                      src={courseForm.thumbnail}
+                      alt="Thumbnail Preview"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   </div>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -3554,9 +3554,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                         <Upload size={13} />
                         <span>내 PC 이미지 선택</span>
-                        <input 
-                          type="file" 
-                          accept="image/*" 
+                        <input
+                          type="file"
+                          accept="image/*"
                           style={{ display: 'none' }}
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
@@ -3572,9 +3572,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         />
                       </label>
                     </div>
-                    <input 
-                      type="text" 
-                      className="form-input" 
+                    <input
+                      type="text"
+                      className="form-input"
                       style={{ fontSize: '12px', padding: '6px 10px' }}
                       placeholder="https://... 이미지 웹 주소"
                       value={courseForm.thumbnail}
@@ -3585,7 +3585,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               </div>
 
               <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
-                <input 
+                <input
                   type="checkbox"
                   id="seqUnlockCheck"
                   checked={courseForm.sequentialUnlock}
@@ -3598,11 +3598,11 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               </div>
 
               {/* Course Certificate (Qualification) Settings */}
-              <div style={{ 
-                background: 'var(--color-surface-warm)', 
-                border: '1.5px solid rgba(212, 155, 75, 0.4)', 
-                borderRadius: '8px', 
-                padding: '16px 18px', 
+              <div style={{
+                background: 'var(--color-surface-warm)',
+                border: '1.5px solid rgba(212, 155, 75, 0.4)',
+                borderRadius: '8px',
+                padding: '16px 18px',
                 marginTop: '16px',
                 marginBottom: '10px'
               }}>
@@ -3610,7 +3610,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Award size={18} color="var(--color-amber-dark)" />
                     <strong style={{ fontSize: '14.5px', color: 'var(--color-charcoal)' }}>
-                      공인 민간자격증 발급 연동 정보
+                      정식 수료증 발급 연동 정보
                     </strong>
                   </div>
                   <span className="badge badge-amber" style={{ fontSize: '11px', fontWeight: 600 }}>수료 시 자동 발급</span>
@@ -3621,9 +3621,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     <label className="form-label">
                       자격증 이름 / 종목명 (필수)
                     </label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
+                    <input
+                      type="text"
+                      className="form-input"
                       placeholder="예: 불교의례법사, 불교의례지도사, 선명상지도사"
                       value={courseForm.certType}
                       onChange={(e) => {
@@ -3640,7 +3640,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                   <div>
                     <label className="form-label">자격 등급</label>
-                    <select 
+                    <select
                       className="form-select"
                       value={courseForm.certGrade}
                       onChange={(e) => {
@@ -3666,23 +3666,23 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   <label className="form-label">
                     자격증 번호 (수료증 발급 등록번호 양식)
                   </label>
-                  <input 
-                    type="text" 
-                    className="form-input font-mono" 
+                  <input
+                    type="text"
+                    className="form-input font-mono"
                     placeholder="예: 제 2026-법사2급-0001 호 또는 제 2026-의례지도사-0001 호"
                     value={courseForm.certRegNo}
                     onChange={(e) => setCourseForm(prev => ({ ...prev, certRegNo: e.target.value }))}
                   />
                   <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '4px', lineHeight: '1.4' }}>
-                    * 학인이 코스를 완강하면 본 등록번호 양식과 고유 일련번호가 자동 부여되어 공인 자격증 및 진위확인 시스템에 공식 등록됩니다.
+                    * 학인이 코스를 완강하면 본 등록번호 양식과 고유 일련번호가 자동 부여되어 정식 수료증 및 진위확인 시스템에 공식 등록됩니다.
                   </div>
                 </div>
 
                 <div>
                   <label className="form-label">주무부처 및 등록 고시</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
+                  <input
+                    type="text"
+                    className="form-input"
                     style={{ fontSize: '12px' }}
                     value={courseForm.certRegOffice}
                     onChange={(e) => setCourseForm(prev => ({ ...prev, certRegOffice: e.target.value }))}
@@ -3702,15 +3702,15 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                           </label>
                         </div>
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                          <label 
-                            className="btn btn-secondary btn-sm" 
+                          <label
+                            className="btn btn-secondary btn-sm"
                             style={{ margin: 0, cursor: 'pointer', fontSize: '11.5px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                           >
                             <Upload size={12} />
                             <span>.txt 파일 불러오기</span>
-                            <input 
-                              type="file" 
-                              accept=".txt,text/plain" 
+                            <input
+                              type="file"
+                              accept=".txt,text/plain"
                               style={{ display: 'none' }}
                               onChange={(e) => {
                                 if (e.target.files && e.target.files[0]) {
@@ -3782,17 +3782,17 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
-                  style={{ flex: 1 }} 
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
                   onClick={() => setShowNewCourseModal(false)}
                 >
                   취소
                 </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary" 
+                <button
+                  type="submit"
+                  className="btn btn-primary"
                   style={{ flex: 1.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
                 >
                   <Plus size={16} />
@@ -3818,9 +3818,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   [{certEditCourse.title}]
                 </h3>
               </div>
-              <button 
-                type="button" 
-                className="btn btn-ghost" 
+              <button
+                type="button"
+                className="btn btn-ghost"
                 style={{ padding: '6px' }}
                 onClick={() => setCertEditCourse(null)}
               >
@@ -3832,7 +3832,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '14px' }}>
                 <div>
                   <label className="form-label">자격증 이름 / 종목명</label>
-                  <input 
+                  <input
                     type="text"
                     className="form-input"
                     value={certEditForm.certType}
@@ -3849,7 +3849,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 </div>
                 <div>
                   <label className="form-label">자격 등급</label>
-                  <select 
+                  <select
                     className="form-select"
                     value={certEditForm.certGrade}
                     onChange={(e) => {
@@ -3873,7 +3873,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
               <div className="form-group" style={{ marginBottom: '14px' }}>
                 <label className="form-label">자격증 번호 (수료증 발급 등록번호 양식)</label>
-                <input 
+                <input
                   type="text"
                   className="form-input font-mono"
                   value={certEditForm.certRegNo}
@@ -3887,7 +3887,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
               <div className="form-group" style={{ marginBottom: '16px' }}>
                 <label className="form-label">주무부처 및 등록 정보</label>
-                <input 
+                <input
                   type="text"
                   className="form-input"
                   style={{ fontSize: '12.5px' }}
@@ -3909,15 +3909,15 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         </label>
                       </div>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <label 
-                          className="btn btn-secondary btn-sm" 
+                        <label
+                          className="btn btn-secondary btn-sm"
                           style={{ margin: 0, cursor: 'pointer', fontSize: '11.5px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                         >
                           <Upload size={12} />
                           <span>.txt 파일 불러오기</span>
-                          <input 
-                            type="file" 
-                            accept=".txt,text/plain" 
+                          <input
+                            type="file"
+                            accept=".txt,text/plain"
                             style={{ display: 'none' }}
                             onChange={(e) => {
                               if (e.target.files && e.target.files[0]) {
@@ -3988,17 +3988,17 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               })()}
 
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
+                <button
+                  type="button"
+                  className="btn btn-secondary"
                   style={{ flex: 1 }}
                   onClick={() => setCertEditCourse(null)}
                 >
                   취소
                 </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-amber" 
+                <button
+                  type="submit"
+                  className="btn btn-amber"
                   style={{ flex: 1.5, fontWeight: 700 }}
                 >
                   자격증 설정 저장 완료
@@ -4022,9 +4022,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   {previewModalLec.orderIndex}강. {previewModalLec.title}
                 </h3>
               </div>
-              <button 
-                type="button" 
-                className="btn btn-ghost" 
+              <button
+                type="button"
+                className="btn btn-ghost"
                 style={{ padding: '6px' }}
                 onClick={() => setPreviewModalLec(null)}
               >
@@ -4033,18 +4033,18 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             </div>
 
             <div style={{ borderRadius: '8px', overflow: 'hidden', backgroundColor: '#000', marginBottom: '14px' }}>
-              <video 
-                src={previewModalLec.videoUrl} 
-                controls 
-                autoPlay 
-                style={{ width: '100%', maxHeight: '380px', display: 'block' }} 
+              <video
+                src={previewModalLec.videoUrl}
+                controls
+                autoPlay
+                style={{ width: '100%', maxHeight: '380px', display: 'block' }}
               />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--color-text-muted)' }}>
               <div>재생 시간: 약 {Math.round(previewModalLec.durationSeconds / 60)}분 ({previewModalLec.durationSeconds}초)</div>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn btn-secondary btn-sm"
                 onClick={() => setPreviewModalLec(null)}
               >
@@ -4070,7 +4070,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               <div style={{ display: 'flex', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: '180px' }}>
                   <label className="form-label">답변 스님/교수 선택 *</label>
-                  <select 
+                  <select
                     className="form-select"
                     value={replyMonkName}
                     onChange={(e) => {
@@ -4087,9 +4087,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                 <div style={{ flex: 1, minWidth: '180px' }}>
                   <label className="form-label">직책 / 호칭 *</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
+                  <input
+                    type="text"
+                    className="form-input"
                     value={replyBadgeTitle}
                     onChange={(e) => setReplyBadgeTitle(e.target.value)}
                     required
@@ -4099,8 +4099,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
               <div className="form-group">
                 <label className="form-label">법문 답변 내용 *</label>
-                <textarea 
-                  className="form-textarea" 
+                <textarea
+                  className="form-textarea"
                   rows="7"
                   placeholder="학인의 질문에 대한 자비로운 법문과 상세한 가르침을 정성껏 작성해 주세요."
                   value={replyContent}
@@ -4133,9 +4133,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
       {/* Course Thumbnail Edit Modal */}
       {thumbModalCourse && (
         <div className="modal-backdrop" onClick={() => !isUploadingThumb && setThumbModalCourse(null)}>
-          <div 
-            className="modal-card" 
-            style={{ padding: '28px', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto' }} 
+          <div
+            className="modal-card"
+            style={{ padding: '28px', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
@@ -4148,9 +4148,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   [{thumbModalCourse.title}] 썸네일 수정
                 </h3>
               </div>
-              <button 
-                type="button" 
-                className="btn btn-ghost" 
+              <button
+                type="button"
+                className="btn btn-ghost"
                 style={{ padding: '6px' }}
                 onClick={() => !isUploadingThumb && setThumbModalCourse(null)}
               >
@@ -4168,20 +4168,20 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <Sparkles size={14} style={{ color: 'var(--color-amber)' }} />
                 <span>실시간 적용 미리보기 (16:9 비율)</span>
               </label>
-              <div 
-                style={{ 
-                  position: 'relative', 
-                  width: '100%', 
-                  height: '210px', 
-                  borderRadius: '10px', 
-                  overflow: 'hidden', 
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  height: '210px',
+                  borderRadius: '10px',
+                  overflow: 'hidden',
                   backgroundColor: '#1E2022',
                   boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
                   border: '1px solid var(--color-border)'
                 }}
               >
-                <img 
-                  src={thumbPreviewUrl || thumbModalCourse.thumbnail} 
+                <img
+                  src={thumbPreviewUrl || thumbModalCourse.thumbnail}
                   alt="Thumbnail Live Preview"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   onError={(e) => {
@@ -4211,8 +4211,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <span style={{ fontSize: '11.5px', color: 'var(--color-text-muted)' }}>JPG, PNG, WebP 지원</span>
               </div>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   ref={courseThumbFileInputRef}
                   accept="image/*"
                   style={{ display: 'none' }}
@@ -4241,9 +4241,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             <div className="form-group" style={{ marginBottom: '16px' }}>
               <label className="form-label">이미지 웹 URL 직접 지정</label>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input 
-                  type="text" 
-                  className="form-input" 
+                <input
+                  type="text"
+                  className="form-input"
                   placeholder="https://... 이미지 웹 주소 입력"
                   value={thumbUrlInput}
                   onChange={(e) => {
@@ -4277,18 +4277,18 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
+              <button
+                type="button"
+                className="btn btn-secondary"
                 style={{ flex: 1 }}
                 onClick={() => setThumbModalCourse(null)}
                 disabled={isUploadingThumb}
               >
                 취소
               </button>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
+              <button
+                type="button"
+                className="btn btn-primary"
                 style={{ flex: 1.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
                 onClick={handleSaveCourseThumbnail}
                 disabled={isUploadingThumb}
@@ -4304,9 +4304,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
       {/* Lecture Thumbnail Edit Modal */}
       {thumbModalLec && (
         <div className="modal-backdrop" onClick={() => !isUploadingLecThumb && setThumbModalLec(null)}>
-          <div 
-            className="modal-card" 
-            style={{ padding: '28px', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }} 
+          <div
+            className="modal-card"
+            style={{ padding: '28px', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
@@ -4319,9 +4319,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   {thumbModalLec.orderIndex}강. {thumbModalLec.title}
                 </h3>
               </div>
-              <button 
-                type="button" 
-                className="btn btn-ghost" 
+              <button
+                type="button"
+                className="btn btn-ghost"
                 style={{ padding: '6px' }}
                 onClick={() => !isUploadingLecThumb && setThumbModalLec(null)}
               >
@@ -4339,19 +4339,19 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <Sparkles size={14} style={{ color: 'var(--color-amber)' }} />
                 <span>차시 포스터 실시간 미리보기</span>
               </label>
-              <div 
-                style={{ 
-                  position: 'relative', 
-                  width: '100%', 
-                  height: '190px', 
-                  borderRadius: '8px', 
-                  overflow: 'hidden', 
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  height: '190px',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
                   backgroundColor: '#1E2022',
                   border: '1px solid var(--color-border)'
                 }}
               >
-                <img 
-                  src={thumbLecPreviewUrl || courses.find(c => c.id === thumbModalLec.courseId)?.thumbnail} 
+                <img
+                  src={thumbLecPreviewUrl || courses.find(c => c.id === thumbModalLec.courseId)?.thumbnail}
                   alt="Lecture Thumbnail Preview"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
@@ -4372,8 +4372,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 </span>
                 <span style={{ fontSize: '11.5px', color: 'var(--color-text-muted)' }}>JPG, PNG, WebP</span>
               </div>
-              <input 
-                type="file" 
+              <input
+                type="file"
                 ref={lecThumbFileInputRef}
                 accept="image/*"
                 style={{ display: 'none' }}
@@ -4398,9 +4398,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             <div className="form-group" style={{ marginBottom: '16px' }}>
               <label className="form-label">이미지 URL 직접 입력</label>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input 
-                  type="text" 
-                  className="form-input" 
+                <input
+                  type="text"
+                  className="form-input"
                   placeholder="https://..."
                   value={thumbLecUrlInput}
                   onChange={(e) => {
@@ -4438,18 +4438,18 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             )}
 
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
+              <button
+                type="button"
+                className="btn btn-secondary"
                 style={{ flex: 1 }}
                 onClick={() => setThumbModalLec(null)}
                 disabled={isUploadingLecThumb}
               >
                 취소
               </button>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
+              <button
+                type="button"
+                className="btn btn-primary"
                 style={{ flex: 1.5 }}
                 onClick={handleSaveLecThumbnail}
                 disabled={isUploadingLecThumb}
