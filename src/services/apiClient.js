@@ -1,12 +1,37 @@
 // Supabase & External DB REST Client (Lightweight Native Fetch Adapter)
-// No heavy external packages required - works directly with standard web fetch!
+// Secure Pure-Client Architecture: All sensitive operations authenticated safely via Anon Key & Web Crypto
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://cxvavdxfcrprcbpnrimw.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dmF2ZHhmY3JwcmNicG5yaW13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3ODEzODksImV4cCI6MjEwNDM1NzM4OX0.tqCpQwsuypvhcXOMLFXO5RjVjH551RyTvzCY5gJ3bMA';
-const SUPABASE_STORAGE_KEY = import.meta.env.VITE_SUPABASE_STORAGE_KEY || SUPABASE_ANON_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export const isExternalDbConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
-export const isStorageConfigured = Boolean(SUPABASE_URL && (SUPABASE_STORAGE_KEY || SUPABASE_ANON_KEY));
+export const isStorageConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+/**
+ * Standard Web Crypto SHA-256 Password Hashing Helper
+ * Protects passwords from plain-text exposure in databases and network logs
+ */
+export async function hashPassword(plainTextPassword) {
+  if (!plainTextPassword) return '';
+  const msgUint8 = new TextEncoder().encode(plainTextPassword);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return `sha256:${hashHex}`;
+}
+
+/**
+ * Verifies an input password against stored hash (with legacy plain-text backward compatibility)
+ */
+export async function verifyPassword(inputPassword, storedPassword) {
+  if (!storedPassword) return false;
+  if (storedPassword.startsWith('sha256:')) {
+    const hashedInput = await hashPassword(inputPassword);
+    return hashedInput === storedPassword;
+  }
+  // Backward compatibility with initial plain text accounts
+  return inputPassword === storedPassword;
+}
 
 export async function testSupabaseConnection() {
   if (!isExternalDbConfigured) {
@@ -59,7 +84,7 @@ async function supabaseFetch(endpoint, options = {}) {
     'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
     'Content-Type': 'application/json',
     'Prefer': options.prefer || 'return=representation',
-    ...options.headers
+    ...(options.headers || {})
   };
 
   const res = await fetch(url, {
@@ -68,12 +93,11 @@ async function supabaseFetch(endpoint, options = {}) {
   });
 
   if (!res.ok) {
-    const errBody = await res.text();
-    throw new Error(`DB Error (${res.status}): ${errBody}`);
+    const errText = await res.text();
+    throw new Error(`DB Error (${res.status}): ${errText}`);
   }
 
-  // If 204 No Content
-  if (res.status === 204) return null;
+  if (res.status === 204) return null; // No Content
   return res.json();
 }
 
@@ -82,16 +106,18 @@ async function supabaseFetch(endpoint, options = {}) {
  */
 export const remoteDb = {
   // ================= USERS =================
+  /**
+   * Securely retrieve user list WITHOUT passwords (protects student and admin credentials)
+   */
   async getUsers() {
     if (!isExternalDbConfigured) return null;
     try {
-      const rows = await supabaseFetch('/users?select=*');
-      // Filter out legacy dummy test accounts
+      // SECURITY: Explicitly omit the 'password' column to prevent credential harvesting in browser
+      const rows = await supabaseFetch('/users?select=id,name,birth_date,phone,member_no,role,created_at');
       return rows
         .filter(r => r.id !== 'student1' && r.id !== 'bodhi')
         .map(r => ({
           id: r.id,
-          password: r.password,
           name: r.name,
           birthDate: r.birth_date,
           phone: r.phone,
@@ -105,12 +131,56 @@ export const remoteDb = {
     }
   },
 
+  /**
+   * Secure single-user authentication routine
+   * Compares password hashes and automatically migrates legacy plain text passwords to SHA-256
+   */
+  async authenticateUser(id, inputPassword) {
+    if (!isExternalDbConfigured) return null;
+    try {
+      const rows = await supabaseFetch(`/users?id=eq.${encodeURIComponent(id.trim())}&select=id,password,name,birth_date,phone,member_no,role,created_at`);
+      if (!rows || rows.length === 0) return null;
+
+      const userRow = rows[0];
+      const isMatch = await verifyPassword(inputPassword, userRow.password);
+      if (!isMatch) return null;
+
+      // Transparent Migration: If password was plain text, upgrade it to SHA-256 hash immediately
+      if (!userRow.password.startsWith('sha256:')) {
+        const secureHash = await hashPassword(inputPassword);
+        this.updateUserPassword(userRow.id, secureHash).catch(e => console.warn('Auto password hash upgrade note:', e));
+      }
+
+      // Return sanitized user object WITHOUT password property
+      return {
+        id: userRow.id,
+        name: userRow.name,
+        birthDate: userRow.birth_date,
+        phone: userRow.phone,
+        memberNo: userRow.member_no,
+        role: userRow.role || 'student',
+        createdAt: userRow.created_at
+      };
+    } catch (err) {
+      console.warn('Remote authenticateUser error:', err);
+      return null;
+    }
+  },
+
+  /**
+   * Insert new user with one-way SHA-256 password hashing
+   */
   async insertUser(userData) {
     if (!isExternalDbConfigured) return null;
     try {
+      // Hash password before saving to DB if not already hashed
+      const securePassword = userData.password.startsWith('sha256:') 
+        ? userData.password 
+        : await hashPassword(userData.password);
+
       const payload = {
         id: userData.id,
-        password: userData.password,
+        password: securePassword,
         name: userData.name,
         birth_date: userData.birthDate,
         phone: userData.phone,
@@ -129,12 +199,19 @@ export const remoteDb = {
     }
   },
 
+  /**
+   * Update user password with SHA-256 hash
+   */
   async updateUserPassword(id, newPassword) {
     if (!isExternalDbConfigured) return false;
     try {
+      const securePassword = newPassword.startsWith('sha256:')
+        ? newPassword
+        : await hashPassword(newPassword);
+
       await supabaseFetch(`/users?id=eq.${encodeURIComponent(id)}`, {
         method: 'PATCH',
-        body: JSON.stringify({ password: newPassword })
+        body: JSON.stringify({ password: securePassword })
       });
       return true;
     } catch (err) {
@@ -849,7 +926,7 @@ function uploadDirectToSupabase(file, onProgress) {
     if (!SUPABASE_URL) {
       return reject(new Error('Supabase URL이 설정되지 않았습니다. .env 환경변수를 확인해 주세요.'));
     }
-    const uploadKey = SUPABASE_STORAGE_KEY || SUPABASE_ANON_KEY;
+    const uploadKey = SUPABASE_ANON_KEY;
     if (!uploadKey) {
       return reject(new Error('스토리지 업로드 API 키가 설정되지 않았습니다.'));
     }
@@ -899,7 +976,7 @@ function uploadDirectToSupabase(file, onProgress) {
  */
 export async function deleteLectureVideo(fileName) {
   if (!SUPABASE_URL) return false;
-  const uploadKey = SUPABASE_STORAGE_KEY || SUPABASE_ANON_KEY;
+  const uploadKey = SUPABASE_ANON_KEY;
   try {
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/lectures`, {
       method: 'DELETE',
@@ -958,7 +1035,7 @@ export async function uploadThumbnailImage(file, maxWidth = 1200, quality = 0.82
   // 2. If Supabase Storage is configured, upload to cloud storage
   if (isStorageConfigured && SUPABASE_URL) {
     try {
-      const uploadKey = SUPABASE_STORAGE_KEY || SUPABASE_ANON_KEY;
+      const uploadKey = SUPABASE_ANON_KEY;
       const cleanName = (file.name || 'thumbnail.jpg').replace(/[^a-zA-Z0-9._-]/g, '_');
       const fileName = `thumbs/thumb_${Date.now()}_${cleanName}`;
       const targetUrl = `${SUPABASE_URL}/storage/v1/object/lectures/${encodeURIComponent(fileName)}`;

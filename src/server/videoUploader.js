@@ -7,22 +7,28 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
 
-const FFMPEG_PATH = 'C:\\Users\\sehyeon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\imageio_ffmpeg\\binaries\\ffmpeg-win-x86_64-v7.1.exe';
+function getFFmpegPath() {
+  if (process.env.FFMPEG_PATH && fs.existsSync(process.env.FFMPEG_PATH)) {
+    return process.env.FFMPEG_PATH;
+  }
+  // Try standard system PATH
+  return 'ffmpeg';
+}
+
+const FFMPEG_PATH = getFFmpegPath();
 
 function loadSupabaseConfig() {
   const envPath = path.join(rootDir, '.env');
   let supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-  let storageKey = process.env.VITE_SUPABASE_STORAGE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+  let storageKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 
   if (fs.existsSync(envPath)) {
     const envText = fs.readFileSync(envPath, 'utf8');
     const urlMatch = envText.match(/VITE_SUPABASE_URL=(.*)/);
-    const keyMatch = envText.match(/VITE_SUPABASE_STORAGE_KEY=(.*)/);
     const anonMatch = envText.match(/VITE_SUPABASE_ANON_KEY=(.*)/);
 
     if (urlMatch) supabaseUrl = urlMatch[1].trim();
-    if (keyMatch) storageKey = keyMatch[1].trim();
-    else if (anonMatch && !storageKey) storageKey = anonMatch[1].trim();
+    if (anonMatch) storageKey = anonMatch[1].trim();
   }
 
   return { supabaseUrl, storageKey };

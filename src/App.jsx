@@ -102,7 +102,12 @@ export default function App() {
   }, [currentView, selectedLectureId, selectedCourseId]);
 
   const handleNavigate = (view) => {
-    if (view === 'admin' && !isAdmin) {
+    const activeUser = currentUser || (() => {
+      try { return JSON.parse(localStorage.getItem('buddha_lms_current_user') || 'null'); } catch { return null; }
+    })();
+    const userIsAdmin = activeUser?.role === 'admin';
+
+    if (view === 'admin' && !userIsAdmin) {
       showAlert('관리자 계정(admin)만 접근할 수 있는 페이지입니다.', { type: 'warning', title: '접근 권한 제한' });
       return;
     }

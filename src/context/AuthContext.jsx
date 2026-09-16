@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getStored, setStored, STORAGE_KEYS, initStorage } from '../services/storage';
 import { generateMemberNumber } from '../services/certService';
-import { remoteDb, isExternalDbConfigured } from '../services/apiClient';
+import { remoteDb, isExternalDbConfigured, verifyPassword, hashPassword } from '../services/apiClient';
 
 const AuthContext = createContext(null);
 
@@ -142,19 +142,30 @@ export function AuthProvider({ children }) {
     return newUser;
   };
 
-  // Login (100% Supabase Direct Authentication)
+  // Login (Secure Authentication via Single Record Check & Web Crypto)
   const login = async (id, password) => {
     const cleanId = id.trim();
-    const latestUsers = (await refreshUsers()) || users;
-    const user = latestUsers.find(u => u.id.toLowerCase() === cleanId.toLowerCase() && u.password === password);
+    let authUser = null;
 
-    if (!user) {
+    if (isExternalDbConfigured) {
+      authUser = await remoteDb.authenticateUser(cleanId, password);
+    } else {
+      const latestUsers = (await refreshUsers()) || users;
+      const found = latestUsers.find(u => u.id.toLowerCase() === cleanId.toLowerCase());
+      if (found && await verifyPassword(password, found.password)) {
+        authUser = { ...found };
+        delete authUser.password;
+      }
+    }
+
+    if (!authUser) {
       throw new Error('아이디 또는 비밀번호가 일치하지 않습니다.');
     }
 
     // Generate unique session token for single device restriction
     const sessionToken = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const sessionUser = { ...user, activeSessionToken: sessionToken };
+    const sessionUser = { ...authUser, activeSessionToken: sessionToken };
+    delete sessionUser.password; // Double check: Never store password in session state
 
     // Store ONLY the session ticket in browser storage for refresh persistence
     setStored(STORAGE_KEYS.CURRENT_USER, sessionUser);
@@ -164,7 +175,7 @@ export function AuthProvider({ children }) {
     // Broadcast new login to invalidate older sessions
     try {
       const channel = new BroadcastChannel('buddha_auth_session_channel');
-      channel.postMessage({ type: 'NEW_LOGIN', userId: user.id, sessionToken });
+      channel.postMessage({ type: 'NEW_LOGIN', userId: authUser.id, sessionToken });
       channel.close();
     } catch (e) {}
 

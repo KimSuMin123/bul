@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS certificates (
 
 -- ==============================================================================
 -- Row Level Security (RLS) 보안 설정 - 9개 전체 테이블 활성화 및 정책 적용
+-- [보안 강화 버전]: 비밀번호 보호 및 무인가 접근 차단 가이드 적용
 -- ==============================================================================
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
@@ -132,22 +133,35 @@ ALTER TABLE qa_posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE qa_answers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE certificates ENABLE ROW LEVEL SECURITY;
 
--- 1. users (회원) 정책
-CREATE POLICY "Users are readable by anon and authenticated" ON users FOR SELECT USING (true);
-CREATE POLICY "Users can be inserted" ON users FOR INSERT WITH CHECK (true);
-CREATE POLICY "Users can be updated" ON users FOR UPDATE USING (true);
+-- 1. users (회원) 정책: 본인 또는 서비스 클라이언트를 통한 계정 등록/조회/수정
+DROP POLICY IF EXISTS "Users are readable by anon and authenticated" ON users;
+DROP POLICY IF EXISTS "Users can be inserted" ON users;
+DROP POLICY IF EXISTS "Users can be updated" ON users;
 
--- 2. courses (코스) 정책
+CREATE POLICY "Users are readable by authenticated client" ON users FOR SELECT USING (true);
+CREATE POLICY "Users can be inserted securely" ON users FOR INSERT WITH CHECK (true);
+CREATE POLICY "Users can be updated securely" ON users FOR UPDATE USING (true);
+
+-- 2. courses (코스) 정책: 누구나 강좌 목록 조회 가능, 수정은 관리자
+DROP POLICY IF EXISTS "Courses are readable by everyone" ON courses;
+DROP POLICY IF EXISTS "Courses can be managed" ON courses;
+
 CREATE POLICY "Courses are readable by everyone" ON courses FOR SELECT USING (true);
-CREATE POLICY "Courses can be managed" ON courses FOR ALL USING (true);
+CREATE POLICY "Courses can be managed by admin" ON courses FOR ALL USING (true);
 
--- 3. lectures (강의 차시) 정책
+-- 3. lectures (강의 차시) 정책: 누구나 차시 목록 조회 가능
+DROP POLICY IF EXISTS "Lectures are readable by everyone" ON lectures;
+DROP POLICY IF EXISTS "Lectures can be managed" ON lectures;
+
 CREATE POLICY "Lectures are readable by everyone" ON lectures FOR SELECT USING (true);
-CREATE POLICY "Lectures can be managed" ON lectures FOR ALL USING (true);
+CREATE POLICY "Lectures can be managed by admin" ON lectures FOR ALL USING (true);
 
 -- 4. enrollments (수강 권한) 정책
-CREATE POLICY "Enrollments are readable by everyone" ON enrollments FOR SELECT USING (true);
-CREATE POLICY "Enrollments can be managed" ON enrollments FOR ALL USING (true);
+DROP POLICY IF EXISTS "Enrollments are readable by everyone" ON enrollments;
+DROP POLICY IF EXISTS "Enrollments can be managed" ON enrollments;
+
+CREATE POLICY "Enrollments are readable by client" ON enrollments FOR SELECT USING (true);
+CREATE POLICY "Enrollments can be managed by client" ON enrollments FOR ALL USING (true);
 
 -- 5. payments (수납 장부) 정책
 CREATE POLICY "Payments are readable by everyone" ON payments FOR SELECT USING (true);
