@@ -132,7 +132,9 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
           }}
         >
           <div>
-            <div className="badge badge-sage" style={{ marginBottom: '6px' }}>내 강의실 (Dashboard)</div>
+            <div className="badge badge-sage" style={{ marginBottom: '6px' }}>
+              {currentUser.role === 'admin' ? '교학처 관리자 모드' : '내 강의실 (Dashboard)'}
+            </div>
             <h1 className="heading-1 font-serif">
               {currentUser.name} 님의 배움터
             </h1>
@@ -141,7 +143,17 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {currentUser.role === 'admin' && (
+              <button 
+                className="btn btn-primary btn-sm" 
+                style={{ fontWeight: 700, padding: '8px 16px', background: 'var(--color-charcoal-dark)' }} 
+                onClick={() => onNavigate('admin')}
+              >
+                <Award size={15} />
+                <span>교학처 관리자 CMS 대시보드 바로가기 ▶</span>
+              </button>
+            )}
             <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('home')}>
               <BookOpen size={15} />
               <span>전체 강좌 둘러보기</span>
@@ -223,9 +235,9 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                 const remainingDays = getRemainingDays(enr.expireAt);
                 const isPending = enr.status === 'pending' || enr.status === 'applied';
                 const isLecturesDone = progress >= 100;
-                const hasPassedExam = isExamPassed(course.id, currentUser.id);
+                const hasPassedExam = isExamPassed(currentUser.id, course.id);
                 const isFullyCompleted = isLecturesDone && hasPassedExam;
-                const latestExam = getExamResult(course.id, currentUser.id);
+                const latestExam = getExamResult(currentUser.id, course.id);
 
                 return (
                   <div key={enr.id} className="card" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

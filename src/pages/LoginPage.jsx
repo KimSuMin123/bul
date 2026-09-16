@@ -18,15 +18,19 @@ export default function LoginPage({ onNavigate }) {
   const [newPassword, setNewPassword] = useState('');
   const [forgotMsg, setForgotMsg] = useState({ text: '', isError: false });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
     try {
-      login(id, password);
-      onNavigate('dashboard');
+      const user = await login(id, password);
+      if (user && user.role === 'admin') {
+        onNavigate('admin');
+      } else {
+        onNavigate('dashboard');
+      }
     } catch (err) {
-      setError(err.message || '로그인에 실패했습니다.');
+      setError(err.message || '아이디 또는 비밀번호가 일치하지 않습니다.');
     } finally {
       setIsSubmitting(false);
     }

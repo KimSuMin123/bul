@@ -542,11 +542,17 @@ export function CourseProvider({ children }) {
     return getCourseExamPool(courseId, courses);
   }, [courses]);
 
-  const getExamResult = useCallback((userId, courseId) => {
+  const getExamResult = useCallback((arg1, arg2) => {
+    const isFirstCourse = typeof arg1 === 'string' && arg1.startsWith('course-');
+    const userId = isFirstCourse ? arg2 : arg1;
+    const courseId = isFirstCourse ? arg1 : arg2;
     return getLatestExamAttempt(userId, courseId, examAttempts);
   }, [examAttempts]);
 
-  const isExamPassed = useCallback((userId, courseId) => {
+  const isExamPassed = useCallback((arg1, arg2) => {
+    const isFirstCourse = typeof arg1 === 'string' && arg1.startsWith('course-');
+    const userId = isFirstCourse ? arg2 : arg1;
+    const courseId = isFirstCourse ? arg1 : arg2;
     return hasPassedCourseExam(userId, courseId, examAttempts);
   }, [examAttempts]);
 

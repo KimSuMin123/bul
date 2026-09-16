@@ -13,9 +13,54 @@ import CertificateVerifyPage from './pages/CertificateVerifyPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 
 import { useAuth } from './context/AuthContext';
+import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+
+// Global Error Boundary to prevent White Screen on any runtime error
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Application Error Caught:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '80px 20px', textAlign: 'center', minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EF4444', marginBottom: '16px' }}>
+            <AlertCircle size={32} />
+          </div>
+          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '24px', marginBottom: '10px', color: 'var(--color-charcoal)' }}>
+            일시적인 화면 오류가 발생했습니다
+          </h2>
+          <p style={{ color: '#64748B', maxWidth: '460px', lineHeight: '1.6', marginBottom: '24px', fontSize: '14px' }}>
+            {this.state.error?.message || '페이지를 불러오는 중 문제가 발생했습니다. 새로고침을 진행해 주세요.'}
+          </p>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button 
+              className="btn btn-primary" 
+              onClick={() => { this.setState({ hasError: false }); window.location.hash = 'home'; window.location.reload(); }}
+            >
+              <RefreshCw size={16} />
+              <span>새로고침 및 첫 화면으로</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, isAdmin, loading } = useAuth();
 
   // Navigation state: 'home' | 'dashboard' | 'courseDetail' | 'watch' | 'login' | 'register' | 'verify' | 'admin'
   const [currentView, setCurrentView] = useState('home');
@@ -75,62 +120,81 @@ export default function App() {
     setCurrentView('watch');
   };
 
+  // Initial Auth Loading Screen
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
+        <img 
+          src="/images/logo.png" 
+          alt="세화붓다아카데미" 
+          style={{ height: '48px', width: 'auto', marginBottom: '20px', objectFit: 'contain' }} 
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--color-sage)', fontSize: '15px', fontWeight: 600 }}>
+          <Loader2 size={20} className="animate-spin" />
+          <span>세화붓다아카데미 보안 세션을 연결하고 있습니다...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="app-wrapper">
-      <Navbar currentView={currentView} onNavigate={handleNavigate} />
+    <ErrorBoundary>
+      <div className="app-wrapper">
+        <Navbar currentView={currentView} onNavigate={handleNavigate} />
 
-      <main className="main-content">
-        {currentView === 'home' && (
-          <HomePage 
-            onNavigate={handleNavigate} 
-            onSelectCourse={handleSelectCourse} 
-          />
-        )}
+        <main className="main-content">
+          {currentView === 'home' && (
+            <HomePage 
+              onNavigate={handleNavigate} 
+              onSelectCourse={handleSelectCourse} 
+            />
+          )}
 
-        {currentView === 'dashboard' && (
-          <DashboardPage 
-            onNavigate={handleNavigate} 
-            onStartLecture={handleStartLecture} 
-          />
-        )}
+          {currentView === 'dashboard' && (
+            <DashboardPage 
+              onNavigate={handleNavigate} 
+              onStartLecture={handleStartLecture} 
+            />
+          )}
 
-        {currentView === 'courseDetail' && (
-          <CourseDetailPage 
-            courseId={selectedCourseId} 
-            onNavigate={handleNavigate} 
-            onStartLecture={handleStartLecture} 
-          />
-        )}
+          {currentView === 'courseDetail' && (
+            <CourseDetailPage 
+              courseId={selectedCourseId} 
+              onNavigate={handleNavigate} 
+              onStartLecture={handleStartLecture} 
+            />
+          )}
 
-        {currentView === 'watch' && (
-          <WatchPage 
-            lectureId={selectedLectureId} 
-            onNavigate={handleNavigate} 
-            onSelectLecture={handleStartLecture} 
-          />
-        )}
+          {currentView === 'watch' && (
+            <WatchPage 
+              lectureId={selectedLectureId} 
+              onNavigate={handleNavigate} 
+              onSelectLecture={handleStartLecture} 
+            />
+          )}
 
-        {currentView === 'login' && (
-          <LoginPage onNavigate={handleNavigate} />
-        )}
+          {currentView === 'login' && (
+            <LoginPage onNavigate={handleNavigate} />
+          )}
 
-        {currentView === 'register' && (
-          <RegisterPage onNavigate={handleNavigate} />
-        )}
+          {currentView === 'register' && (
+            <RegisterPage onNavigate={handleNavigate} />
+          )}
 
-        {currentView === 'verify' && (
-          <CertificateVerifyPage onNavigate={handleNavigate} />
-        )}
+          {currentView === 'verify' && (
+            <CertificateVerifyPage onNavigate={handleNavigate} />
+          )}
 
-        {currentView === 'admin' && (
-          <AdminDashboardPage />
-        )}
-      </main>
+          {currentView === 'admin' && (
+            <AdminDashboardPage />
+          )}
+        </main>
 
-      <Footer />
+        <Footer />
 
-      {/* Concurrent Login Session Conflict Modal */}
-      <ConflictModal />
-    </div>
+        {/* Concurrent Login Session Conflict Modal */}
+        <ConflictModal />
+      </div>
+    </ErrorBoundary>
   );
 }

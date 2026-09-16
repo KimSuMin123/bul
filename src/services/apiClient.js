@@ -1,8 +1,8 @@
 // Supabase & External DB REST Client (Lightweight Native Fetch Adapter)
 // No heavy external packages required - works directly with standard web fetch!
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://cxvavdxfcrprcbpnrimw.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dmF2ZHhmY3JwcmNicG5yaW13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3ODEzODksImV4cCI6MjEwNDM1NzM4OX0.tqCpQwsuypvhcXOMLFXO5RjVjH551RyTvzCY5gJ3bMA';
 const SUPABASE_STORAGE_KEY = import.meta.env.VITE_SUPABASE_STORAGE_KEY || SUPABASE_ANON_KEY;
 
 export const isExternalDbConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
