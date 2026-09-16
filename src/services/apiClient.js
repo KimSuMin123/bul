@@ -35,10 +35,10 @@ export async function verifyPassword(inputPassword, storedPassword) {
 
 export async function testSupabaseConnection() {
   if (!isExternalDbConfigured) {
-    return { 
-      configured: false, 
-      success: false, 
-      message: '.env 파일에 VITE_SUPABASE_URL 및 VITE_SUPABASE_ANON_KEY가 아직 설정되지 않았습니다. (현재 안전한 로컬 스토리지 모드로 작동 중)' 
+    return {
+      configured: false,
+      success: false,
+      message: '.env 파일에 VITE_SUPABASE_URL 및 VITE_SUPABASE_ANON_KEY가 아직 설정되지 않았습니다. (현재 안전한 로컬 스토리지 모드로 작동 중)'
     };
   }
   try {
@@ -49,23 +49,23 @@ export async function testSupabaseConnection() {
       }
     });
     if (res.ok) {
-      return { 
-        configured: true, 
-        success: true, 
-        message: 'Supabase 클라우드 데이터베이스에 정상적으로 연결되었습니다! (실시간 동기화 활성)' 
+      return {
+        configured: true,
+        success: true,
+        message: 'Supabase 클라우드 데이터베이스에 정상적으로 연결되었습니다! (실시간 동기화 활성)'
       };
     } else {
-      return { 
-        configured: true, 
-        success: false, 
-        message: `연결 실패 (${res.status}): API 키를 확인하거나 database_setup.sql 테이블 생성을 먼저 진행해 주세요.` 
+      return {
+        configured: true,
+        success: false,
+        message: `연결 실패 (${res.status}): API 키를 확인하거나 database_setup.sql 테이블 생성을 먼저 진행해 주세요.`
       };
     }
   } catch (e) {
-    return { 
-      configured: true, 
-      success: false, 
-      message: `네트워크 연결 실패: ${e.message}` 
+    return {
+      configured: true,
+      success: false,
+      message: `네트워크 연결 실패: ${e.message}`
     };
   }
 }
@@ -174,8 +174,8 @@ export const remoteDb = {
     if (!isExternalDbConfigured) return null;
     try {
       // Hash password before saving to DB if not already hashed
-      const securePassword = userData.password.startsWith('sha256:') 
-        ? userData.password 
+      const securePassword = userData.password.startsWith('sha256:')
+        ? userData.password
         : await hashPassword(userData.password);
 
       const payload = {
@@ -884,7 +884,7 @@ export function uploadLectureVideo(file, onProgress) {
               originalMb: res.originalMb
             });
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       // If local endpoint returns 404 (e.g. running on static production host without Node), fallback to direct Supabase
