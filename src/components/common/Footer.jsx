@@ -35,7 +35,7 @@ export default function Footer() {
           <div>
             <div style={{ marginBottom: '16px' }}>
               <img
-                src="/images/logo-white.svg"
+                src="/images/logo-white.png"
                 alt="사단법인 세화불학원"
                 style={{ height: '36px', maxWidth: '100%', objectFit: 'contain' }}
               />
@@ -118,7 +118,6 @@ export default function Footer() {
         {/* Copyright */}
         <div style={{ paddingTop: '20px', borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#64748B', flexWrap: 'wrap', gap: '10px' }}>
           <div>© 2026 Sehwa Buddha Academy (사단법인 세화불학원). All rights reserved.</div>
-          <div>본원은 문화체육관광부 및 문화재청 소관 비영리 사단법인입니다.</div>
         </div>
       </div>
     </footer>
