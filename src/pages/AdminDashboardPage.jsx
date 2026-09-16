@@ -16,7 +16,7 @@ import CertificateModal from '../components/certificate/CertificateModal';
 import { useModalAlert } from '../context/ModalAlertContext';
 
 export default function AdminDashboardPage() {
-  const { showConfirm } = useModalAlert();
+  const { showAlert, showConfirm } = useModalAlert();
   const { 
     courses, lectures, enrollments, payments, 
     enrollStudent, recordPayment, updateCourseSettings, 
@@ -104,7 +104,7 @@ export default function AdminDashboardPage() {
   const handleSaveAdminAnswer = (e) => {
     e.preventDefault();
     if (!replyModalPost || !replyContent.trim()) {
-      alert('답변 내용을 입력해 주세요.');
+      showAlert('답변 내용을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
       return;
     }
 
@@ -114,11 +114,11 @@ export default function AdminDashboardPage() {
         authorName: replyMonkName,
         badgeTitle: replyBadgeTitle
       });
-      alert('스님 명의의 답변이 성공적으로 등록되었습니다.');
+      showAlert('스님 명의의 답변이 성공적으로 등록되었습니다.', { type: 'success', title: '답변 등록 완료' });
       setReplyModalPost(null);
       refreshData();
     } catch (err) {
-      alert(err.message);
+      showAlert(err.message, { type: 'error', title: '답변 등록 오류' });
     }
   };
 
@@ -133,7 +133,7 @@ export default function AdminDashboardPage() {
         deleteQAPost(postId);
         refreshData();
       } catch (err) {
-        alert(err.message);
+        showAlert(err.message, { type: 'error', title: '삭제 오류' });
       }
     }
   };
@@ -218,7 +218,7 @@ export default function AdminDashboardPage() {
       certRegOffice: certEditForm.certRegOffice.trim(),
       rawExamText: certEditForm.rawExamText || ''
     });
-    alert(`[${certEditCourse.title}] 코스의 자격증 및 온라인 시험 설정이 성공적으로 저장되었습니다!\n\n• 자격증 종목: ${certEditForm.certTypeFull}\n• 자격증 번호 양식: ${certEditForm.certRegNo}\n• 등록된 시험 문항: 총 ${parsed.length}개 문제 (응시 시 20문항 무작위 출제)`);
+    showAlert(`[${certEditCourse.title}] 코스의 자격증 및 온라인 시험 설정이 성공적으로 저장되었습니다!\n\n• 자격증 종목: ${certEditForm.certTypeFull}\n• 자격증 번호 양식: ${certEditForm.certRegNo}\n• 등록된 시험 문항: 총 ${parsed.length}개 문제 (응시 시 20문항 무작위 출제)`, { type: 'success', title: '자격증/시험 설정 저장 완료' });
     setCertEditCourse(null);
     refreshData();
   };
@@ -226,13 +226,13 @@ export default function AdminDashboardPage() {
   const handleCreateCourse = (e) => {
     e.preventDefault();
     if (!courseForm.title.trim()) {
-      alert('코스 제목을 입력해 주세요.');
+      showAlert('코스 제목을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
       return;
     }
     try {
       const parsed = parseExamText(courseForm.rawExamText || '');
       const created = addCourse(courseForm);
-      alert(`[${created.title}] 코스가 성공적으로 개설되었습니다!\n\n• 연동 자격증: ${courseForm.certTypeFull}\n• 자격증 번호: ${courseForm.certRegNo}\n• 등록된 시험 문항: 총 ${parsed.length}개 문제`);
+      showAlert(`[${created.title}] 코스가 성공적으로 개설되었습니다!\n\n• 연동 자격증: ${courseForm.certTypeFull}\n• 자격증 번호: ${courseForm.certRegNo}\n• 등록된 시험 문항: 총 ${parsed.length}개 문제`, { type: 'success', title: '코스 개설 완료' });
       setShowNewCourseModal(false);
       setCourseForm({
         id: '',
@@ -253,7 +253,7 @@ export default function AdminDashboardPage() {
       });
       refreshData();
     } catch (err) {
-      alert(`코스 생성 실패: ${err.message}`);
+      showAlert(`코스 생성 실패: ${err.message}`, { type: 'error', title: '코스 생성 오류' });
     }
   };
 
@@ -267,9 +267,9 @@ export default function AdminDashboardPage() {
       try {
         deleteCourse(courseId);
         refreshData();
-        alert(`[${courseTitle}] 코스가 성공적으로 삭제되었습니다.`);
+        showAlert(`[${courseTitle}] 코스가 성공적으로 삭제되었습니다.`, { type: 'success', title: '코스 삭제 완료' });
       } catch (err) {
-        alert(`삭제 실패: ${err.message}`);
+        showAlert(`삭제 실패: ${err.message}`, { type: 'error', title: '코스 삭제 오류' });
       }
     }
   };
@@ -284,9 +284,9 @@ export default function AdminDashboardPage() {
       try {
         deleteLecture(lecId);
         refreshData();
-        alert(`[${lecTitle}] 차시가 성공적으로 삭제되었습니다.`);
+        showAlert(`[${lecTitle}] 차시가 성공적으로 삭제되었습니다.`, { type: 'success', title: '차시 삭제 완료' });
       } catch (err) {
-        alert(`삭제 실패: ${err.message}`);
+        showAlert(`삭제 실패: ${err.message}`, { type: 'error', title: '차시 삭제 오류' });
       }
     }
   };
@@ -356,7 +356,7 @@ export default function AdminDashboardPage() {
   const handleCourseThumbFileSelect = async (file) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      alert('이미지 파일(JPG, PNG, WebP 등)만 업로드할 수 있습니다.');
+      showAlert('이미지 파일(JPG, PNG, WebP 등)만 업로드할 수 있습니다.', { type: 'warning', title: '파일 형식 안내' });
       return;
     }
     try {
@@ -379,7 +379,7 @@ export default function AdminDashboardPage() {
     if (!thumbModalCourse) return;
     const finalUrl = thumbPreviewUrl?.trim() || thumbUrlInput?.trim();
     if (!finalUrl) {
-      alert('썸네일 이미지 URL을 입력하거나 이미지 파일을 선택해 주세요.');
+      showAlert('썸네일 이미지 URL을 입력하거나 이미지 파일을 선택해 주세요.', { type: 'warning', title: '입력 확인' });
       return;
     }
     try {
@@ -390,7 +390,7 @@ export default function AdminDashboardPage() {
         setThumbModalCourse(null);
       }, 1000);
     } catch (err) {
-      alert(`썸네일 저장 실패: ${err.message}`);
+      showAlert(`썸네일 저장 실패: ${err.message}`, { type: 'error', title: '저장 오류' });
     }
   };
 
@@ -408,7 +408,7 @@ export default function AdminDashboardPage() {
   const handleLecThumbFileSelect = async (file) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      alert('이미지 파일(JPG, PNG, WebP 등)만 업로드할 수 있습니다.');
+      showAlert('이미지 파일(JPG, PNG, WebP 등)만 업로드할 수 있습니다.', { type: 'warning', title: '파일 형식 안내' });
       return;
     }
     try {
@@ -431,7 +431,7 @@ export default function AdminDashboardPage() {
     if (!thumbModalLec) return;
     const finalUrl = thumbLecPreviewUrl?.trim() || thumbLecUrlInput?.trim();
     if (!finalUrl) {
-      alert('차시 썸네일 이미지 URL을 입력하거나 이미지 파일을 선택해 주세요.');
+      showAlert('차시 썸네일 이미지 URL을 입력하거나 이미지 파일을 선택해 주세요.', { type: 'warning', title: '입력 확인' });
       return;
     }
     try {
@@ -442,7 +442,7 @@ export default function AdminDashboardPage() {
         setThumbModalLec(null);
       }, 1000);
     } catch (err) {
-      alert(`차시 썸네일 저장 실패: ${err.message}`);
+      showAlert(`차시 썸네일 저장 실패: ${err.message}`, { type: 'error', title: '저장 오류' });
     }
   };
 
@@ -450,7 +450,7 @@ export default function AdminDashboardPage() {
   const handleNewVideoFileSelect = async (file) => {
     if (!file) return;
     if (!file.type.startsWith('video/') && !file.name.match(/\.(mp4|mov|webm|mkv|avi)$/i)) {
-      alert('동영상 파일(.mp4, .mov, .webm, .mkv 등)만 업로드할 수 있습니다.');
+      showAlert('동영상 파일(.mp4, .mov, .webm, .mkv 등)만 업로드할 수 있습니다.', { type: 'warning', title: '파일 형식 안내' });
       return;
     }
 
@@ -480,7 +480,7 @@ export default function AdminDashboardPage() {
   const handleReplaceVideoFileSelect = async (file) => {
     if (!file) return;
     if (!file.type.startsWith('video/') && !file.name.match(/\.(mp4|mov|webm|mkv|avi)$/i)) {
-      alert('동영상 파일(.mp4, .mov, .webm, .mkv 등)만 업로드할 수 있습니다.');
+      showAlert('동영상 파일(.mp4, .mov, .webm, .mkv 등)만 업로드할 수 있습니다.', { type: 'warning', title: '파일 형식 안내' });
       return;
     }
 
@@ -497,7 +497,7 @@ export default function AdminDashboardPage() {
   const handleReplaceVideoSubmit = async (e) => {
     e.preventDefault();
     if (!replaceModalLec || !replaceVideoFile) {
-      alert('교체할 동영상 파일을 선택해 주세요.');
+      showAlert('교체할 동영상 파일을 선택해 주세요.', { type: 'warning', title: '파일 선택' });
       return;
     }
 
@@ -530,7 +530,7 @@ export default function AdminDashboardPage() {
     } catch (err) {
       setIsReplacing(false);
       setReplaceErrorMsg(`업로드 실패: ${err.message}`);
-      alert(`동영상 업로드 실패: ${err.message}`);
+      showAlert(`동영상 업로드 실패: ${err.message}`, { type: 'error', title: '업로드 오류' });
     }
   };
 
@@ -705,11 +705,11 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
   const handleDeleteUser = async (user) => {
     if (user.id === 'admin') {
-      alert('최고관리자(admin) 계정은 시스템 보호를 위해 삭제할 수 없습니다.');
+      showAlert('최고관리자(admin) 계정은 시스템 보호를 위해 삭제할 수 없습니다.', { type: 'warning', title: '계정 보호' });
       return;
     }
     if (currentUser && currentUser.id === user.id) {
-      alert('현재 로그인 중인 본인 계정은 삭제할 수 없습니다.');
+      showAlert('현재 로그인 중인 본인 계정은 삭제할 수 없습니다.', { type: 'warning', title: '계정 삭제 불가' });
       return;
     }
 
@@ -724,9 +724,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
         adminDeleteUser(user.id);
         setUsersVersion(v => v + 1);
         refreshData();
-        alert(`[${user.name}] 회원 계정이 정상적으로 삭제되었습니다.`);
+        showAlert(`[${user.name}] 회원 계정이 정상적으로 삭제되었습니다.`, { type: 'success', title: '회원 삭제 완료' });
       } catch (err) {
-        alert(`삭제 실패: ${err.message}`);
+        showAlert(`삭제 실패: ${err.message}`, { type: 'error', title: '삭제 오류' });
       }
     }
   };
@@ -735,7 +735,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
     e.preventDefault();
     if (!resetPwUser) return;
     if (!newTempPassword || newTempPassword.trim().length < 4) {
-      alert('새 비밀번호는 최소 4자 이상이어야 합니다.');
+      showAlert('새 비밀번호는 최소 4자 이상이어야 합니다.', { type: 'warning', title: '입력 확인' });
       return;
     }
 
@@ -743,10 +743,10 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
       setIsResettingPw(true);
       adminResetPassword(resetPwUser.id, newTempPassword.trim());
       setUsersVersion(v => v + 1);
-      alert(`[${resetPwUser.name}] 님의 비밀번호가 '${newTempPassword.trim()}'(으)로 성공적으로 초기화되었습니다.\n학인에게 변경된 비밀번호를 안내해 주시기 바랍니다.`);
+      showAlert(`[${resetPwUser.name}] 님의 비밀번호가 '${newTempPassword.trim()}'(으)로 성공적으로 초기화되었습니다.\n학인에게 변경된 비밀번호를 안내해 주시기 바랍니다.`, { type: 'success', title: '비밀번호 초기화 완료' });
       setResetPwUser(null);
     } catch (err) {
-      alert(`비밀번호 초기화 실패: ${err.message}`);
+      showAlert(`비밀번호 초기화 실패: ${err.message}`, { type: 'error', title: '초기화 오류' });
     } finally {
       setIsResettingPw(false);
     }
@@ -774,7 +774,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
     e.preventDefault();
     if (!selectedUser) return;
     enrollStudent(selectedUser.id, grantCourseId, grantStatus);
-    alert(`${selectedUser.name} 님에게 [${courses.find(c => c.id === grantCourseId)?.title}] 강좌의 권한(${grantStatus})이 성공적으로 부여되었습니다.`);
+    showAlert(`${selectedUser.name} 님에게 [${courses.find(c => c.id === grantCourseId)?.title}] 강좌의 권한(${grantStatus})이 성공적으로 부여되었습니다.`, { type: 'success', title: '수강 권한 부여 완료' });
     setShowGrantModal(false);
     refreshData();
   };
@@ -783,7 +783,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
   const handleRecordPayment = (e) => {
     e.preventDefault();
     if (!payUserId) {
-      alert('회원을 선택해 주세요.');
+      showAlert('회원을 선택해 주세요.', { type: 'warning', title: '입력 확인' });
       return;
     }
 
@@ -796,7 +796,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
       paidAt: payDate
     });
 
-    alert('대면 수납 내역이 장부에 기록되었으며, 해당 회원의 수강 상태가 [수강중(결제완료)]으로 전환되었습니다.');
+    showAlert('대면 수납 내역이 장부에 기록되었으며, 해당 회원의 수강 상태가 [수강중(결제완료)]으로 전환되었습니다.', { type: 'success', title: '수납 처리 완료' });
     setShowPaymentModal(false);
     refreshData();
   };
@@ -851,7 +851,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
         methodMemo: '교학처 방문 대면 수납 승인',
         paidAt: new Date().toISOString().split('T')[0]
       });
-      alert(`[${studentName}] 학인의 대면 수납 승인이 완료되었습니다!\n장부에 정상 등재되었으며, 이제 수강이 시작됩니다.`);
+      showAlert(`[${studentName}] 학인의 대면 수납 승인이 완료되었습니다!\n장부에 정상 등재되었으며, 이제 수강이 시작됩니다.`, { type: 'success', title: '수납 승인 완료' });
       refreshData();
     }
   };
@@ -866,7 +866,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
   const handleCreateLecture = async (e) => {
     e.preventDefault();
     if (!lecForm.title.trim()) {
-      alert('강의 제목을 입력해 주세요.');
+      showAlert('강의 제목을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
       return;
     }
 
@@ -875,7 +875,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
     // Direct Video Upload to Server Storage
     if (uploadMode === 'file') {
       if (!newVideoFile && !finalVideoUrl) {
-        alert('동영상 파일을 먼저 선택해 주세요.');
+        showAlert('동영상 파일을 먼저 선택해 주세요.', { type: 'warning', title: '파일 선택' });
         return;
       }
 
@@ -894,7 +894,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
         } catch (err) {
           setIsUploading(false);
           setUploadErrorMsg(`업로드 오류: ${err.message}`);
-          alert(`서버 업로드 오류: ${err.message}`);
+          showAlert(`서버 업로드 오류: ${err.message}`, { type: 'error', title: '업로드 오류' });
           return;
         } finally {
           setIsUploading(false);
@@ -902,7 +902,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
       }
     } else {
       if (!finalVideoUrl.trim()) {
-        alert('동영상 소스 URL을 입력해 주세요.');
+        showAlert('동영상 소스 URL을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
         return;
       }
     }
@@ -917,7 +917,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
       attachments: lecForm.attachmentName ? [{ name: lecForm.attachmentName, size: '2.5 MB' }] : []
     });
 
-    alert(`[${lecForm.title}] 차시가 성공적으로 등록되었습니다!\n영상은 프라이빗 서버에서 즉시 고화질 스트리밍됩니다.`);
+    showAlert(`[${lecForm.title}] 차시가 성공적으로 등록되었습니다!\n영상은 프라이빗 서버에서 즉시 고화질 스트리밍됩니다.`, { type: 'success', title: '차시 등록 완료' });
     setShowNewLecModal(false);
     setNewVideoFile(null);
     setNewVideoPreviewUrl('');
@@ -3374,7 +3374,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                 const res = await uploadThumbnailImage(file);
                                 setCourseForm(prev => ({ ...prev, thumbnail: res.publicUrl }));
                               } catch (err) {
-                                alert(`이미지 처리 오류: ${err.message}`);
+                                showAlert(`이미지 처리 오류: ${err.message}`, { type: 'error', title: '이미지 오류' });
                               }
                             }
                           }}

@@ -12,7 +12,7 @@ import { useModalAlert } from '../context/ModalAlertContext';
 
 export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
   const { currentUser } = useAuth();
-  const { showConfirm } = useModalAlert();
+  const { showAlert, showConfirm } = useModalAlert();
   const { 
     lectures, courses, hasLectureAccess, isLectureLocked, 
     getLectureProgress, qaPosts 
@@ -73,7 +73,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
 
     // Check sequential lock
     if (isLectureLocked(currentUser?.id, targetLec.id)) {
-      alert('이전 차시를 100% 완강하셔야 다음 차시를 수강하실 수 있습니다. (순차 학습 적용)');
+      showAlert('이전 차시를 100% 완강하셔야 다음 차시를 수강하실 수 있습니다. (순차 학습 적용)', { type: 'warning', title: '순차 학습 제한' });
       return;
     }
 
@@ -298,7 +298,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                           </div>
                           <button 
                             className="btn btn-secondary btn-sm"
-                            onClick={() => alert(`[${file.name}] 교안 다운로드가 시작되었습니다.`)}
+                            onClick={() => showAlert(`[${file.name}] 교안 다운로드가 시작되었습니다.`, { type: 'info', title: '교안 다운로드' })}
                           >
                             <Download size={13} />
                             <span>다운로드</span>

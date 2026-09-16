@@ -13,6 +13,7 @@ import CertificateVerifyPage from './pages/CertificateVerifyPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 
 import { useAuth } from './context/AuthContext';
+import { useModalAlert } from './context/ModalAlertContext';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
 // Global Error Boundary to prevent White Screen on any runtime error
@@ -61,6 +62,7 @@ class ErrorBoundary extends React.Component {
 
 export default function App() {
   const { currentUser, isAdmin, loading } = useAuth();
+  const { showAlert } = useModalAlert();
 
   // Navigation state: 'home' | 'dashboard' | 'courseDetail' | 'watch' | 'login' | 'register' | 'verify' | 'admin'
   const [currentView, setCurrentView] = useState('home');
@@ -101,7 +103,7 @@ export default function App() {
 
   const handleNavigate = (view) => {
     if (view === 'admin' && !isAdmin) {
-      alert('관리자 계정(admin)만 접근할 수 있는 페이지입니다.');
+      showAlert('관리자 계정(admin)만 접근할 수 있는 페이지입니다.', { type: 'warning', title: '접근 권한 제한' });
       return;
     }
     window.location.hash = view;

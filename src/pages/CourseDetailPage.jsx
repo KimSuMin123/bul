@@ -224,7 +224,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                   ) : (
                     <button 
                       className="btn btn-secondary btn-sm"
-                      onClick={() => alert('본 강좌의 수강 권한이 필요합니다. 교학처 수납 후 승인됩니다.')}
+                      onClick={() => showAlert('본 강좌의 수강 권한이 필요합니다. 교학처 수납 후 승인됩니다.', { type: 'warning', title: '수강 권한 안내' })}
                     >
                       <Lock size={14} color="var(--color-coral)" />
                       <span>잠김</span>

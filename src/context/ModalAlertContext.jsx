@@ -185,24 +185,19 @@ export function ModalAlertProvider({ children }) {
     };
   }, [modalState.isOpen, modalState.isConfirm]);
 
-  // Hook global window.alert to automatically open this beautiful modal
+  // Hook global window.alert and window.confirm to ALWAYS open this custom modal
   useEffect(() => {
-    const originalAlert = window.alert;
     window.alert = (msg) => {
       showAlert(msg);
+    };
+    window.confirm = (msg) => {
+      return showConfirm(msg);
     };
 
     window.__showModalAlert = showAlert;
     window.__showModalConfirm = showConfirm;
     window.__closeModalAlert = () => {
       setModalState(prev => ({ ...prev, isOpen: false }));
-    };
-
-    return () => {
-      window.alert = originalAlert;
-      delete window.__showModalAlert;
-      delete window.__showModalConfirm;
-      delete window.__closeModalAlert;
     };
   }, [showAlert, showConfirm]);
 

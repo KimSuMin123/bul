@@ -16,7 +16,7 @@ export default function LectureQABoard({
 }) {
   const { currentUser, isAdmin } = useAuth();
   const { qaPosts, addQAPost, addQAAnswer, deleteQAPost } = useCourse();
-  const { showConfirm } = useModalAlert();
+  const { showAlert, showConfirm } = useModalAlert();
 
   // Filter: 'all' | 'pending' | 'answered'
   const [filter, setFilter] = useState('all');
@@ -75,7 +75,7 @@ export default function LectureQABoard({
   // Open Form & auto sync current video timestamp
   const handleOpenForm = () => {
     if (!currentUser) {
-      alert('질문을 작성하시려면 먼저 로그인해 주세요.');
+      showAlert('질문을 작성하시려면 먼저 로그인해 주세요.', { type: 'warning', title: '로그인 필요' });
       return;
     }
     const currentSec = Math.round(currentVideoTime || 0);
@@ -151,7 +151,7 @@ export default function LectureQABoard({
   const handleSubmitAnswer = (postId) => {
     const formData = answerForms[postId];
     if (!formData || !formData.content?.trim()) {
-      alert('답변 내용을 입력해 주세요.');
+      showAlert('답변 내용을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
       return;
     }
 
@@ -166,9 +166,9 @@ export default function LectureQABoard({
         ...prev,
         [postId]: { ...prev[postId], showForm: false }
       }));
-      alert('스님 명의의 법문 답변이 성공적으로 등록되었습니다.');
+      showAlert('스님 명의의 법문 답변이 성공적으로 등록되었습니다.', { type: 'success', title: '답변 등록 완료' });
     } catch (err) {
-      alert(err.message);
+      showAlert(err.message, { type: 'error', title: '답변 등록 오류' });
     }
   };
 
@@ -183,7 +183,7 @@ export default function LectureQABoard({
       try {
         deleteQAPost(postId);
       } catch (err) {
-        alert(err.message);
+        showAlert(err.message, { type: 'error', title: '삭제 오류' });
       }
     }
   };

@@ -6,11 +6,13 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCourse } from '../context/CourseContext';
+import { useModalAlert } from '../context/ModalAlertContext';
 import CertificateModal from '../components/certificate/CertificateModal';
 import CourseExamModal from '../components/exam/CourseExamModal';
 
 export default function DashboardPage({ onNavigate, onStartLecture }) {
   const { currentUser } = useAuth();
+  const { showAlert } = useModalAlert();
   const { 
     courses, lectures, enrollments, getCourseProgress, 
     progressList, claimCertificate, getCertificate,
@@ -92,7 +94,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
       try {
         cert = claimCertificate(course.id);
       } catch (e) {
-        alert(e.message);
+        showAlert(e.message, { type: 'error', title: '수료증 발급 오류' });
         return;
       }
     }
@@ -102,7 +104,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
   // Direct Apply from Dashboard
   const handleApplyCourseFromDashboard = (courseId) => {
     enrollStudent(currentUser.id, courseId, 'pending');
-    alert(`수강 신청이 정상 접수되었습니다!\n\n현재 [대기상태 (대면 수납 대기)]로 등록되었습니다.\n교학처(02-2260-8888)에 방문하시어 수납을 완료하시면 [수강 중]으로 전환됩니다.`);
+    showAlert(`수강 신청이 정상 접수되었습니다!\n\n현재 [대기상태 (대면 수납 대기)]로 등록되었습니다.\n교학처(02-2260-8888)에 방문하시어 수납을 완료하시면 [수강 중]으로 전환됩니다.`, { type: 'success', title: '수강 신청 접수 완료' });
     refreshData();
   };
 
@@ -112,7 +114,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
     courseLecs.forEach(lec => {
       updateProgress(currentUser.id, lec.id, lec.durationSeconds || 1000, lec.durationSeconds || 1000);
     });
-    alert('🎉 강의 진도율 100% 완강 처리가 완료되었습니다!\n\n이제 [📝 자격 검정 시험 응시하기] 버튼을 눌러 60점 이상 득점하시면 공인 자격증이 정식 발급됩니다.');
+    showAlert('🎉 강의 진도율 100% 완강 처리가 완료되었습니다!\n\n이제 [📝 자격 검정 시험 응시하기] 버튼을 눌러 60점 이상 득점하시면 공인 자격증이 정식 발급됩니다.', { type: 'success', title: '완강 처리 완료' });
     refreshData();
   };
 
