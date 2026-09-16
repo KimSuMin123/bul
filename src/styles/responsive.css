@@ -1,0 +1,630 @@
+/* ==========================================================================
+   Buddha Lecture Platform (세화불학원 온라인 아카데미)
+   Comprehensive Mobile & Tablet Responsive Enhancements
+   ========================================================================== */
+
+/* 
+   Zone 1:  Extra Small Mobile   (<= 359px)       - iPhone SE 1st, Galaxy Fold cover (320px)
+   Zone 2:  Compact Mobile       (360px ~ 389px)  - Standard Android (Galaxy S8/S9/S10, 360px)
+   Zone 3:  Standard Mobile      (390px ~ 429px)  - iPhone 12/13/14/15/16, Pro (390px, 393px, 412px)
+   Zone 4:  Large Mobile         (430px ~ 539px)  - iPhone Pro Max (430px), Galaxy Ultra
+   Zone 5:  Phablet & Foldable   (540px ~ 639px)  - Galaxy Z Fold unfolded, landscape mobile
+   Zone 6:  Small Tablet         (640px ~ 767px)  - iPad Mini portrait (744px), Nexus 7
+   Zone 7:  Standard Tablet      (768px ~ 879px)  - iPad 9/10th (768px, 820px), iPad Air (820px)
+   Zone 8:  Large Tablet/Mini PC (880px ~ 1023px) - iPad Pro 11", landscape tablets
+   Zone 9:  Standard Laptop      (1024px ~ 1279px)- MacBooks, 13-14" laptops
+   Zone 10: Widescreen Desktop   (>= 1280px)      - Desktops, 1080p, 1440p, 4K monitors
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Global Mobile-Friendly Defaults, Safe Areas & Anti-Squish Base
+   -------------------------------------------------------------------------- */
+html, body {
+  overflow-x: hidden !important;
+  width: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Ensure headings and subtitles wrap by word instead of breaking characters awkwardly */
+h1, h2, h3, h4, .font-serif, .heading-1, .heading-2, .heading-3, p {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* Prevent iOS Safari auto-zoom on input focus by keeping base font 16px on mobile */
+@media (max-width: 767.98px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Touch targets: ensure minimum 44px hit-box on mobile touch devices */
+@media (pointer: coarse) {
+  button, .btn, a.btn {
+    min-height: 42px;
+  }
+}
+
+/* Responsive Table Wrapper with Smooth Momentum Scroll */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 12px 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.table-responsive table {
+  min-width: 620px;
+  width: 100%;
+}
+
+/* Mobile Scrollable Horizontal Tabs */
+.mobile-tab-scroll {
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
+  gap: 8px;
+  padding-bottom: 6px;
+  scrollbar-width: none;
+}
+.mobile-tab-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Watch Page Layout Grid Default */
+.watch-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  gap: 26px;
+}
+
+/* Course Detail Page Banner Default */
+.course-detail-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 1fr);
+}
+
+/* Mobile Nav Drawer Defaults */
+.mobile-nav-backdrop {
+  display: none;
+}
+.mobile-menu-toggle {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   2. Mobile Drawer Navigation Breakpoint Trigger (<= 880px)
+   Gives tablets in portrait mode (768px~880px) clean breathing room
+   -------------------------------------------------------------------------- */
+@media (max-width: 880px) {
+  .desktop-nav-menu,
+  .desktop-auth-capsule {
+    display: none !important;
+  }
+
+  .mobile-menu-toggle {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: var(--color-surface-warm);
+    color: var(--color-charcoal);
+    cursor: pointer;
+    border: 1px solid var(--color-border);
+    flex-shrink: 0;
+  }
+
+  .mobile-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 998;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .mobile-nav-drawer {
+    display: flex;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(320px, 85vw);
+    background: #FFFFFF;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.25);
+    z-index: 999;
+    flex-direction: column;
+    padding: 20px 18px;
+    overflow-y: auto;
+    animation: slideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .course-detail-banner {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   ZONE 10: Widescreen Desktop (>= 1280px)
+   -------------------------------------------------------------------------- */
+@media (min-width: 1280px) {
+  .container {
+    max-width: 1240px;
+    padding: 0 28px;
+  }
+  .hero-heading {
+    font-size: 40px !important;
+    line-height: 1.35 !important;
+  }
+  .watch-layout {
+    grid-template-columns: minmax(0, 2.3fr) minmax(340px, 1fr);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   ZONE 9: Standard Laptop / Small Desktop (1024px ~ 1279.98px)
+   -------------------------------------------------------------------------- */
+@media (min-width: 1024px) and (max-width: 1279.98px) {
+  .container {
+    max-width: 1060px;
+    padding: 0 24px;
+  }
+  .hero-heading {
+    font-size: 35px !important;
+  }
+  .watch-layout {
+    grid-template-columns: minmax(0, 1.8fr) minmax(300px, 1fr);
+    gap: 20px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   ZONE 8: Large Tablet & Small Laptop (880px ~ 1023.98px)
+   -------------------------------------------------------------------------- */
+@media (min-width: 880px) and (max-width: 1023.98px) {
+  .container {
+    max-width: 100%;
+    padding: 0 22px;
+  }
+  .hero-heading {
+    font-size: 32px !important;
+  }
+  .watch-layout {
+    grid-template-columns: 1fr !important;
+    gap: 24px;
+  }
+  .courses-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   ZONE 7: Standard Tablet Portrait (768px ~ 879.98px)
+   iPads (768px, 820px, 834px)
+   -------------------------------------------------------------------------- */
+@media (min-width: 768px) and (max-width: 879.98px) {
+  .container {
+    max-width: 100%;
+    padding: 0 20px;
+  }
+  .hero-heading {
+    font-size: 30px !important;
+  }
+  .hero-desc {
+    font-size: 15px !important;
+  }
+  .watch-layout {
+    grid-template-columns: 1fr !important;
+    gap: 22px;
+  }
+  .courses-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .admin-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   ZONE 6: Small Tablet (640px ~ 767.98px)
+   iPad Mini, Foldable Wide (640px ~ 767px)
+   -------------------------------------------------------------------------- */
+@media (min-width: 640px) and (max-width: 767.98px) {
+  .container {
+    padding: 0 18px;
+  }
+  .hero-heading {
+    font-size: 28px !important;
+  }
+  .hero-metric-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .watch-layout {
+    grid-template-columns: 1fr !important;
+    gap: 20px;
+  }
+  .courses-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .dashboard-course-card {
+    padding: 20px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   ZONE 5: Phablet & Foldable Unfolded (540px ~ 639.98px)
+   -------------------------------------------------------------------------- */
+@media (min-width: 540px) and (max-width: 639.98px) {
+  .container {
+    padding: 0 16px;
+  }
+  .hero-heading {
+    font-size: 26px !important;
+  }
+  .hero-desc {
+    font-size: 14.5px !important;
+  }
+  .hero-metric-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .watch-layout {
+    grid-template-columns: 1fr !important;
+    gap: 18px;
+  }
+  .courses-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .dashboard-course-card {
+    padding: 18px !important;
+  }
+  .course-detail-info {
+    padding: 24px !important;
+  }
+  .sticky-resume-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    padding: 14px 18px !important;
+    top: 56px !important;
+  }
+  .sticky-resume-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   ZONE 4: Large Mobile (430px ~ 539.98px)
+   iPhone 14/15/16 Pro Max, Galaxy Ultra
+   -------------------------------------------------------------------------- */
+@media (min-width: 430px) and (max-width: 539.98px) {
+  .container {
+    padding: 0 16px;
+  }
+  .hero-heading {
+    font-size: 25px !important;
+    line-height: 1.35 !important;
+  }
+  .hero-desc {
+    font-size: 14px !important;
+  }
+  .watch-layout {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+  .courses-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .course-detail-info {
+    padding: 20px 16px !important;
+  }
+  .course-meta-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  .sticky-resume-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    padding: 12px 16px !important;
+    top: 56px !important;
+  }
+  .sticky-resume-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .qa-write-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .watch-tab-btn {
+    padding: 10px 12px !important;
+    font-size: 13.5px !important;
+    flex: 1 1 0 !important;
+    justify-content: center !important;
+  }
+  .watch-breadcrumb-title {
+    max-width: 220px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   ZONE 3: Standard Mobile (390px ~ 429.98px)
+   iPhone 12/13/14/15/16 (390px), Galaxy S21/S22/S23 (412px)
+   -------------------------------------------------------------------------- */
+@media (min-width: 390px) and (max-width: 429.98px) {
+  .container {
+    padding: 0 14px;
+  }
+  .hero-heading {
+    font-size: 24px !important;
+    line-height: 1.35 !important;
+  }
+  .hero-desc {
+    font-size: 13.5px !important;
+  }
+  .watch-layout {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+  .courses-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .course-detail-info {
+    padding: 18px 14px !important;
+  }
+  .course-meta-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .course-detail-cta-wrap button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .sticky-resume-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 12px 14px !important;
+    top: 56px !important;
+  }
+  .sticky-resume-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .qa-write-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .watch-tab-btn {
+    padding: 10px 10px !important;
+    font-size: 13px !important;
+    flex: 1 1 0 !important;
+    justify-content: center !important;
+  }
+  .watch-breadcrumb-title {
+    max-width: 180px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .modal-card {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    padding: 18px 14px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   ZONE 2: Compact Mobile (360px ~ 389.98px)
+   Standard Android (360px), iPhone mini (375px)
+   -------------------------------------------------------------------------- */
+@media (min-width: 360px) and (max-width: 389.98px) {
+  .container {
+    padding: 0 12px;
+  }
+  .hero-heading {
+    font-size: 22px !important;
+    line-height: 1.35 !important;
+  }
+  .hero-desc {
+    font-size: 13px !important;
+    margin-bottom: 18px !important;
+  }
+  .brand-title {
+    font-size: 15px !important;
+  }
+  .brand-sub {
+    font-size: 9px !important;
+  }
+  .watch-layout {
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+  }
+  .courses-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .course-detail-info {
+    padding: 16px 12px !important;
+  }
+  .course-meta-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  .course-detail-cta-wrap button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .sticky-resume-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 12px 12px !important;
+    top: 54px !important;
+  }
+  .sticky-resume-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .qa-write-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .watch-tab-btn {
+    padding: 9px 8px !important;
+    font-size: 12.5px !important;
+    flex: 1 1 0 !important;
+    justify-content: center !important;
+  }
+  .watch-breadcrumb-title {
+    max-width: 150px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .modal-card {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    padding: 16px 12px !important;
+  }
+  .qa-write-form-card {
+    padding: 16px 12px !important;
+  }
+  .qa-question-card {
+    padding: 16px 12px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   ZONE 1: Very Small Mobile (<= 359.98px)
+   iPhone SE 1st gen (320px), Galaxy Fold closed cover (320px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 359.98px) {
+  .container {
+    padding: 0 10px !important;
+  }
+  .hero-heading {
+    font-size: 20px !important;
+    line-height: 1.3 !important;
+  }
+  .hero-desc {
+    font-size: 12.5px !important;
+    line-height: 1.5 !important;
+    margin-bottom: 16px !important;
+  }
+  .brand-title {
+    font-size: 14px !important;
+  }
+  .brand-sub {
+    display: none !important;
+  }
+  .btn {
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+  }
+  .btn-lg {
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+    width: 100% !important;
+  }
+  .card {
+    padding: 12px !important;
+    border-radius: var(--radius-sm) !important;
+  }
+  .badge {
+    font-size: 10.5px !important;
+    padding: 2px 6px !important;
+  }
+  .watch-layout {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  .courses-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .course-detail-info {
+    padding: 14px 10px !important;
+  }
+  .course-meta-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    font-size: 12px !important;
+  }
+  .course-detail-cta-wrap button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .sticky-resume-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    padding: 10px 10px !important;
+    top: 50px !important;
+  }
+  .sticky-resume-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .qa-write-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .watch-tab-btn {
+    padding: 8px 6px !important;
+    font-size: 11.5px !important;
+    flex: 1 1 0 !important;
+    justify-content: center !important;
+  }
+  .watch-breadcrumb-title {
+    max-width: 120px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .modal-card {
+    width: 96vw !important;
+    max-width: 96vw !important;
+    padding: 14px 10px !important;
+  }
+  .qa-write-form-card {
+    padding: 14px 10px !important;
+  }
+  .qa-question-card {
+    padding: 14px 10px !important;
+  }
+  .qa-filter-pills button {
+    font-size: 11px !important;
+    padding: 3px 6px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Keyframe Animations
+   -------------------------------------------------------------------------- */
+@keyframes slideLeft {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

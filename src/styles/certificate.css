@@ -1,0 +1,542 @@
+/* ==========================================================================
+   Certificate Styles - A4 Landscape & Print Styles
+   ========================================================================== */
+
+.cert-outer-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.cert-paper {
+  width: 100%;
+  max-width: 860px;
+  aspect-ratio: 1.414 / 1; /* A4 Ratio */
+  background: #FFFFFF;
+  position: relative;
+  padding: 44px 56px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #1E2022;
+  border-radius: 4px;
+}
+
+/* Elegant Double Frame */
+.cert-frame {
+  position: absolute;
+  inset: 16px;
+  border: 2px solid #3B5249; /* Sage Green primary line */
+  pointer-events: none;
+}
+
+.cert-frame::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid #D49B4B; /* Amber delicate inner line */
+}
+
+/* Corner Ornaments */
+.cert-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: #3B5249;
+}
+.cert-corner.top-left { top: 12px; left: 12px; border-top: 3px solid; border-left: 3px solid; }
+.cert-corner.top-right { top: 12px; right: 12px; border-top: 3px solid; border-right: 3px solid; }
+.cert-corner.bottom-left { bottom: 12px; left: 12px; border-bottom: 3px solid; border-left: 3px solid; }
+.cert-corner.bottom-right { bottom: 12px; right: 12px; border-bottom: 3px solid; border-right: 3px solid; }
+
+/* Certificate Header */
+.cert-header {
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.cert-emblem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.cert-title-ko {
+  font-family: var(--font-serif);
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: #1E2022;
+  margin-bottom: 2px;
+}
+
+.cert-title-en {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  letter-spacing: 0.18em;
+  color: #6C757D;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.cert-number {
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  font-family: var(--font-body);
+}
+
+/* Certificate Body */
+.cert-body {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 10px 0;
+}
+
+.cert-recipient {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.cert-recipient-name {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 700;
+  color: #1E2022;
+}
+
+.cert-recipient-birth {
+  font-size: 13.5px;
+  color: #64748B;
+}
+
+.cert-course-name {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 600;
+  color: #3B5249;
+  letter-spacing: 0.04em;
+  padding: 4px 14px;
+  background-color: rgba(59, 82, 73, 0.05);
+  border-radius: 4px;
+  display: inline-block;
+  margin: 0 auto;
+}
+
+.cert-desc {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.8;
+  color: #2D3748;
+  max-width: 620px;
+  margin: 0 auto;
+  word-break: keep-all;
+}
+
+/* Certificate Footer & Seal */
+.cert-footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(212, 155, 75, 0.4);
+}
+
+.cert-verification-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+
+.cert-verify-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cert-verify-label {
+  font-size: 10px;
+  color: #64748B;
+}
+
+.cert-verify-url {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #3B5249;
+}
+
+.cert-authority-block {
+  text-align: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cert-date {
+  font-size: 13.5px;
+  font-family: var(--font-serif);
+  color: #4A5568;
+  margin-bottom: 6px;
+}
+
+.cert-org-name {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #1E2022;
+}
+
+/* Red Seal Positioning */
+.cert-seal-position {
+  position: absolute;
+  right: -42px;
+  bottom: -16px;
+  width: 84px;
+  height: 84px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ==========================================================================
+   Registered Private Qualification (등록민간자격증) Specific Styles
+   ========================================================================== */
+
+.cert-paper-qualification {
+  background: #FCFBF7 !important; /* Elegant Warm Ivory Paper */
+  padding: 38px 52px !important;
+}
+
+/* Background Watermark */
+.cert-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Top Meta Bar */
+.cert-top-meta {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 6px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid rgba(59, 82, 73, 0.15);
+}
+
+.cert-meta-left, .cert-meta-right {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cert-meta-left {
+  text-align: left;
+}
+
+.cert-meta-right {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.cert-meta-label {
+  font-size: 10.5px;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.cert-meta-value {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1E293B;
+  letter-spacing: 0.04em;
+}
+
+.cert-meta-sub {
+  font-size: 10px;
+  color: #8A99A8;
+}
+
+.cert-meta-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #3B5249;
+  background: rgba(59, 82, 73, 0.1);
+  border: 1px solid rgba(59, 82, 73, 0.3);
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.cert-title-divider {
+  width: 140px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #D49B4B, #3B5249, #D49B4B, transparent);
+  margin: 6px auto 0 auto;
+}
+
+/* Qualification Details Specification Grid Table */
+.cert-table-container {
+  position: relative;
+  z-index: 2;
+  margin: 10px 0 12px 0;
+  width: 100%;
+}
+
+.cert-spec-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1.5px solid #3B5249;
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  table-layout: fixed;
+}
+
+.cert-spec-table tr {
+  border-bottom: 1px solid rgba(59, 82, 73, 0.25);
+}
+
+.cert-spec-table tr:last-child {
+  border-bottom: none;
+}
+
+.cert-th {
+  background: #F4F6F4;
+  color: #2D3748;
+  font-weight: 700;
+  padding: 7px 12px;
+  text-align: center;
+  border-right: 1px solid rgba(59, 82, 73, 0.25);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  vertical-align: middle;
+}
+
+.cert-td {
+  padding: 7px 14px;
+  color: #1E2022;
+  border-right: 1px solid rgba(59, 82, 73, 0.25);
+  vertical-align: middle;
+  text-align: left;
+}
+
+.cert-td:last-child {
+  border-right: none;
+}
+
+.cert-td-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: #1E2022;
+  letter-spacing: 0.15em;
+}
+
+.cert-type-text {
+  font-size: 14.5px;
+  color: #1E2022;
+  font-weight: 700;
+}
+
+.cert-grade-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  background: #D49B4B;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 12.5px;
+  border-radius: 3px;
+  letter-spacing: 0.05em;
+}
+
+.cert-course-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #3B5249;
+}
+
+/* Clause statement */
+.cert-clause-wrap {
+  position: relative;
+  z-index: 2;
+  margin: 6px 0 10px 0;
+  text-align: center;
+}
+
+.cert-clause-wrap .cert-desc {
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: #2D3748;
+  max-width: 680px;
+  margin: 0 auto;
+  word-break: keep-all;
+}
+
+/* Authority and Official Stamping Layout */
+.cert-org-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.cert-org-name {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #1E2022;
+  margin: 0;
+  padding-right: 16px;
+}
+
+.cert-verify-stamp-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #3B5249;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  min-width: 90px;
+}
+
+.cert-legal-notice {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 9.5px;
+  color: #8A99A8;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dotted rgba(59, 82, 73, 0.2);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Media Print Optimization - Guaranteed 1 Page A4 Landscape */
+@page {
+  size: A4 landscape;
+  margin: 0mm;
+}
+
+@media print {
+  html, body {
+    width: 297mm !important;
+    height: 210mm !important;
+    max-width: 297mm !important;
+    max-height: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #FFFFFF !important;
+    overflow: hidden !important;
+  }
+
+  /* Completely hide all website chrome and page background elements */
+  nav,
+  .navbar,
+  footer,
+  .footer,
+  .no-print,
+  .container,
+  header,
+  .sticky-resume-bar {
+    display: none !important;
+  }
+
+  /* Reset layout wrappers so they don't produce extra height */
+  .app-wrapper,
+  .main-content {
+    display: block !important;
+    height: 210mm !important;
+    max-height: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    overflow: hidden !important;
+  }
+
+  /* Make sure modal backdrop fills the single landscape sheet */
+  .modal-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    max-width: 297mm !important;
+    max-height: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #FFFFFF !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    z-index: 9999999 !important;
+  }
+
+  .modal-card {
+    position: static !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    max-width: 297mm !important;
+    max-height: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    overflow: hidden !important;
+  }
+
+  /* The certificate sheet fills exactly 297mm x 210mm without overflowing */
+  .cert-paper {
+    position: relative !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    max-width: 297mm !important;
+    max-height: 210mm !important;
+    min-height: 210mm !important;
+    aspect-ratio: auto !important;
+    box-sizing: border-box !important;
+    margin: 0 auto !important;
+    padding: 16mm 22mm !important;
+    background: #FFFFFF !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

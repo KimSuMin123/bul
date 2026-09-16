@@ -1,0 +1,469 @@
+/* ==========================================================================
+   Component Styles - Buddha Lecture Platform
+   ========================================================================== */
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background-color: var(--color-sage);
+  color: var(--color-white);
+}
+.btn-primary:hover {
+  background-color: var(--color-sage-dark);
+  box-shadow: 0 4px 12px rgba(59, 82, 73, 0.25);
+}
+
+.btn-amber {
+  background-color: var(--color-amber);
+  color: var(--color-white);
+}
+.btn-amber:hover {
+  background-color: var(--color-amber-dark);
+  box-shadow: 0 4px 12px rgba(212, 155, 75, 0.3);
+}
+
+.btn-coral {
+  background-color: var(--color-coral);
+  color: var(--color-white);
+}
+.btn-coral:hover {
+  background-color: var(--color-coral-dark);
+}
+
+.btn-secondary {
+  background-color: var(--color-surface-warm);
+  color: var(--color-charcoal);
+  border: 1px solid var(--color-border-warm);
+}
+.btn-secondary:hover {
+  background-color: #E6E3DD;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-sage);
+  border: 1px solid var(--color-sage);
+}
+.btn-outline:hover {
+  background-color: var(--color-sage-subtle);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-main);
+}
+.btn-ghost:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 4px;
+}
+
+.btn-lg {
+  padding: 14px 28px;
+  font-size: 16px;
+  border-radius: var(--radius-md);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none !important;
+}
+
+/* Badges & Tags */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.badge-sage {
+  background-color: var(--color-sage-subtle);
+  color: var(--color-sage);
+  border: 1px solid rgba(59, 82, 73, 0.2);
+}
+
+.badge-amber {
+  background-color: var(--color-amber-subtle);
+  color: var(--color-amber-dark);
+  border: 1px solid rgba(212, 155, 75, 0.25);
+}
+
+.badge-coral {
+  background-color: var(--color-coral-subtle);
+  color: var(--color-coral);
+  border: 1px solid rgba(224, 109, 83, 0.2);
+}
+
+.badge-neutral {
+  background-color: var(--color-surface-warm);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+/* Cards */
+.card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-smooth);
+  overflow: hidden;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card-warm {
+  background-color: var(--color-surface-warm);
+  border: 1px solid var(--color-border-warm);
+}
+
+/* Progress Bar */
+.progress-bar-container {
+  width: 100%;
+  height: 7px;
+  background-color: #E2E8F0;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--color-sage);
+  border-radius: var(--radius-full);
+  transition: width 0.4s ease-out;
+}
+
+.progress-bar-fill.complete {
+  background-color: var(--color-sage-dark);
+}
+
+/* Forms & Inputs */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.form-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-charcoal);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-white);
+  color: var(--color-text-main);
+  transition: var(--transition);
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--color-sage);
+  box-shadow: 0 0 0 3px rgba(59, 82, 73, 0.12);
+}
+
+.form-input.error {
+  border-color: var(--color-coral);
+  background-color: #FFF9F9;
+}
+
+.form-error {
+  font-size: 12px;
+  color: var(--color-coral);
+  margin-top: 3px;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* Modals & Backdrops */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(20, 22, 23, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-card {
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-dropdown);
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Sticky Resume Action Banner */
+.sticky-resume-bar {
+  position: sticky;
+  top: 68px;
+  z-index: 90;
+  background: rgba(30, 32, 34, 0.95);
+  backdrop-filter: blur(10px);
+  color: var(--color-white);
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ==========================================================================
+   Custom Alert & Confirm Modal System
+   ========================================================================== */
+.alert-modal-backdrop {
+  z-index: 10000 !important;
+  background-color: rgba(18, 20, 22, 0.72) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.alert-modal-card {
+  max-width: 440px !important;
+  width: 100% !important;
+  border-radius: 20px !important;
+  padding: 28px 26px 24px !important;
+  text-align: center !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  position: relative !important;
+  animation: alertModalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes alertModalPop {
+  0% { opacity: 0; transform: scale(0.92) translateY(14px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.alert-modal-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #F1F5F9;
+  color: #64748B;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.alert-modal-close-btn:hover {
+  background: #E2E8F0;
+  color: #1E2022;
+}
+
+.alert-modal-icon-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.alert-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.alert-icon-success {
+  background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%);
+  border: 1.5px solid #86EFAC;
+}
+
+.alert-icon-warning {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  border: 1.5px solid #FCD34D;
+}
+
+.alert-icon-error {
+  background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+  border: 1.5px solid #FCA5A5;
+}
+
+.alert-icon-info {
+  background: linear-gradient(135deg, rgba(59, 82, 73, 0.12) 0%, rgba(59, 82, 73, 0.2) 100%);
+  border: 1.5px solid rgba(59, 82, 73, 0.28);
+}
+
+.alert-modal-title {
+  font-size: 19px !important;
+  font-weight: 700 !important;
+  color: #1E2022 !important;
+  margin-bottom: 12px !important;
+  line-height: 1.4 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.alert-modal-message {
+  font-size: 14.5px;
+  color: #4B5563;
+  line-height: 1.65;
+  margin-bottom: 24px;
+  word-break: keep-all;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 0 4px;
+}
+
+.alert-bullet-line {
+  background: #F8FAFC;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 6px 0;
+  text-align: left;
+  font-size: 13.5px;
+  color: #334155;
+  font-weight: 500;
+  border-left: 3px solid var(--color-sage, #3B5249);
+}
+
+.alert-text-line {
+  margin: 2px 0;
+}
+
+.alert-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.alert-modal-actions.is-alert .alert-btn-confirm {
+  width: 100%;
+}
+
+.alert-modal-actions.is-confirm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.alert-btn-confirm {
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alert-btn-primary {
+  background: linear-gradient(135deg, #3B5249 0%, #293B34 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(59, 82, 73, 0.3) !important;
+}
+
+.alert-btn-primary:hover {
+  background: linear-gradient(135deg, #4D6A5F 0%, #3B5249 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(59, 82, 73, 0.4) !important;
+}
+
+.alert-btn-danger {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3) !important;
+}
+
+.alert-btn-danger:hover {
+  background: linear-gradient(135deg, #F87171 0%, #EF4444 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.4) !important;
+}
+
+.alert-btn-cancel {
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #F1F5F9 !important;
+  color: #475569 !important;
+  border: 1px solid #CBD5E1 !important;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alert-btn-cancel:hover {
+  background: #E2E8F0 !important;
+  color: #1E293B !important;
+}
+

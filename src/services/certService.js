@@ -1,0 +1,313 @@
+import { getStored, setStored, STORAGE_KEYS } from './storage.js';
+
+/**
+ * 과정별 민간 자격증 종목, 등급, 직무역량 및 등록정보 매핑
+ */
+export function getCourseQualificationDetails(courseId, courseTitle = '', courseObj = null) {
+  let course = courseObj;
+  if (!course && courseId) {
+    const courses = getStored(STORAGE_KEYS.COURSES) || [];
+    course = courses.find(c => c.id === courseId);
+  }
+
+  // 1. If course has custom certificate configuration, respect it directly!
+  if (course && (course.certType || course.certTypeFull || course.certRegNo)) {
+    const certType = course.certType || course.certTypeFull || '불교의례법사';
+    const certGrade = course.certGrade || '2급';
+    const certTypeFull = course.certTypeFull || `${certType} ${certGrade}`.trim();
+    const certGradeCode = certGrade.replace(/\s+/g, '') || '자격';
+
+    return {
+      certType,
+      certGrade,
+      certTypeFull,
+      certGradeCode,
+      certEnTitle: course.certEnTitle || 'Certificate of Qualification',
+      regOffice: course.certRegOffice || '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
+      customCertRegNo: course.certRegNo || '',
+      competency: course.competency || `${course.title || certTypeFull} 전문 교육과정 이수 및 자격 검정 통과`
+    };
+  }
+
+  // 2. Default fallback mapping by course ID or Title
+  const cid = (courseId || '').toLowerCase();
+  const title = (courseTitle || '').toLowerCase();
+
+  if (cid === 'course-ritual-12-15' || title.includes('ii') || title.includes('2') || title.includes('심화')) {
+    return {
+      certType: '불교의례법사',
+      certGrade: '1급',
+      certTypeFull: '불교의례법사 1급',
+      certGradeCode: '법사1급',
+      certEnTitle: 'Buddhist Ritual Master (Level 1)',
+      regOffice: '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
+      customCertRegNo: '',
+      competency: '심화 불교의례(칠칠재 막재, 포살의식, 생일권공의식, 영산수륙예수 작법) 집행 및 의식 지도'
+    };
+  } else if (cid === 'bundle-all' || title.includes('통합') || title.includes('지도사')) {
+    return {
+      certType: '불교의례지도사',
+      certGrade: '전문과정',
+      certTypeFull: '불교의례지도사 (전문과정)',
+      certGradeCode: '의례지도사',
+      certEnTitle: 'Buddhist Ritual Instructor (Master Course)',
+      regOffice: '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
+      customCertRegNo: '',
+      competency: '불교 전통 의례 및 종교 법요식 총괄 지도·집전'
+    };
+  } else {
+    // Default: Course I (8~11강)
+    return {
+      certType: '불교의례법사',
+      certGrade: '2급',
+      certTypeFull: '불교의례법사 2급',
+      certGradeCode: '법사2급',
+      certEnTitle: 'Buddhist Ritual Master (Level 2)',
+      regOffice: '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
+      customCertRegNo: '',
+      competency: '전통 불교의례(하단시식, 칠칠재 영혼식, 각 칠재의례 및 영반 실수) 집행 및 봉행'
+    };
+  }
+}
+
+/**
+ * 수료증/자격증 객체 정규화 및 민간 자격증 필수 메타데이터 보강
+ */
+export function enrichCertificate(cert) {
+  if (!cert) return null;
+  const qual = getCourseQualificationDetails(cert.courseId, cert.courseTitle);
+  const rawSeq = (cert.certNo || '').match(/\d+$/)?.[0] || '1';
+  const seqStr = String(parseInt(rawSeq, 10) || 1).padStart(4, '0');
+  const currentYear = cert.issuedAt ? cert.issuedAt.slice(0, 4) : new Date().getFullYear();
+
+  let certRegNo = cert.certRegNo;
+  if (!certRegNo) {
+    if (qual.customCertRegNo) {
+      certRegNo = qual.customCertRegNo.includes('00')
+        ? qual.customCertRegNo.replace(/(\d{4,5})(?=[^\d]*$)/, seqStr)
+        : (qual.customCertRegNo.includes('호') ? qual.customCertRegNo : `제 ${currentYear}-${qual.customCertRegNo}-${seqStr} 호`);
+    } else {
+      certRegNo = `제 ${currentYear}-${qual.certGradeCode}-${seqStr} 호`;
+    }
+  }
+
+  return {
+    ...qual,
+    ...cert,
+    certRegNo,
+    certType: cert.certType || qual.certType,
+    certGrade: cert.certGrade || qual.certGrade,
+    certTypeFull: cert.certTypeFull || qual.certTypeFull,
+    certEnTitle: cert.certEnTitle || qual.certEnTitle,
+    regOffice: cert.regOffice || qual.regOffice,
+    issuingOrg: cert.issuingOrg || '사단법인 세화불학원',
+    representative: cert.representative || '이사장',
+    competency: cert.competency || qual.competency
+  };
+}
+
+export function generateCertNumber() {
+  const currentYear = new Date().getFullYear();
+  let nextSeq = parseInt(getStored(STORAGE_KEYS.NEXT_CERT_SEQ) || '1', 10);
+  const certNo = `CERT-${currentYear}-${String(nextSeq).padStart(4, '0')}`;
+  setStored(STORAGE_KEYS.NEXT_CERT_SEQ, (nextSeq + 1).toString());
+  return certNo;
+}
+
+export function generateMemberNumber() {
+  const currentYear = new Date().getFullYear();
+  let nextSeq = parseInt(getStored(STORAGE_KEYS.NEXT_MEMBER_SEQ) || '30', 10);
+  const memberNo = `BUDDHA-${currentYear}-${String(nextSeq).padStart(5, '0')}`;
+  setStored(STORAGE_KEYS.NEXT_MEMBER_SEQ, (nextSeq + 1).toString());
+  return memberNo;
+}
+
+import { hasPassedCourseExam } from './examService.js';
+
+/**
+ * Check if a student has completed all lectures in a course (100% progress)
+ */
+export function checkLecturesCompleted(userId, courseId) {
+  const courses = getStored(STORAGE_KEYS.COURSES) || [];
+  const lectures = getStored(STORAGE_KEYS.LECTURES) || [];
+  const progressList = getStored(STORAGE_KEYS.PROGRESS) || [];
+
+  const course = courses.find(c => c.id === courseId);
+  if (!course) return false;
+
+  let targetLectureIds = [];
+  if (courseId === 'bundle-all') {
+    targetLectureIds = lectures.map(l => l.id);
+  } else {
+    targetLectureIds = lectures.filter(l => l.courseId === courseId).map(l => l.id);
+  }
+
+  if (targetLectureIds.length === 0) return false;
+
+  return targetLectureIds.every(lecId => {
+    const p = progressList.find(prog => prog.userId === userId && prog.lectureId === lecId);
+    return p && (p.completed || p.progressRate >= 99);
+  });
+}
+
+/**
+ * Check if a student has completed all lectures in a course AND passed the exam (>= 60점)
+ */
+export function checkCourseCompletion(userId, courseId) {
+  const lecturesDone = checkLecturesCompleted(userId, courseId);
+  const examPassed = hasPassedCourseExam(userId, courseId);
+
+  const enrollments = getStored(STORAGE_KEYS.ENROLLMENTS) || [];
+  if (lecturesDone && examPassed) {
+    const enrIndex = enrollments.findIndex(e => e.userId === userId && e.courseId === courseId);
+    if (enrIndex !== -1 && enrollments[enrIndex].status !== 'completed') {
+      enrollments[enrIndex].status = 'completed';
+      setStored(STORAGE_KEYS.ENROLLMENTS, enrollments);
+    }
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Issue or retrieve existing certificate for user and course
+ */
+export function issueCertificate(user, course) {
+  const certificates = getStored(STORAGE_KEYS.CERTIFICATES) || [];
+  
+  // Check if already issued
+  const existing = certificates.find(c => c.userId === user.id && c.courseId === course.id);
+  if (existing) {
+    return enrichCertificate(existing);
+  }
+
+  // 1. Must have completed all lectures
+  if (!checkLecturesCompleted(user.id, course.id)) {
+    throw new Error('모든 강의 차시(진도율 100%)를 완강하셔야 수료증 발급이 가능합니다.');
+  }
+
+  // 2. Must have passed the course qualification exam (>= 60점)
+  if (!hasPassedCourseExam(user.id, course.id)) {
+    throw new Error('자격 검정 시험(수료 기준 60점 이상)에 합격하셔야 공인 자격증이 발급됩니다.');
+  }
+
+  const qual = getCourseQualificationDetails(course.id, course.title, course);
+  const currentYear = new Date().getFullYear();
+  let nextSeq = parseInt(getStored(STORAGE_KEYS.NEXT_CERT_SEQ) || '1', 10);
+  const seqStr = String(nextSeq).padStart(4, '0');
+  const certNo = `CERT-${currentYear}-${seqStr}`;
+
+  let certRegNo = '';
+  if (qual.customCertRegNo) {
+    certRegNo = qual.customCertRegNo.includes('00')
+      ? qual.customCertRegNo.replace(/(\d{4,5})(?=[^\d]*$)/, seqStr)
+      : (qual.customCertRegNo.includes('호') ? qual.customCertRegNo : `제 ${currentYear}-${qual.customCertRegNo}-${seqStr} 호`);
+  } else {
+    certRegNo = `제 ${currentYear}-${qual.certGradeCode}-${seqStr} 호`;
+  }
+
+  setStored(STORAGE_KEYS.NEXT_CERT_SEQ, (nextSeq + 1).toString());
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}년 ${String(today.getMonth() + 1).padStart(2, '0')}월 ${String(today.getDate()).padStart(2, '0')}일`;
+  const isoDate = today.toISOString().split('T')[0];
+
+  const newCert = {
+    certNo,
+    certRegNo,
+    userId: user.id,
+    courseId: course.id,
+    memberNo: user.memberNo,
+    studentName: user.name,
+    birthDate: user.birthDate || '1980-01-01',
+    courseTitle: course.title,
+    certType: qual.certType,
+    certGrade: qual.certGrade,
+    certTypeFull: qual.certTypeFull,
+    certEnTitle: qual.certEnTitle,
+    regOffice: qual.regOffice,
+    issuingOrg: '사단법인 세화불학원',
+    representative: '이사장',
+    competency: qual.competency,
+    period: `2026년 01월 10일 ~ ${todayStr}`,
+    issuedAt: isoDate,
+    status: 'valid'
+  };
+
+  certificates.push(newCert);
+  setStored(STORAGE_KEYS.CERTIFICATES, certificates);
+  return newCert;
+}
+
+// Predefined verified demonstration qualifications (e.g. for demo / search)
+const DEMO_CERTIFICATES = [
+  {
+    certNo: 'CERT-2026-0001',
+    certRegNo: '제 2026-법사2급-0001 호',
+    userId: 'user-bodhi',
+    courseId: 'course-ritual-8-11',
+    memberNo: 'BUDDHA-2026-00001',
+    studentName: '이보디',
+    birthDate: '1982-05-14',
+    courseTitle: '불교의례법사 과정 I (8강~11강)',
+    certType: '불교의례법사',
+    certGrade: '2급',
+    certTypeFull: '불교의례법사 2급',
+    certEnTitle: 'Buddhist Ritual Master (Level 2)',
+    regOffice: '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
+    issuingOrg: '사단법인 세화불학원',
+    representative: '이사장',
+    competency: '전통 불교의례(하단시식, 칠칠재 영혼식, 각 칠재의례 및 영반 실수) 집행 및 봉행',
+    period: '2026년 01월 10일 ~ 2026년 03월 15일',
+    issuedAt: '2026-03-15',
+    status: 'valid'
+  },
+  {
+    certNo: 'CERT-2026-0002',
+    certRegNo: '제 2026-법사1급-0002 호',
+    userId: 'user-wonhyo',
+    courseId: 'course-ritual-12-15',
+    memberNo: 'BUDDHA-2026-00089',
+    studentName: '김원효',
+    birthDate: '1979-11-20',
+    courseTitle: '불교의례법사 과정 II (12강~15강)',
+    certType: '불교의례법사',
+    certGrade: '1급',
+    certTypeFull: '불교의례법사 1급',
+    certEnTitle: 'Buddhist Ritual Master (Level 1)',
+    regOffice: '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
+    issuingOrg: '사단법인 세화불학원',
+    representative: '이사장',
+    competency: '심화 불교의례(칠칠재 막재, 포살의식, 생일권공의식, 영산수륙예수 작법) 집행 및 의식 지도',
+    period: '2026년 01월 10일 ~ 2026년 03월 15일',
+    issuedAt: '2026-03-15',
+    status: 'valid'
+  }
+];
+
+/**
+ * Public Verification function: supports certNo, certRegNo, memberNo, or student name
+ */
+export function verifyCertificate(query) {
+  if (!query) return null;
+  const certificates = getStored(STORAGE_KEYS.CERTIFICATES) || [];
+  const allPool = [...certificates, ...DEMO_CERTIFICATES];
+  const clean = query.trim().toUpperCase().replace(/\s+/g, '');
+
+  const found = allPool.find(c => {
+    const enriched = enrichCertificate(c);
+    const certNoClean = (enriched.certNo || '').toUpperCase().replace(/\s+/g, '');
+    const certRegNoClean = (enriched.certRegNo || '').toUpperCase().replace(/\s+/g, '');
+    const memberNoClean = (enriched.memberNo || '').toUpperCase().replace(/\s+/g, '');
+    return (
+      certNoClean === clean ||
+      certRegNoClean === clean ||
+      certRegNoClean.includes(clean) ||
+      clean.includes(certNoClean) ||
+      memberNoClean === clean
+    );
+  });
+
+  return found ? enrichCertificate(found) : null;
+}
