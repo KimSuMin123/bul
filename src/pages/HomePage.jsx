@@ -16,7 +16,7 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
       <section
         style={{
           background: 'linear-gradient(180deg, #FFFFFF 0%, var(--color-surface-warm) 100%)',
-          padding: '60px 0 50px 0',
+          padding: '64px 0 54px 0',
           borderBottom: '1px solid var(--color-border)'
         }}
       >
@@ -128,7 +128,7 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
               gap: '16px',
-              marginTop: '36px',
+              marginTop: '54px',
               textAlign: 'left'
             }}
           >
@@ -166,9 +166,9 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
       </section>
 
       {/* Courses Catalog Section */}
-      <section id="curriculum-section" style={{ backgroundColor: '#FFFFFF', padding: '36px 0 40px' }}>
+      <section id="curriculum-section" style={{ backgroundColor: '#FFFFFF', padding: '60px 0' }}>
         <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '44px' }}>
             <span className="badge badge-amber" style={{ marginBottom: '8px' }}>CURRICULUM</span>
             <h2 className="heading-1 font-serif" style={{ marginBottom: '10px' }}>개설 강좌 안내</h2>
             <p className="text-body" style={{ color: 'var(--color-text-muted)' }}>
@@ -243,9 +243,9 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
       </section>
 
       {/* FAQ & Admission Process Section */}
-      <section style={{ backgroundColor: 'var(--color-surface-warm)', padding: '48px 0 54px', borderTop: '1px solid var(--color-border)' }}>
+      <section style={{ backgroundColor: 'var(--color-surface-warm)', padding: '60px 0', borderTop: '1px solid var(--color-border)' }}>
         <div className="container" style={{ maxWidth: '840px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <span className="badge badge-sage" style={{ marginBottom: '8px' }}>GUIDE & FAQ</span>
             <h2 className="heading-1 font-serif">수강생 이용 안내 FAQ</h2>
           </div>
