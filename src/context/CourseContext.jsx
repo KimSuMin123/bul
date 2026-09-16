@@ -11,6 +11,7 @@ import {
   PRESET_EXAM_QUESTIONS
 } from '../services/examService.js';
 import { remoteDb, isExternalDbConfigured, deleteLectureVideo } from '../services/apiClient.js';
+import { notifyAdminCourseApplication } from '../services/notificationService.js';
 import { useAuth } from './AuthContext.jsx';
 
 const CourseContext = createContext(null);
@@ -262,8 +263,18 @@ export function CourseProvider({ children }) {
       await remoteDb.upsertEnrollment(item).catch(err => console.warn('Supabase upsertEnrollment warning:', err));
     }
 
+    // Dispatch real-time Push Notification to Admin devices
+    if (status === 'pending' || status === 'applied') {
+      notifyAdminCourseApplication({
+        studentName: currentUser?.name || userId,
+        courseTitle: course?.title || '강좌',
+        studentId: userId,
+        courseId
+      }).catch(err => console.warn('Admin push notification dispatch note:', err));
+    }
+
     return item;
-  }, [courses, enrollments]);
+  }, [courses, enrollments, currentUser]);
 
   const recordPayment = useCallback(async ({ userId, courseId, manager, amount, methodMemo, paidAt }) => {
     const newPay = {

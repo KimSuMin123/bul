@@ -5,7 +5,8 @@ import {
   MessageSquare, Lock, PlayCircle, UploadCloud, Film, FileVideo, 
   Loader2, Play, ExternalLink, AlertCircle, RefreshCw, X, Info,
   Image as ImageIcon, Upload, Sparkles, CheckCircle2, FileText,
-  UserPlus, KeyRound, Eye, EyeOff, Copy, CheckCheck, UserCheck
+  UserPlus, KeyRound, Eye, EyeOff, Copy, CheckCheck, UserCheck,
+  Bell, BellOff, Download, Smartphone, Volume2
 } from 'lucide-react';
 import { useCourse } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +15,12 @@ import { generateMemberNumber } from '../services/certService';
 import { parseExamText, DEFAULT_RAW_EXAM_TEXT } from '../services/examService';
 import CertificateModal from '../components/certificate/CertificateModal';
 import { useModalAlert } from '../context/ModalAlertContext';
+import { 
+  getNotificationPermission, 
+  requestNotificationPermission, 
+  sendTestNotification, 
+  startAdminEnrollmentListener 
+} from '../services/notificationService';
 
 export default function AdminDashboardPage() {
   const { showAlert, showConfirm } = useModalAlert();
@@ -36,6 +43,96 @@ export default function AdminDashboardPage() {
 
   const [activeTab, setActiveTab] = useState('enrollment'); // 'enrollment' | 'payment' | 'cms' | 'qa' | 'cert'
   
+  // PWA & Push Notification State
+  const [notifPermission, setNotifPermission] = useState(() => getNotificationPermission());
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [isSendingTestNotif, setIsSendingTestNotif] = useState(false);
+
+  // Setup PWA install prompt capture and real-time push listener
+  React.useEffect(() => {
+    // 1. Check if running as standalone PWA app
+    const isStandaloneApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    setIsStandalone(isStandaloneApp);
+
+    // 2. Capture PWA install prompt
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+
+    // 3. Listen for real-time incoming enrollments across tabs / Supabase
+    const unsubscribe = startAdminEnrollmentListener((newEnr) => {
+      showAlert(`새로운 수강신청이 실시간 접수되었습니다!\n\n수강생 ID: ${newEnr.userId || newEnr.studentId || '수강생'}\n신청 강좌: ${newEnr.courseId || newEnr.courseTitle || '신규 강좌'}\n상태: [대면 수납 대기]`, {
+        title: '🔔 신규 수강신청 실시간 알림',
+        type: 'info'
+      });
+      refreshData();
+    });
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      unsubscribe();
+    };
+  }, [refreshData, showAlert]);
+
+  const handleRequestPushPermission = async () => {
+    try {
+      const perm = await requestNotificationPermission();
+      setNotifPermission(perm);
+      if (perm === 'granted') {
+        showAlert('수강신청 실시간 푸시 알림이 활성화되었습니다!\n새로운 수강신청이 접수되면 시스템 상단바와 알림 센터로 즉시 전달됩니다.', {
+          title: '🔔 푸시 알림 활성화 완료',
+          type: 'success'
+        });
+      } else {
+        showAlert('알림 권한이 허용되지 않았습니다. 브라우저 주소창 좌측의 설정/자물쇠 아이콘에서 알림을 [허용]으로 변경해 주세요.', {
+          title: '알림 권한 안내',
+          type: 'warning'
+        });
+      }
+    } catch (err) {
+      showAlert(`알림 설정 오류: ${err.message}`, { title: '오류', type: 'error' });
+    }
+  };
+
+  const handleSendTestPush = async () => {
+    setIsSendingTestNotif(true);
+    try {
+      await sendTestNotification();
+      setNotifPermission(getNotificationPermission());
+      showAlert('테스트 푸시 알림이 발송되었습니다!\n스마트폰 상단바 또는 PC 화면 우측 하단의 알림 팝업과 맑은 알림음을 확인해 보세요.', {
+        title: '🔔 테스트 알림 발송 완료',
+        type: 'success'
+      });
+    } catch (err) {
+      showAlert(err.message || '알림 발송에 실패했습니다.', { title: '알림 안내', type: 'warning' });
+    } finally {
+      setIsSendingTestNotif(false);
+    }
+  };
+
+  const handleInstallPwaApp = async () => {
+    if (!installPrompt) {
+      showAlert('브라우저 메뉴에서 [홈 화면에 추가] 또는 [앱 설치]를 선택하여 스마트폰/PC에 설치하실 수 있습니다.\n\n• 스마트폰: 브라우저 메뉴(⋮ 또는 공유 버튼) -> [홈 화면에 추가]\n• PC: 브라우저 주소창 우측의 [앱 설치] 아이콘 클릭', {
+        title: '📱 PWA 관리자 앱 설치 안내',
+        type: 'info'
+      });
+      return;
+    }
+
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      showAlert('세화붓다아카데미 관리자 앱 설치가 완료되었습니다!\n바탕화면 또는 홈 화면의 아이콘으로 언제든 즉시 실행하실 수 있습니다.', {
+        title: '📱 앱 설치 완료',
+        type: 'success'
+      });
+      setInstallPrompt(null);
+    }
+  };
+
   // Student Search state
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
@@ -964,6 +1061,100 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               <Plus size={15} />
               <span>+ 신규 VOD 차시 등록</span>
             </button>
+          </div>
+        </div>
+
+        {/* PWA & Push Notification Control Banner */}
+        <div 
+          className="card" 
+          style={{ 
+            marginBottom: '24px', 
+            padding: '16px 20px', 
+            background: 'linear-gradient(135deg, rgba(31, 58, 51, 0.04) 0%, rgba(200, 150, 62, 0.06) 100%)',
+            border: '1px solid rgba(31, 58, 51, 0.12)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '14px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div 
+              style={{ 
+                width: '42px', 
+                height: '42px', 
+                borderRadius: '10px', 
+                backgroundColor: notifPermission === 'granted' ? 'var(--color-sage)' : 'var(--color-gold)', 
+                color: '#fff', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                flexShrink: 0
+              }}
+            >
+              {notifPermission === 'granted' ? <Bell size={22} /> : <BellOff size={22} />}
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-charcoal)' }}>
+                  수강신청 실시간 푸시 알림 및 모바일 PWA 앱 연동
+                </span>
+                {isStandalone && (
+                  <span className="badge badge-sage" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                    📱 PWA 전용 앱 구동 중
+                  </span>
+                )}
+                {notifPermission === 'granted' ? (
+                  <span className="badge badge-success" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                    ● 실시간 알림 켜짐
+                  </span>
+                ) : (
+                  <span className="badge badge-coral" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                    ○ 알림 꺼짐 (수신 대기)
+                  </span>
+                )}
+              </div>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                {notifPermission === 'granted' 
+                  ? '수강생이 강좌를 신청하면 관리자 기기(모바일/PC)로 즉시 맑은 알림음과 함께 OS 푸시 알림이 발송됩니다.'
+                  : '스마트폰 홈화면에 앱(PWA)으로 설치하고 알림을 켜두시면 수강생이 수강신청을 접수할 때 실시간 푸시 알림을 받으실 수 있습니다.'}
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {notifPermission !== 'granted' ? (
+              <button 
+                className="btn btn-primary btn-sm"
+                onClick={handleRequestPushPermission}
+                style={{ backgroundColor: 'var(--color-sage)', borderColor: 'var(--color-sage)' }}
+              >
+                <Bell size={14} />
+                <span>🔔 푸시 알림 켜기</span>
+              </button>
+            ) : (
+              <button 
+                className="btn btn-secondary btn-sm"
+                onClick={handleSendTestPush}
+                disabled={isSendingTestNotif}
+                title="푸시 알림이 잘 도착하는지 테스트 알림을 발송합니다"
+              >
+                {isSendingTestNotif ? <Loader2 size={14} className="animate-spin" /> : <Volume2 size={14} />}
+                <span>🔔 테스트 알림 발송</span>
+              </button>
+            )}
+
+            {!isStandalone && (
+              <button 
+                className="btn btn-secondary btn-sm"
+                onClick={handleInstallPwaApp}
+                title="홈 화면 또는 바탕화면에 관리자 앱을 설치합니다"
+              >
+                <Smartphone size={14} />
+                <span>📱 관리자 앱(PWA) 설치</span>
+              </button>
+            )}
           </div>
         </div>
 

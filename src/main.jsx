@@ -13,6 +13,10 @@ import './styles/responsive.css';
 import { AuthProvider } from './context/AuthContext';
 import { CourseProvider } from './context/CourseContext';
 import { ModalAlertProvider } from './context/ModalAlertContext';
+import { registerServiceWorker } from './services/notificationService';
+
+// Register Service Worker for PWA installation and Push Notifications
+registerServiceWorker();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
