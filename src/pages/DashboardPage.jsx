@@ -108,16 +108,6 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
     refreshData();
   };
 
-  // Test Simulator: 100% Lecture Completion
-  const handleSimulateCompletion = (courseId) => {
-    const courseLecs = lectures.filter(l => l.courseId === courseId);
-    courseLecs.forEach(lec => {
-      updateProgress(currentUser.id, lec.id, lec.durationSeconds || 1000, lec.durationSeconds || 1000);
-    });
-    showAlert('🎉 강의 진도율 100% 완강 처리가 완료되었습니다!\n\n이제 [📝 자격 검정 시험 응시하기] 버튼을 눌러 60점 이상 득점하시면 공인 자격증이 정식 발급됩니다.', { type: 'success', title: '완강 처리 완료' });
-    refreshData();
-  };
-
   return (
     <div style={{ padding: '36px 0 60px 0' }}>
       <div className="container">
@@ -445,41 +435,17 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                             </button>
                           </>
                         ) : (
-                          <>
-                            <button 
-                              className="btn btn-primary btn-md" 
-                              style={{ width: '100%', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px' }}
-                              onClick={() => {
-                                const firstLec = lectures.find(l => l.courseId === course.id);
-                                if (firstLec) onStartLecture(firstLec.id);
-                              }}
-                            >
-                              <PlayCircle size={16} />
-                              <span>강의실 입장 (학습 이어하기) ▶</span>
-                            </button>
-                            <button 
-                              type="button"
-                              className="btn btn-ghost btn-sm"
-                              style={{ 
-                                fontSize: '12px', 
-                                color: '#92400E', 
-                                backgroundColor: '#FEF3C7',
-                                border: '1px dashed #F59E0B',
-                                padding: '6px 10px',
-                                borderRadius: '6px',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '4px'
-                              }}
-                              onClick={() => handleSimulateCompletion(course.id)}
-                              title="차시 전체를 100% 완강한 상태로 변경하여 자격 검정 시험 및 수료증 발급 기능을 바로 테스트합니다."
-                            >
-                              <span>⚡ 100% 완강 처리하기 (테스트용)</span>
-                            </button>
-                          </>
+                          <button 
+                            className="btn btn-primary btn-md" 
+                            style={{ width: '100%', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px' }}
+                            onClick={() => {
+                              const firstLec = lectures.find(l => l.courseId === course.id);
+                              if (firstLec) onStartLecture(firstLec.id);
+                            }}
+                          >
+                            <PlayCircle size={16} />
+                            <span>강의실 입장 (학습 이어하기) ▶</span>
+                          </button>
                         )}
                       </div>
                     </div>

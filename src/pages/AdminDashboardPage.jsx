@@ -2968,7 +2968,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       onChange={(e) => setLecForm({ ...lecForm, videoUrl: e.target.value })}
                     />
                     <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                      외부 CDN 주소나 테스트용 MP4 비디오 URL을 직접 지정할 수 있습니다.
+                      외부 CDN 주소나 MP4 동영상 스트리밍 URL을 직접 지정할 수 있습니다.
                     </div>
                   </div>
                 )}
