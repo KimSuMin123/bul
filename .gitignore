@@ -36,3 +36,5 @@ __pycache__/
 *.pyc
 scratch/
 불교의례법사*
+compress_tool.py
+웹업로드용_압축영상/
