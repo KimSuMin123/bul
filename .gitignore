@@ -29,6 +29,8 @@ dist-ssr
 .env.*.local
 .env.*
 
+_old_manual_backup/
+
 # Video raw folders & temp
 __pycache__/
 *.pyc
