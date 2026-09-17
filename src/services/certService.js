@@ -6,10 +6,10 @@ export function getCourseQualificationDetails(courseId, courseTitle = '', course
 
   // 1. If course has custom certificate configuration, respect it directly!
   if (course && (course.certType || course.certTypeFull || course.certRegNo)) {
-    const certType = course.certType || course.certTypeFull || '불교의례법사';
-    const certGrade = course.certGrade || '2급';
+    const certType = course.certType || (course.certTypeFull ? course.certTypeFull.split(' ')[0] : '불교의례해설사');
+    const certGrade = course.certGrade || (course.certTypeFull ? course.certTypeFull.split(' ').slice(1).join(' ') : '2급') || '2급';
     const certTypeFull = course.certTypeFull || `${certType} ${certGrade}`.trim();
-    const certGradeCode = certGrade.replace(/\s+/g, '') || '자격';
+    const certGradeCode = certGrade.replace(/\s+/g, '') || '해설사2급';
 
     return {
       certType,
@@ -17,8 +17,8 @@ export function getCourseQualificationDetails(courseId, courseTitle = '', course
       certTypeFull,
       certGradeCode,
       certEnTitle: course.certEnTitle || 'Certificate of Qualification',
-      regOffice: course.certRegOffice || '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
-      customCertRegNo: course.certRegNo || '',
+      regOffice: course.certRegOffice || '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
+      customCertRegNo: course.certRegNo || '민간자격 등록번호 제 2026- 00183호',
       competency: course.competency || `${course.title || certTypeFull} 전문 교육과정 이수 및 자격 검정 통과`
     };
   }
@@ -29,37 +29,37 @@ export function getCourseQualificationDetails(courseId, courseTitle = '', course
 
   if (cid === 'course-ritual-12-15' || title.includes('ii') || title.includes('2') || title.includes('심화')) {
     return {
-      certType: '불교의례법사',
+      certType: '불교의례해설사',
       certGrade: '1급',
-      certTypeFull: '불교의례법사 1급',
-      certGradeCode: '법사1급',
-      certEnTitle: 'Buddhist Ritual Master (Level 1)',
-      regOffice: '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
-      customCertRegNo: '',
-      competency: '심화 불교의례(칠칠재 막재, 포살의식, 생일권공의식, 영산수륙예수 작법) 집행 및 의식 지도'
+      certTypeFull: '불교의례해설사 1급',
+      certGradeCode: '해설사1급',
+      certEnTitle: 'Buddhist Ritual Interpreter (Level 1)',
+      regOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
+      customCertRegNo: '민간자격 등록번호 제 2026- 00183호',
+      competency: '심화 불교의례(칠칠재 막재, 포살의식, 생일권공의식, 영산수륙예수 작법) 집행 및 의식 해설/지도'
     };
   } else if (cid === 'bundle-all' || title.includes('통합') || title.includes('지도사')) {
     return {
-      certType: '불교의례지도사',
+      certType: '불교의례해설사',
       certGrade: '전문과정',
-      certTypeFull: '불교의례지도사 (전문과정)',
-      certGradeCode: '의례지도사',
-      certEnTitle: 'Buddhist Ritual Instructor (Master Course)',
-      regOffice: '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
-      customCertRegNo: '',
-      competency: '불교 전통 의례 및 종교 법요식 총괄 지도·집전'
+      certTypeFull: '불교의례해설사 (전문과정)',
+      certGradeCode: '해설지도사',
+      certEnTitle: 'Buddhist Ritual Master Instructor',
+      regOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
+      customCertRegNo: '민간자격 등록번호 제 2026- 00183호',
+      competency: '불교 전통 의례 및 종교 법요식 총괄 지도·해설'
     };
   } else {
     // Default: Course I (8~11강)
     return {
-      certType: '불교의례법사',
+      certType: '불교의례해설사',
       certGrade: '2급',
-      certTypeFull: '불교의례법사 2급',
-      certGradeCode: '법사2급',
-      certEnTitle: 'Buddhist Ritual Master (Level 2)',
-      regOffice: '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
-      customCertRegNo: '',
-      competency: '영가천도 및 사찰 기본 불교의례(하단시식, 칠칠재 영혼식, 각 칠재의례) 집행'
+      certTypeFull: '불교의례해설사 2급',
+      certGradeCode: '해설사2급',
+      certEnTitle: 'Buddhist Ritual Interpreter (Level 2)',
+      regOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
+      customCertRegNo: '민간자격 등록번호 제 2026- 00183호',
+      competency: '영가천도 및 사찰 기본 불교의례(하단시식, 칠칠재 영혼식, 각 칠재의례) 해설 및 집행'
     };
   }
 }
@@ -189,42 +189,42 @@ export function issueCertificate(user, course, certsList = [], certCount = 0) {
 const DEMO_CERTIFICATES = [
   {
     certNo: 'CERT-2026-0001',
-    certRegNo: '제 2026-법사2급-0001 호',
+    certRegNo: '민간자격 등록번호 제 2026- 00183호',
     userId: 'user-bodhi',
     courseId: 'course-ritual-8-11',
     memberNo: 'BUDDHA-2026-00001',
     studentName: '이보디',
     birthDate: '1982-05-14',
     courseTitle: '불교의례법사 과정 I (8강~11강)',
-    certType: '불교의례법사',
+    certType: '불교의례해설사',
     certGrade: '2급',
-    certTypeFull: '불교의례법사 2급',
-    certEnTitle: 'Buddhist Ritual Master (Level 2)',
-    regOffice: '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
+    certTypeFull: '불교의례해설사 2급',
+    certEnTitle: 'Buddhist Ritual Interpreter (Level 2)',
+    regOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
     issuingOrg: '사단법인 세화불학원',
     representative: '이사장',
-    competency: '전통 불교의례(하단시식, 칠칠재 영혼식, 각 칠재의례 및 영반 실수) 집행 및 봉행',
+    competency: '전통 불교의례(하단시식, 칠칠재 영혼식, 각 칠재의례 및 영반 실수) 해설 및 집행',
     period: '2026년 01월 10일 ~ 2026년 03월 15일',
     issuedAt: '2026-03-15',
     status: 'valid'
   },
   {
     certNo: 'CERT-2026-0002',
-    certRegNo: '제 2026-법사1급-0002 호',
+    certRegNo: '민간자격 등록번호 제 2026- 00183호',
     userId: 'user-wonhyo',
     courseId: 'course-ritual-12-15',
     memberNo: 'BUDDHA-2026-00089',
     studentName: '김원효',
     birthDate: '1979-11-20',
     courseTitle: '불교의례법사 과정 II (12강~15강)',
-    certType: '불교의례법사',
+    certType: '불교의례해설사',
     certGrade: '1급',
-    certTypeFull: '불교의례법사 1급',
-    certEnTitle: 'Buddhist Ritual Master (Level 1)',
-    regOffice: '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
+    certTypeFull: '불교의례해설사 1급',
+    certEnTitle: 'Buddhist Ritual Interpreter (Level 1)',
+    regOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
     issuingOrg: '사단법인 세화불학원',
     representative: '이사장',
-    competency: '심화 불교의례(칠칠재 막재, 포살의식, 생일권공의식, 영산수륙예수 작법) 집행 및 의식 지도',
+    competency: '심화 불교의례(칠칠재 막재, 포살의식, 생일권공의식, 영산수륙예수 작법) 집행 및 의식 해설/지도',
     period: '2026년 01월 10일 ~ 2026년 03월 15일',
     issuedAt: '2026-03-15',
     status: 'valid'

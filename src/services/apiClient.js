@@ -248,6 +248,11 @@ export const remoteDb = {
         sequentialUnlock: c.sequential_unlock,
         price: c.price,
         instructor: c.instructor,
+        certType: c.cert_type || '불교의례해설사',
+        certGrade: c.cert_grade || '2급',
+        certTypeFull: c.cert_type_full || `${c.cert_type || '불교의례해설사'} ${c.cert_grade || '2급'}`.trim(),
+        certRegNo: c.cert_reg_no || '민간자격 등록번호 제 2026- 00183호',
+        certRegOffice: c.cert_reg_office || '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
         rawExamText: c.raw_exam_text || null,
         lectureIds: []
       }));
@@ -283,7 +288,13 @@ export const remoteDb = {
         default_period_days: courseData.defaultPeriodDays,
         sequential_unlock: courseData.sequentialUnlock,
         price: courseData.price,
-        instructor: courseData.instructor
+        instructor: courseData.instructor,
+        cert_type: courseData.certType || '불교의례해설사',
+        cert_grade: courseData.certGrade || '2급',
+        cert_type_full: courseData.certTypeFull || '불교의례해설사 2급',
+        cert_reg_no: courseData.certRegNo || '민간자격 등록번호 제 2026- 00183호',
+        cert_reg_office: courseData.certRegOffice || '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
+        raw_exam_text: courseData.rawExamText || ''
       };
       const [inserted] = await supabaseFetch('/courses', {
         method: 'POST',
@@ -322,6 +333,12 @@ export const remoteDb = {
       if (updates.sequentialUnlock !== undefined) payload.sequential_unlock = updates.sequentialUnlock;
       if (updates.price !== undefined) payload.price = updates.price;
       if (updates.instructor !== undefined) payload.instructor = updates.instructor;
+      if (updates.certType !== undefined) payload.cert_type = updates.certType;
+      if (updates.certGrade !== undefined) payload.cert_grade = updates.certGrade;
+      if (updates.certTypeFull !== undefined) payload.cert_type_full = updates.certTypeFull;
+      if (updates.certRegNo !== undefined) payload.cert_reg_no = updates.certRegNo;
+      if (updates.certRegOffice !== undefined) payload.cert_reg_office = updates.certRegOffice;
+      if (updates.rawExamText !== undefined) payload.raw_exam_text = updates.rawExamText;
 
       await supabaseFetch(`/courses?id=eq.${encodeURIComponent(courseId)}`, {
         method: 'PATCH',
@@ -512,6 +529,7 @@ export const remoteDb = {
       return rows.map(p => ({
         id: p.id,
         userId: p.user_id,
+        courseId: p.course_id || null,
         lectureId: p.lecture_id,
         lastPlayedSeconds: p.last_played_seconds,
         watchedSeconds: p.watched_seconds,
@@ -531,6 +549,7 @@ export const remoteDb = {
       const payload = {
         id: prog.id,
         user_id: prog.userId,
+        course_id: prog.courseId || null,
         lecture_id: prog.lectureId,
         last_played_seconds: Math.round(prog.lastPlayedSeconds || 0),
         watched_seconds: Math.round(prog.watchedSeconds || 0),

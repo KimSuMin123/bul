@@ -216,7 +216,7 @@ export default function CertificateModal({ certificate: rawCert, onClose }) {
 
             {/* Bottom Legal Notice Bar */}
             <div className="cert-legal-notice">
-              <span>• 본 자격증은 자격기본법 제17조 제2항에 따라 등록된 민간자격(주무부처: 문화체육관광부, 등록번호: 제2024-003892호)입니다.</span>
+              <span>• 본 자격증은 자격기본법 제17조 제2항에 따라 등록된 민간자격(주무부처: 문화체육관광부, 등록번호: {cert.certRegNo || '민간자격 등록번호 제 2026- 00183호'})입니다.</span>
               <span>• 사단법인 세화불학원 온라인 학사관리시스템을 통해 24시간 실시간 진위 확인 및 정본 대조가 가능합니다.</span>
             </div>
 

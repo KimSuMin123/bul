@@ -161,9 +161,13 @@ export function CourseProvider({ children }) {
     const highestRate = existing ? Math.max(existing.progressRate || 0, calcRate) : calcRate;
     const isCompleted = highestRate >= 99 || (existing && existing.completed);
 
+    const targetLec = lectures.find(l => l.id === lectureId);
+    const courseId = targetLec?.courseId || existing?.courseId || null;
+
     const updatedItem = {
       id: existing ? existing.id : `prog_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       userId,
+      courseId,
       lectureId,
       lastPlayedSeconds: lastPlayed,
       watchedSeconds: existing ? Math.max(existing.watchedSeconds || 0, lastPlayed) : lastPlayed,
@@ -315,10 +319,11 @@ export function CourseProvider({ children }) {
   }, []);
 
   const addCourse = useCallback(async (courseData) => {
-    const certType = courseData.certType?.trim() || '불교의례법사';
+    const certType = courseData.certType?.trim() || '불교의례해설사';
     const certGrade = courseData.certGrade?.trim() || '2급';
     const certTypeFull = courseData.certTypeFull?.trim() || (certGrade ? `${certType} ${certGrade}` : certType);
-    const certRegNo = courseData.certRegNo?.trim() || '';
+    const certRegNo = courseData.certRegNo?.trim() || '민간자격 등록번호 제 2026- 00183호';
+    const certRegOffice = courseData.certRegOffice?.trim() || '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)';
 
     let parsedExamQuestions = [];
     if (courseData.rawExamText && courseData.rawExamText.trim()) {
@@ -341,7 +346,7 @@ export function CourseProvider({ children }) {
       certGrade,
       certTypeFull,
       certRegNo,
-      certRegOffice: courseData.certRegOffice?.trim() || '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)',
+      certRegOffice,
       rawExamText: courseData.rawExamText?.trim() || '',
       examQuestions: parsedExamQuestions,
       lectureIds: []

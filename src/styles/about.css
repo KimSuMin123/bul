@@ -1,0 +1,495 @@
+/* ==========================================================================
+   About SBA Page Stylesheet - Preserving Original HTML Layout & Using Brand Colors
+   ========================================================================== */
+
+.about-page-container {
+  min-height: calc(100vh - 68px - 200px);
+  background-color: #FAFAF8;
+  color: var(--color-charcoal);
+  padding-bottom: 80px;
+}
+
+/* Sub-Navigation Top Bar (Original Site Style) */
+.about-subnav-bar {
+  background-color: #FFFFFF;
+  border-bottom: 1px solid var(--color-border-warm);
+  position: sticky;
+  top: 68px;
+  z-index: 40;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.about-subnav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.about-subnav-inner::-webkit-scrollbar {
+  display: none;
+}
+
+.about-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 22px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-charcoal);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.about-tab-btn:hover {
+  color: var(--color-sage);
+  background-color: var(--color-sage-subtle);
+}
+
+.about-tab-btn.active {
+  color: var(--color-sage);
+  font-weight: 700;
+  border-bottom: 3px solid var(--color-sage);
+  background-color: rgba(59, 82, 73, 0.05);
+}
+
+/* Breadcrumb Trail */
+.about-breadcrumbs {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--color-text-muted);
+  padding: 24px 0 12px;
+}
+
+.about-breadcrumbs .home-link {
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.about-breadcrumbs .home-link:hover {
+  color: var(--color-sage);
+}
+
+.about-breadcrumbs .sep {
+  color: #CBD5E1;
+  font-size: 11px;
+}
+
+.about-breadcrumbs .current {
+  color: var(--color-sage);
+  font-weight: 600;
+}
+
+/* Page Title (Original Site wrap_page_title format) */
+.wrap_page_title {
+  color: var(--color-sage);
+  font-family: var(--font-serif);
+  font-size: 2.1rem;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  position: relative;
+}
+
+.wrap_page_title strong {
+  display: inline-block;
+  position: relative;
+  letter-spacing: -0.5px;
+}
+
+.wrap_page_title strong::after {
+  position: absolute;
+  color: var(--color-amber);
+  padding-left: 8px;
+  top: 3px;
+  font-size: 1rem;
+  content: "●";
+  font-family: sans-serif;
+}
+
+/* Content Container Card */
+.about-content-card {
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border-warm);
+  border-radius: 12px;
+  padding: 48px 40px;
+  box-shadow: 0 4px 20px rgba(30, 32, 34, 0.03);
+  margin-top: 10px;
+}
+
+@media (max-width: 768px) {
+  .about-content-card {
+    padding: 28px 18px;
+  }
+}
+
+/* ==========================================================================
+   Original Section Styles with Brand Colors
+   ========================================================================== */
+
+/* 1. 설립목적 (wrap_intro) */
+.wrap_intro {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--color-charcoal);
+}
+
+.wrap_intro .intro_img {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border-warm);
+  padding-bottom: 2.5rem;
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.wrap_intro .intro_img img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+  margin: 0 auto;
+}
+
+.wrap_intro .intro_txt {
+  font-family: var(--font-serif);
+  font-size: 1.12rem;
+  font-weight: 400;
+  color: var(--color-charcoal);
+  line-height: 2.4;
+  max-width: 1050px;
+  margin: 0 auto;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.wrap_intro .intro_sentence {
+  margin-bottom: 0.9rem;
+}
+
+.wrap_intro .intro_sentence:last-child {
+  margin-bottom: 0;
+}
+
+/* 2. 신행헌장 (wrap_charter) */
+.wrap_charter {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--color-charcoal);
+}
+
+.wrap_charter .tit_zone {
+  font-family: var(--font-serif);
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: var(--color-sage);
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.wrap_charter .tit_zone .tit {
+  font-weight: 600;
+}
+
+.wrap_charter .tit_zone .sub_tit {
+  font-size: 1.69rem;
+  font-weight: 500;
+  color: var(--color-sage-dark);
+  margin-top: 0.5rem;
+}
+
+.wrap_charter .txt {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--color-charcoal);
+  margin-bottom: 3.5rem;
+  line-height: 2.2;
+  word-break: keep-all;
+  text-align: center;
+}
+
+.wrap_charter .txt_box {
+  border-top: 1px solid var(--color-border-warm);
+  margin-top: 4rem;
+  margin-bottom: 4rem;
+  padding-top: 3rem;
+  position: relative;
+}
+
+.wrap_charter .txt_box .txt_circle {
+  width: 6.88rem;
+  height: 6.88rem;
+  border-radius: 50%;
+  background: var(--color-sage);
+  color: #ffffff;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: -5.5rem auto 2rem;
+  box-shadow: 0 4px 12px rgba(59, 82, 73, 0.2);
+}
+
+/* 3. 학회연혁 (wrap_history) */
+.wrap_history {
+  color: var(--color-charcoal);
+}
+
+.wrap_history .his_box {
+  border-bottom: 1px solid var(--color-border);
+  padding-top: 2rem !important;
+  padding-bottom: 2rem;
+}
+
+.wrap_history .his_box:last-child {
+  border-bottom: none;
+}
+
+.wrap_history .his_box .year {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-sage);
+  position: relative;
+  padding-left: 2rem;
+  min-width: 130px;
+}
+
+.wrap_history .his_box .year::before {
+  position: absolute;
+  content: "●";
+  left: 0.6rem;
+  top: 4px;
+  font-size: 12px;
+  color: var(--color-amber);
+}
+
+.wrap_history .his_box .his_con {
+  margin-bottom: 1rem;
+}
+
+.wrap_history .his_box .his_con .tit {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--color-charcoal);
+  margin-bottom: 6px;
+}
+
+.wrap_history .his_box .his_con .sub_tit {
+  display: flex;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.wrap_history .his_box .his_con dl,
+.wrap_history .his_box .his_con dd {
+  margin-bottom: 0;
+  line-height: 1.8;
+  color: var(--color-charcoal);
+}
+
+.wrap_history .his_box .his_con dd {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.wrap_history .his_box .his_con dd li {
+  word-break: keep-all;
+}
+
+.wrap_history .his_box .his_con dt {
+  font-weight: 600;
+  color: var(--color-sage-dark);
+}
+
+/* 4. 조직활동 (wrap_committed) */
+.wrap_committed {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--color-charcoal);
+}
+
+.wrap_committed .sub_tit {
+  font-size: 1.375rem;
+  font-weight: 600;
+  position: relative;
+  color: var(--color-sage);
+  padding-left: 1.4rem;
+  margin-bottom: 1.2rem;
+}
+
+.wrap_committed .sub_tit::before {
+  position: absolute;
+  content: "■";
+  left: 0px;
+  top: 2px;
+  font-size: 12px;
+  color: var(--color-amber);
+}
+
+.wrap_committed img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-warm);
+}
+
+.wrap_committed .txt_box {
+  margin-bottom: 1.5rem;
+}
+
+.wrap_committed .table {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 2rem;
+  border-collapse: collapse;
+}
+
+.wrap_committed .table tr:first-child td {
+  border-top: 2px solid var(--color-sage);
+}
+
+.wrap_committed .table th,
+.wrap_committed .table td {
+  border: 1px solid var(--color-border-warm);
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  vertical-align: middle;
+}
+
+.wrap_committed .table th {
+  background-color: var(--color-surface-warm);
+  color: var(--color-sage-dark);
+  font-weight: 600;
+  text-align: center;
+}
+
+.wrap_committed .fc_main {
+  font-weight: 600;
+  font-size: 1.15rem;
+  color: var(--color-sage);
+}
+
+/* 5. 학회정관 (fr-view) */
+.fr-view {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 2.1;
+  color: var(--color-charcoal);
+  word-break: keep-all;
+}
+
+.fr-view p {
+  margin-bottom: 1rem;
+}
+
+.fr-view table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+}
+
+.fr-view table td,
+.fr-view table th {
+  border: 1px solid var(--color-border-warm);
+  padding: 10px 14px;
+}
+
+.fr-view table th {
+  background-color: var(--color-surface-warm);
+  font-weight: 600;
+  color: var(--color-sage-dark);
+}
+
+/* Bootstrap Grid & Layout Emulation for About Content */
+.about-page-wrapper .row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -15px;
+  margin-left: -15px;
+}
+
+.about-page-wrapper .col-12 {
+  flex: 0 0 100%;
+  max-width: 100%;
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
+.about-page-wrapper .col {
+  flex-basis: 0;
+  flex-grow: 1;
+  max-width: 100%;
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
+.about-page-wrapper .col-md-auto {
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
+@media (min-width: 768px) {
+  .about-page-wrapper .col-md-auto {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 992px) {
+  .about-page-wrapper .col-lg-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+    padding-right: 15px;
+    padding-left: 15px;
+  }
+}
+
+/* Utility classes used in original templates */
+.about-page-wrapper .text-center { text-align: center; }
+.about-page-wrapper .text-left { text-align: left; }
+.about-page-wrapper .text-right { text-align: right; }
+
+.about-page-wrapper .mt-3 { margin-top: 1rem; }
+.about-page-wrapper .mt-4 { margin-top: 1.5rem; }
+.about-page-wrapper .mt-5 { margin-top: 3rem; }
+
+.about-page-wrapper .mb-1 { margin-bottom: 0.25rem; }
+.about-page-wrapper .mb-2 { margin-bottom: 0.5rem; }
+.about-page-wrapper .mb-3 { margin-bottom: 1rem; }
+.about-page-wrapper .mb-4 { margin-bottom: 1.5rem; }
+.about-page-wrapper .mb-5 { margin-bottom: 3rem; }
+
+.about-page-wrapper .pt-4 { padding-top: 1.5rem; }
+.about-page-wrapper .pb-5 { padding-bottom: 3rem; }
+.about-page-wrapper .mr-4 { margin-right: 1.5rem; }
+
+@media (min-width: 768px) {
+  .about-page-wrapper .mb-md-4 { margin-bottom: 1.5rem; }
+  .about-page-wrapper .pt-md-5 { padding-top: 3rem; }
+}

@@ -69,7 +69,7 @@ flowchart LR
 
 ## 3. 데이터베이스 스키마 및 관계도 (ERD)
 
-데이터베이스는 총 8개 핵심 엔티티로 구성되어 있으며, 수강생 관리, 진도율 추적, 대면 수납 장부, 질의응답 및 공인 수료증 발급을 관장합니다.
+데이터베이스는 총 10개 핵심 엔티티로 구성되어 있으며, 수강생 관리, 진도율 추적, 대면 수납 장부, 질의응답, 공인 수료증 발급 및 자격 시험 채점 대장을 관장합니다.
 
 ```mermaid
 erDiagram
@@ -78,11 +78,14 @@ erDiagram
     users ||--o{ progress : "records"
     users ||--o{ qa_posts : "writes"
     users ||--o{ certificates : "issued"
+    users ||--o{ exam_attempts : "takes"
 
     courses ||--|{ lectures : "contains"
     courses ||--o{ enrollments : "assigned"
     courses ||--o{ payments : "settled"
     courses ||--o{ certificates : "awarded"
+    courses ||--o{ progress : "aggregated"
+    courses ||--o{ exam_attempts : "evaluated"
 
     lectures ||--o{ progress : "tracks"
     lectures ||--o{ qa_posts : "discussed"
@@ -109,6 +112,10 @@ erDiagram
         boolean sequential_unlock "순차 학습 잠금 여부"
         int price "수강료"
         string instructor "담당 법사/교수진"
+        string cert_type_full "수료증 자격 명칭 ('불교의례해설사 2급')"
+        string cert_reg_no "민간자격 등록번호 ('민간자격 등록번호 제 2026- 00183호')"
+        string cert_reg_office "자격 등록 주무부처"
+        text raw_exam_text "코스별 커스텀 시험 문제 텍스트 원문"
     }
 
     lectures {
@@ -145,6 +152,7 @@ erDiagram
     progress {
         string id PK "진도율 기록 ID"
         string user_id FK "학인 ID"
+        string course_id FK "소속 강좌 ID (코스 2개 이상일 때 직접 구분자)"
         string lecture_id FK "차시 ID"
         int last_played_seconds "마지막 시청 시점 (이어보기용)"
         int watched_seconds "총 누적 시청 시간"
@@ -183,6 +191,25 @@ erDiagram
         date issued_at "발급일자"
         string status "유효 상태 ('valid')"
     }
+
+    exam_attempts {
+        string id PK "시험 응시 기록 ID"
+        string user_id FK "응시 학인 ID"
+        string course_id FK "응시 강좌 ID"
+        int score "취득 점수 (0~100)"
+        boolean passed "합격 여부"
+        int correct_count "맞힌 문항 수"
+        int total_count "총 문항 수"
+        jsonb question_results "채점 상세 내역"
+    }
+```
+
+### ※ 복수 강좌(2개 이상) 수강 시 진도율 및 이어보기 구분 메커니즘
+1. **차시 고유성 (Primary Distinction)**:
+   - 각 강의 차시(`lecture_id`)는 반드시 단 하나의 강좌(`lectures.course_id`)에 귀속됩니다. (예: `lec-ritual-08-1`은 코스 I, `lec-ritual-12-1`은 코스 II)
+   - 따라서 `(user_id, lecture_id)` 쌍만으로도 소속 코스가 고유하게 식별됩니다.
+2. **직접 강좌 외래키 (`progress.course_id`) 추가 적용 (Direct Partitioning)**:
+   - 다중 강좌 수강 환경에서 `lectures` 테이블을 매번 JOIN하지 않고도, `progress` 테이블 단독으로 `WHERE user_id = ? AND course_id = ?` 쿼리를 실행해 특정 코스의 진도율과 이어보기 시점을 즉시 추출할 수 있도록 `course_id` 컬럼을 직접 보유합니다.
 ```
 
 ---
@@ -263,5 +290,6 @@ graph TD
    * 모든 9개 테이블에 RLS를 활성화하여 비인가 사용자의 임의 데이터 변조를 방지합니다.
 2. **단일 기기 / 보안 세션 마킹**:
    * 비디오 플레이어 상단에 실시간 스트리밍 검증 보안 토큰(`streamToken`)을 표시하여 비인가 녹화 및 캡처를 시각적으로 방지합니다.
-3. **오프라인 안전 모드 (Offline Resiliency)**:
-   * 외부 Supabase 네트워크가 일시 단절되더라도 로컬 스토리지 캐시 동기화 엔진([storage.js](file:///c:/Users/sehyeon/OneDrive%20-%20kyonggi.ac.kr/%EB%AC%B8%EC%84%9C/%EB%B6%88%EA%B5%90/src/services/storage.js))을 통해 수강생의 학습 진도와 시청 기능이 중단되지 않고 유지됩니다.
+3. **로컬 무저장 보안 원칙 (Zero-LocalStorage Policy)**:
+   * 학인 및 관리자 브라우저 디스크(`localStorage`)에는 학인 명부, 강좌 목록, 진도율, 결제 장부 등 일체의 데이터가 일절 저장되지 않습니다.
+   * 앱 초기화 및 로그아웃 시 `localStorage.clear()`가 강제 실행되며, 모든 데이터는 100% Supabase Cloud DB와 실시간 직접 통신으로만 처리됩니다. 로그인 세션 또한 브라우저 창/탭을 닫으면 디스크에 남지 않고 즉시 자동 파기되는 휘발성 세션 스토리지(`sessionStorage`)로 격리되어 로컬 디스크에 어떠한 개인정보나 학습 흔적도 남지 않습니다.

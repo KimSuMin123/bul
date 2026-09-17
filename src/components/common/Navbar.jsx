@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { BookOpen, Shield, User, LogOut, LogIn, UserPlus, Menu, X } from 'lucide-react';
+import { BookOpen, Shield, User, LogOut, LogIn, UserPlus, Menu, X, Landmark, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Navbar({ currentView, onNavigate }) {
   const { currentUser, logout, isAdmin } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [aboutDropdownOpen, setAboutDropdownOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -12,9 +13,10 @@ export default function Navbar({ currentView, onNavigate }) {
     onNavigate('home');
   };
 
-  const handleNavClick = (view) => {
-    onNavigate(view);
+  const handleNavClick = (view, subParam) => {
+    if (onNavigate) onNavigate(view, subParam);
     setMobileMenuOpen(false);
+    setAboutDropdownOpen(false);
   };
 
   return (
@@ -42,8 +44,78 @@ export default function Navbar({ currentView, onNavigate }) {
           />
         </div>
 
-        {/* Desktop Navigation Menus */}
+        {/* Desktop Navigation Menus (Order: About SBA -> 강의 과정 -> 내 강의실) */}
         <nav className="desktop-nav-menu" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* 1. About SBA */}
+          <div 
+            style={{ position: 'relative' }}
+            onMouseEnter={() => setAboutDropdownOpen(true)}
+            onMouseLeave={() => setAboutDropdownOpen(false)}
+          >
+            <button 
+              className={`btn ${currentView === 'about' ? 'btn-secondary' : 'btn-ghost'}`}
+              onClick={() => handleNavClick('about', 'intro')}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Landmark size={16} color="var(--color-sage)" />
+              <span>About SBA</span>
+              <ChevronDown size={13} style={{ opacity: 0.6, marginLeft: '2px' }} />
+            </button>
+            {aboutDropdownOpen && (
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid var(--color-border-warm)',
+                  borderRadius: '10px',
+                  boxShadow: 'var(--shadow-dropdown)',
+                  padding: '6px 0',
+                  minWidth: '160px',
+                  zIndex: 200,
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}
+              >
+                {[
+                  { id: 'intro', label: '설립목적' },
+                  { id: 'charter', label: '신행헌장' },
+                  { id: 'history', label: '학회연혁' },
+                  { id: 'constitution', label: '학회정관' },
+                  { id: 'committed', label: '조직활동' },
+                  { id: 'sba', label: 'About SBA' }
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavClick('about', item.id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '8px 16px',
+                      textAlign: 'left',
+                      fontSize: '13.5px',
+                      color: 'var(--color-charcoal)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--color-surface-warm)';
+                      e.currentTarget.style.color = 'var(--color-sage)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'var(--color-charcoal)';
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 2. 강의 과정 */}
           <button 
             className={`btn ${currentView === 'home' ? 'btn-secondary' : 'btn-ghost'}`}
             onClick={() => handleNavClick('home')}
@@ -52,6 +124,7 @@ export default function Navbar({ currentView, onNavigate }) {
             <span>강의 과정</span>
           </button>
 
+          {/* 3. 내 강의실 */}
           <button 
             className={`btn ${currentView === 'dashboard' ? 'btn-secondary' : 'btn-ghost'}`}
             onClick={() => handleNavClick('dashboard')}
@@ -189,6 +262,15 @@ export default function Navbar({ currentView, onNavigate }) {
 
             {/* Mobile Navigation Links */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+              <button 
+                className={`btn ${currentView === 'about' ? 'btn-secondary' : 'btn-ghost'}`}
+                style={{ justifyContent: 'flex-start', padding: '12px 14px', fontSize: '15px' }}
+                onClick={() => handleNavClick('about', 'intro')}
+              >
+                <Landmark size={18} color="var(--color-sage)" />
+                <span>About SBA (학회 소개)</span>
+              </button>
+
               <button 
                 className={`btn ${currentView === 'home' ? 'btn-secondary' : 'btn-ghost'}`}
                 style={{ justifyContent: 'flex-start', padding: '12px 14px', fontSize: '15px' }}

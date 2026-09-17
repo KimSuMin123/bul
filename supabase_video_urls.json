@@ -1,0 +1,242 @@
+[
+  {
+    "success": true,
+    "fileName": "법사01-1_의례와 불교의례(1).mp4",
+    "storageKey": "lecture_01_1.mp4",
+    "sizeMb": "22.06",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_01_1.mp4",
+    "elapsedSec": "1.7"
+  },
+  {
+    "success": true,
+    "fileName": "법사01-2_의례와 불교의례(2)_슬라이드.mp4",
+    "storageKey": "lecture_01_2.mp4",
+    "sizeMb": "23.31",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_01_2.mp4",
+    "elapsedSec": "1.8"
+  },
+  {
+    "success": true,
+    "fileName": "법사02-1_의례와 주요 절차(1)_슬라이드.mp4",
+    "storageKey": "lecture_02_1.mp4",
+    "sizeMb": "17.06",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_02_1.mp4",
+    "elapsedSec": "1.5"
+  },
+  {
+    "success": true,
+    "fileName": "법사02-2_의례와 주요 절차(2)_슬라이드.mp4",
+    "storageKey": "lecture_02_2.mp4",
+    "sizeMb": "29.95",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_02_2.mp4",
+    "elapsedSec": "2.0"
+  },
+  {
+    "success": true,
+    "fileName": "법사03-1_의례의 법기와 사용법(1)_슬라이드.mp4",
+    "storageKey": "lecture_03_1.mp4",
+    "sizeMb": "14.05",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_03_1.mp4",
+    "elapsedSec": "1.2"
+  },
+  {
+    "success": true,
+    "fileName": "법사03-2_의례의 법기와 사용법(2)_슬라이드.mp4",
+    "storageKey": "lecture_03_2.mp4",
+    "sizeMb": "23.08",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_03_2.mp4",
+    "elapsedSec": "1.7"
+  },
+  {
+    "success": true,
+    "fileName": "법사04-1_각전 예경 실수(1)_슬라이드.mp4",
+    "storageKey": "lecture_04_1.mp4",
+    "sizeMb": "14.52",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_04_1.mp4",
+    "elapsedSec": "1.5"
+  },
+  {
+    "success": true,
+    "fileName": "법사04-2_각전 예경 실수(2)_슬라이드.mp4",
+    "storageKey": "lecture_04_2.mp4",
+    "sizeMb": "18.62",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_04_2.mp4",
+    "elapsedSec": "1.4"
+  },
+  {
+    "success": true,
+    "fileName": "법사05-1_각단 예경 실수(1)_슬라이드.mp4",
+    "storageKey": "lecture_05_1.mp4",
+    "sizeMb": "18.07",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_05_1.mp4",
+    "elapsedSec": "2.3"
+  },
+  {
+    "success": true,
+    "fileName": "법사05-2_각단 예경 실수(2)_슬라이드.mp4",
+    "storageKey": "lecture_05_2.mp4",
+    "sizeMb": "24.70",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_05_2.mp4",
+    "elapsedSec": "2.2"
+  },
+  {
+    "success": true,
+    "fileName": "법사06-1_상단 권공 실수(1)_슬라이드.mp4",
+    "storageKey": "lecture_06_1.mp4",
+    "sizeMb": "26.74",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_06_1.mp4",
+    "elapsedSec": "2.8"
+  },
+  {
+    "success": true,
+    "fileName": "법사06-2_상단 권공 실수(2)_슬라이드.mp4",
+    "storageKey": "lecture_06_2.mp4",
+    "sizeMb": "32.88",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_06_2.mp4",
+    "elapsedSec": "2.4"
+  },
+  {
+    "success": true,
+    "fileName": "법사07-1_중단 권공 실수(1)_슬라이드.mp4",
+    "storageKey": "lecture_07_1.mp4",
+    "sizeMb": "11.30",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_07_1.mp4",
+    "elapsedSec": "1.4"
+  },
+  {
+    "success": true,
+    "fileName": "법사07-2_중단 권공 실수(2)_슬라이드.mp4",
+    "storageKey": "lecture_07_2.mp4",
+    "sizeMb": "17.31",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_07_2.mp4",
+    "elapsedSec": "1.6"
+  },
+  {
+    "success": true,
+    "fileName": "법사08-1_하단 시식 실수(1)_슬라이드.mp4",
+    "storageKey": "lecture_08_1.mp4",
+    "sizeMb": "36.25",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_08_1.mp4",
+    "elapsedSec": "2.7"
+  },
+  {
+    "success": true,
+    "fileName": "법사08-2_하단 시식 실수(2)_슬라이드.mp4",
+    "storageKey": "lecture_08_2.mp4",
+    "sizeMb": "37.14",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_08_2.mp4",
+    "elapsedSec": "2.3"
+  },
+  {
+    "success": true,
+    "fileName": "법사09-1_칠칠재 영혼식(1)_슬라이드.mp4",
+    "storageKey": "lecture_09_1.mp4",
+    "sizeMb": "21.22",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_09_1.mp4",
+    "elapsedSec": "2.5"
+  },
+  {
+    "success": true,
+    "fileName": "법사09-2_칠칠재 영혼식(2)_슬라이드.mp4",
+    "storageKey": "lecture_09_2.mp4",
+    "sizeMb": "37.24",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_09_2.mp4",
+    "elapsedSec": "2.8"
+  },
+  {
+    "success": true,
+    "fileName": "법사10-1_각 칠재 의례 실수(1)_슬라이드.mp4",
+    "storageKey": "lecture_10_1.mp4",
+    "sizeMb": "18.06",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_10_1.mp4",
+    "elapsedSec": "1.7"
+  },
+  {
+    "success": true,
+    "fileName": "법사10-2_각 칠재 의례 실수(2)_슬라이드.mp4",
+    "storageKey": "lecture_10_2.mp4",
+    "sizeMb": "28.33",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_10_2.mp4",
+    "elapsedSec": "2.3"
+  },
+  {
+    "success": true,
+    "fileName": "법사11-1_각 칠재 영반 실수(1)_슬라이드.mp4",
+    "storageKey": "lecture_11_1.mp4",
+    "sizeMb": "15.35",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_11_1.mp4",
+    "elapsedSec": "1.5"
+  },
+  {
+    "success": true,
+    "fileName": "법사11-2_각 칠재 영반 실수(2)_슬라이드.mp4",
+    "storageKey": "lecture_11_2.mp4",
+    "sizeMb": "19.03",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_11_2.mp4",
+    "elapsedSec": "1.5"
+  },
+  {
+    "success": true,
+    "fileName": "법사12-1_칠칠재 막재 실수(1)_슬라이드.mp4",
+    "storageKey": "lecture_12_1.mp4",
+    "sizeMb": "17.48",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_12_1.mp4",
+    "elapsedSec": "1.7"
+  },
+  {
+    "success": true,
+    "fileName": "법사12-2_칠칠재 막재 실수(2)_슬라이드.mp4",
+    "storageKey": "lecture_12_2.mp4",
+    "sizeMb": "20.20",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_12_2.mp4",
+    "elapsedSec": "2.1"
+  },
+  {
+    "success": true,
+    "fileName": "법사13-1_세불원 포살의식 실수(1)_슬라이드.mp4",
+    "storageKey": "lecture_13_1.mp4",
+    "sizeMb": "13.50",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_13_1.mp4",
+    "elapsedSec": "1.8"
+  },
+  {
+    "success": true,
+    "fileName": "법사13-2_세불원 포살의식 실수(2)_슬라이드.mp4",
+    "storageKey": "lecture_13_2.mp4",
+    "sizeMb": "23.15",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_13_2.mp4",
+    "elapsedSec": "2.2"
+  },
+  {
+    "success": true,
+    "fileName": "법사14-1_생일권공의식 실수(1)_슬라이드.mp4",
+    "storageKey": "lecture_14_1.mp4",
+    "sizeMb": "17.25",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_14_1.mp4",
+    "elapsedSec": "1.8"
+  },
+  {
+    "success": true,
+    "fileName": "법사14-2_생일권공의식 실수(2)_슬라이드.mp4",
+    "storageKey": "lecture_14_2.mp4",
+    "sizeMb": "16.47",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_14_2.mp4",
+    "elapsedSec": "1.6"
+  },
+  {
+    "success": true,
+    "fileName": "법사15-1_영산수륙예수 작법 소개(1)_슬라이드.mp4",
+    "storageKey": "lecture_15_1.mp4",
+    "sizeMb": "14.97",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_15_1.mp4",
+    "elapsedSec": "1.5"
+  },
+  {
+    "success": true,
+    "fileName": "법사15-2_영산수륙예수 작법 소개(2)_슬라이드.mp4",
+    "storageKey": "lecture_15_2.mp4",
+    "sizeMb": "13.20",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/lecture_15_2.mp4",
+    "elapsedSec": "1.4"
+  }
+]

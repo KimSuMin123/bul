@@ -189,7 +189,7 @@ export default function CertificateVerifyPage({ onNavigate }) {
                   <div style={{ gridColumn: 'span 2' }}>
                     <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>자격 등록 및 주무부처</span>
                     <div style={{ fontSize: '12.5px', color: '#64748B', marginTop: '2px' }}>
-                      {verifyResult.regOffice || '문화체육관광부 (민간자격 등록번호: 제 2024-003892 호)'}
+                      {verifyResult.regOffice || '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)'}
                     </div>
                   </div>
                 </div>

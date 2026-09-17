@@ -1,14 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getStored, setStored, STORAGE_KEYS, initStorage } from '../services/storage';
+import { getStored, setStored, removeStored, STORAGE_KEYS, initStorage } from '../services/storage';
 import { generateMemberNumber } from '../services/certService';
 import { remoteDb, isExternalDbConfigured, verifyPassword, hashPassword } from '../services/apiClient';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    return getStored(STORAGE_KEYS.CURRENT_USER);
+  });
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [sessionConflict, setSessionConflict] = useState(false);
 
   // Fetch users from Supabase Cloud DB
@@ -43,7 +45,7 @@ export function AuthProvider({ children }) {
             setCurrentUser({ ...matched, activeSessionToken: storedUser.activeSessionToken });
           } else {
             // User no longer exists in Supabase, clear session ticket
-            localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+            removeStored(STORAGE_KEYS.CURRENT_USER);
             setCurrentUser(null);
           }
         }
@@ -68,7 +70,7 @@ export function AuthProvider({ children }) {
             setSessionConflict(true);
             // Invalidate current session
             setCurrentUser(null);
-            localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+            removeStored(STORAGE_KEYS.CURRENT_USER);
           }
         }
       };
@@ -182,10 +184,10 @@ export function AuthProvider({ children }) {
     return sessionUser;
   };
 
-  // Logout (Clear session ticket)
+  // Logout (Clear session ticket & wipe storage)
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+    removeStored(STORAGE_KEYS.CURRENT_USER);
   };
 
   // Find / Reset Password (100% Supabase Direct)

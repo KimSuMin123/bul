@@ -11,6 +11,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CertificateVerifyPage from './pages/CertificateVerifyPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import AboutPage from './pages/AboutPage';
 
 import { useAuth } from './context/AuthContext';
 import { useModalAlert } from './context/ModalAlertContext';
@@ -65,10 +66,11 @@ export default function App() {
   const { currentUser, isAdmin, loading } = useAuth();
   const { showAlert } = useModalAlert();
 
-  // Navigation state: 'home' | 'dashboard' | 'courseDetail' | 'watch' | 'login' | 'register' | 'verify' | 'admin'
+  // Navigation state: 'home' | 'about' | 'dashboard' | 'courseDetail' | 'watch' | 'login' | 'register' | 'verify' | 'admin'
   const [currentView, setCurrentView] = useState('home');
   const [selectedCourseId, setSelectedCourseId] = useState('course-ritual-8-11');
   const [selectedLectureId, setSelectedLectureId] = useState('lec-ritual-08-1');
+  const [aboutTab, setAboutTab] = useState('intro');
 
   // Handle URL hash changes for direct deep linking and back/forward buttons
   useEffect(() => {
@@ -87,6 +89,10 @@ export default function App() {
         const id = params.get('id') || 'course-ritual-8-11';
         setSelectedCourseId(id);
         setCurrentView('courseDetail');
+      } else if (route === 'about') {
+        const tab = params.get('tab') || 'intro';
+        setAboutTab(tab);
+        setCurrentView('about');
       } else if (['home', 'dashboard', 'login', 'register', 'verify', 'admin'].includes(route)) {
         setCurrentView(route);
       }
@@ -103,7 +109,7 @@ export default function App() {
     updatePageSEO(currentView);
   }, [currentView, selectedLectureId, selectedCourseId]);
 
-  const handleNavigate = (view) => {
+  const handleNavigate = (view, subParam) => {
     const activeUser = currentUser || (() => {
       try { return JSON.parse(localStorage.getItem('buddha_lms_current_user') || 'null'); } catch { return null; }
     })();
@@ -113,6 +119,15 @@ export default function App() {
       showAlert('관리자 계정(admin)만 접근할 수 있는 페이지입니다.', { type: 'warning', title: '접근 권한 제한' });
       return;
     }
+
+    if (view === 'about') {
+      const tab = subParam || 'intro';
+      setAboutTab(tab);
+      window.location.hash = `about?tab=${tab}`;
+      setCurrentView('about');
+      return;
+    }
+
     window.location.hash = view;
     setCurrentView(view);
   };
@@ -152,6 +167,13 @@ export default function App() {
         <Navbar currentView={currentView} onNavigate={handleNavigate} />
 
         <main className="main-content">
+          {currentView === 'about' && (
+            <AboutPage 
+              initialTab={aboutTab} 
+              onNavigate={handleNavigate} 
+            />
+          )}
+
           {currentView === 'home' && (
             <HomePage 
               onNavigate={handleNavigate} 

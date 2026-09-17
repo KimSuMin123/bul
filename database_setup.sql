@@ -25,7 +25,13 @@ CREATE TABLE IF NOT EXISTS courses (
     default_period_days INT DEFAULT 90,
     sequential_unlock BOOLEAN DEFAULT true,
     price INT DEFAULT 50000,
-    instructor VARCHAR(100)
+    instructor VARCHAR(100),
+    cert_type VARCHAR(100) DEFAULT '불교의례해설사',
+    cert_grade VARCHAR(50) DEFAULT '2급',
+    cert_type_full VARCHAR(100) DEFAULT '불교의례해설사 2급',
+    cert_reg_no VARCHAR(100) DEFAULT '민간자격 등록번호 제 2026- 00183호',
+    cert_reg_office VARCHAR(200) DEFAULT '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
+    raw_exam_text TEXT
 );
 
 -- 3. 강의 차시 테이블 (100개 이상의 40분 VOD 메타데이터)
@@ -69,6 +75,7 @@ CREATE TABLE IF NOT EXISTS payments (
 CREATE TABLE IF NOT EXISTS progress (
     id VARCHAR(50) PRIMARY KEY,
     user_id VARCHAR(50) REFERENCES users(id) ON DELETE CASCADE,
+    course_id VARCHAR(50) REFERENCES courses(id) ON DELETE CASCADE,
     lecture_id VARCHAR(50) REFERENCES lectures(id) ON DELETE CASCADE,
     last_played_seconds INT DEFAULT 0,
     watched_seconds INT DEFAULT 0,
@@ -199,8 +206,16 @@ CREATE TABLE IF NOT EXISTS exam_attempts (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- courses 테이블에 raw_exam_text 컬럼 추가 (코스별 커스텀 시험 문제 텍스트 보관)
+-- courses 테이블 수료증 자격 명칭 및 민간자격 등록번호, 시험문제 원문 컬럼 추가
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS cert_type VARCHAR(100) DEFAULT '불교의례해설사';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS cert_grade VARCHAR(50) DEFAULT '2급';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS cert_type_full VARCHAR(100) DEFAULT '불교의례해설사 2급';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS cert_reg_no VARCHAR(100) DEFAULT '민간자격 등록번호 제 2026- 00183호';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS cert_reg_office VARCHAR(200) DEFAULT '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)';
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS raw_exam_text TEXT;
+
+-- progress 테이블에 course_id 직접 외래키 추가 (복수 강좌 수강 시 코스별 진도율/이어보기 직관적 구분)
+ALTER TABLE progress ADD COLUMN IF NOT EXISTS course_id VARCHAR(50) REFERENCES courses(id) ON DELETE CASCADE;
 
 ALTER TABLE exam_attempts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Exam attempts are readable by everyone" ON exam_attempts FOR SELECT USING (true);

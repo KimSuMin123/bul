@@ -1,0 +1,242 @@
+[
+  {
+    "success": true,
+    "fileName": "해설사_제1-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_01_1.mp4",
+    "sizeMb": "23.52",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_01_1.mp4",
+    "elapsedSec": "2.5"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제1-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_01_2.mp4",
+    "sizeMb": "21.56",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_01_2.mp4",
+    "elapsedSec": "2.1"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제2-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_02_1.mp4",
+    "sizeMb": "15.27",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_02_1.mp4",
+    "elapsedSec": "1.9"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제2-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_02_2.mp4",
+    "sizeMb": "17.24",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_02_2.mp4",
+    "elapsedSec": "2.0"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제3-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_03_1.mp4",
+    "sizeMb": "13.76",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_03_1.mp4",
+    "elapsedSec": "1.5"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제3-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_03_2.mp4",
+    "sizeMb": "13.32",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_03_2.mp4",
+    "elapsedSec": "1.1"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제4-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_04_1.mp4",
+    "sizeMb": "14.10",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_04_1.mp4",
+    "elapsedSec": "2.3"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제4-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_04_2.mp4",
+    "sizeMb": "12.27",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_04_2.mp4",
+    "elapsedSec": "2.4"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제5-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_05_1.mp4",
+    "sizeMb": "11.65",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_05_1.mp4",
+    "elapsedSec": "1.6"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제5-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_05_2.mp4",
+    "sizeMb": "12.32",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_05_2.mp4",
+    "elapsedSec": "1.3"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제6-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_06_1.mp4",
+    "sizeMb": "11.42",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_06_1.mp4",
+    "elapsedSec": "1.4"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제6-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_06_2.mp4",
+    "sizeMb": "18.65",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_06_2.mp4",
+    "elapsedSec": "2.0"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제7-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_07_1.mp4",
+    "sizeMb": "14.18",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_07_1.mp4",
+    "elapsedSec": "1.5"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제7-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_07_2.mp4",
+    "sizeMb": "14.51",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_07_2.mp4",
+    "elapsedSec": "1.5"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제8-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_08_1.mp4",
+    "sizeMb": "14.23",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_08_1.mp4",
+    "elapsedSec": "1.7"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제8-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_08_2.mp4",
+    "sizeMb": "12.60",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_08_2.mp4",
+    "elapsedSec": "1.0"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제9-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_09_1.mp4",
+    "sizeMb": "14.84",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_09_1.mp4",
+    "elapsedSec": "2.1"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제9-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_09_2.mp4",
+    "sizeMb": "10.60",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_09_2.mp4",
+    "elapsedSec": "1.0"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제10-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_10_1.mp4",
+    "sizeMb": "14.96",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_10_1.mp4",
+    "elapsedSec": "1.5"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제10-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_10_2.mp4",
+    "sizeMb": "11.42",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_10_2.mp4",
+    "elapsedSec": "1.8"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제11-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_11_1.mp4",
+    "sizeMb": "10.77",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_11_1.mp4",
+    "elapsedSec": "1.9"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제11-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_11_2.mp4",
+    "sizeMb": "14.52",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_11_2.mp4",
+    "elapsedSec": "1.4"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제12-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_12_1.mp4",
+    "sizeMb": "11.43",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_12_1.mp4",
+    "elapsedSec": "1.3"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제12-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_12_2.mp4",
+    "sizeMb": "15.68",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_12_2.mp4",
+    "elapsedSec": "1.8"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제13-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_13_1.mp4",
+    "sizeMb": "12.43",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_13_1.mp4",
+    "elapsedSec": "1.4"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제13-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_13_2.mp4",
+    "sizeMb": "11.83",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_13_2.mp4",
+    "elapsedSec": "4.3"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제14-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_14_1.mp4",
+    "sizeMb": "11.38",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_14_1.mp4",
+    "elapsedSec": "1.6"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제14-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_14_2.mp4",
+    "sizeMb": "12.32",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_14_2.mp4",
+    "elapsedSec": "2.4"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제15-1강_슬라이드.avi",
+    "storageKey": "haeseolsa_15_1.mp4",
+    "sizeMb": "8.95",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_15_1.mp4",
+    "elapsedSec": "1.2"
+  },
+  {
+    "success": true,
+    "fileName": "해설사_제15-2강_슬라이드.avi",
+    "storageKey": "haeseolsa_15_2.mp4",
+    "sizeMb": "12.40",
+    "publicUrl": "https://cxvavdxfcrprcbpnrimw.supabase.co/storage/v1/object/public/lectures/haeseolsa_15_2.mp4",
+    "elapsedSec": "1.4"
+  }
+]
