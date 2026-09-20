@@ -1,3 +1,5 @@
+import { hasPassedCourseExam } from './examService.js';
+
 /**
  * 과정별 민간 자격증 종목, 등급, 직무역량 및 등록정보 매핑
  */
@@ -96,8 +98,6 @@ export function generateMemberNumber(seqCount = 0) {
   const nextSeq = (seqCount || 30) + 1;
   return `BUDDHA-${currentYear}-${String(nextSeq).padStart(5, '0')}`;
 }
-
-import { hasPassedCourseExam } from './examService.js';
 
 /**
  * Check if a student has completed all lectures in a course (100% progress)

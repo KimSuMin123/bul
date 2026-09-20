@@ -64,7 +64,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
       }
     }
     setOpenGroupIds(new Set([targetPartId]));
-  }, [courseLectures, currentUser?.id]);
+  }, [courseLectures, currentUser?.id, getLectureProgress]);
 
   const toggleGroup = (groupId) => {
     setOpenGroupIds(prev => {
@@ -109,7 +109,18 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
     onNavigate('dashboard');
   };
 
-  if (!course && courses.length > 0) {
+  if (!course) {
+    if (courses.length === 0) {
+      return (
+        <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
+          <div className="card" style={{ padding: '40px 20px', maxWidth: '480px', margin: '0 auto' }}>
+            <p className="text-body" style={{ color: 'var(--color-text-muted)' }}>
+              강좌 정보를 불러오는 중입니다...
+            </p>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
         <div className="card" style={{ padding: '40px 20px', maxWidth: '480px', margin: '0 auto' }}>

@@ -15,7 +15,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
   const { currentUser, isAdmin } = useAuth();
   const { showAlert, showConfirm } = useModalAlert();
   const { 
-    lectures, courses, hasLectureAccess, isLectureLocked, 
+    lectures, courses, enrollments, hasLectureAccess, isLectureLocked, 
     getLectureProgress, qaPosts, adminBypassLock, toggleAdminBypassLock 
   } = useCourse();
 
@@ -118,9 +118,30 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
   };
 
   if (!currentLecture || !course) {
+    if (lectures.length === 0) {
+      return (
+        <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
+          <div className="card" style={{ padding: '40px 20px', maxWidth: '480px', margin: '0 auto' }}>
+            <p className="text-body" style={{ color: 'var(--color-text-muted)' }}>
+              강의 정보를 불러오는 중입니다...
+            </p>
+          </div>
+        </div>
+      );
+    }
     return (
-      <div className="container" style={{ padding: '60px 0', textAlign: 'center' }}>
-        <p>강의 정보를 불러오는 중입니다...</p>
+      <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
+        <div className="card" style={{ padding: '40px 20px', maxWidth: '480px', margin: '0 auto' }}>
+          <h2 className="heading-1 font-serif" style={{ fontSize: '22px', marginBottom: '12px' }}>
+            강의를 찾을 수 없습니다
+          </h2>
+          <p className="text-body" style={{ color: 'var(--color-text-muted)', marginBottom: '24px' }}>
+            요청하신 강의 차시가 존재하지 않거나 삭제되었습니다.
+          </p>
+          <button className="btn btn-primary" onClick={() => onNavigate('dashboard')}>
+            내 강의실로 돌아가기
+          </button>
+        </div>
       </div>
     );
   }
@@ -164,24 +185,6 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
       }, 500);
     }
   };
-
-  if (!currentLecture) {
-    return (
-      <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
-        <div className="card" style={{ padding: '40px 20px', maxWidth: '480px', margin: '0 auto' }}>
-          <h2 className="heading-1 font-serif" style={{ fontSize: '22px', marginBottom: '12px' }}>
-            강의를 찾을 수 없습니다
-          </h2>
-          <p className="text-body" style={{ color: 'var(--color-text-muted)', marginBottom: '24px' }}>
-            요청하신 강의 차시가 존재하지 않거나 삭제되었습니다.
-          </p>
-          <button className="btn btn-primary" onClick={() => onNavigate('dashboard')}>
-            내 강의실로 돌아가기
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   const hasAccess = hasLectureAccess(currentUser?.id, currentLecture.id);
   const isLocked = isLectureLocked(currentUser?.id, currentLecture.id);

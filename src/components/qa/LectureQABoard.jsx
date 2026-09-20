@@ -99,7 +99,7 @@ export default function LectureQABoard({
   };
 
   // Submit New Question
-  const handleSubmitQuestion = (e) => {
+  const handleSubmitQuestion = async (e) => {
     e.preventDefault();
     setFormError('');
 
@@ -114,7 +114,7 @@ export default function LectureQABoard({
 
     setSubmitting(true);
     try {
-      addQAPost({
+      await addQAPost({
         courseId: currentCrsId,
         lectureId: currentLecId,
         title: newTitle,
@@ -154,7 +154,7 @@ export default function LectureQABoard({
   };
 
   // Submit Monk Answer (Admin)
-  const handleSubmitAnswer = (postId) => {
+  const handleSubmitAnswer = async (postId) => {
     const formData = answerForms[postId];
     if (!formData || !formData.content?.trim()) {
       showAlert('답변 내용을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
@@ -162,7 +162,7 @@ export default function LectureQABoard({
     }
 
     try {
-      addQAAnswer(postId, {
+      await addQAAnswer(postId, {
         content: formData.content,
         authorName: formData.monkName || '지산 스님',
         badgeTitle: formData.badgeTitle || '담당 지도교수'
@@ -187,7 +187,7 @@ export default function LectureQABoard({
     });
     if (ok) {
       try {
-        deleteQAPost(postId);
+        await deleteQAPost(postId);
       } catch (err) {
         showAlert(err.message, { type: 'error', title: '삭제 오류' });
       }

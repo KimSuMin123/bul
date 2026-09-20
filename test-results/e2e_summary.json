@@ -1,0 +1,80 @@
+{
+  "success": true,
+  "testSteps": [
+    {
+      "step": 1,
+      "page": "메인 홈 화면",
+      "interaction": "최초 URL 진입",
+      "expected": "강의 목록 및 내비게이션 노출",
+      "actual": "정상 노출",
+      "passed": true,
+      "screenshot": "step_01_main_init_20260920040547.png"
+    },
+    {
+      "step": 2,
+      "page": "강의 상세 페이지",
+      "interaction": "강의 카드 선택 진입",
+      "expected": "강의 상세 정보 및 커리큘럼 뷰 노출",
+      "actual": "정상 노출",
+      "passed": true,
+      "screenshot": "step_02_course_detail_20260920040547.png"
+    },
+    {
+      "step": 3,
+      "page": "강의 상세 페이지",
+      "interaction": "커리큘럼 파트 토글/펼치기 조작",
+      "expected": "하위 차시 목록 아코디언 애니메이션 전개",
+      "actual": "정상 전개",
+      "passed": true,
+      "screenshot": "step_03_curriculum_toggle_20260920040547.png"
+    },
+    {
+      "step": 4,
+      "page": "소개 (About SBA)",
+      "interaction": "상단 서브탭(신행헌장) 전환",
+      "expected": "해당 탭 본문 내용 렌더링",
+      "actual": "정상 렌더링",
+      "passed": true,
+      "screenshot": "step_04_about_tab_switch_20260920040547.png"
+    },
+    {
+      "step": 5,
+      "page": "수료증 진위확인",
+      "interaction": "진위 확인 페이지 진입",
+      "expected": "검색 인풋창 및 조회 버튼 노출",
+      "actual": "정상 노출",
+      "passed": true,
+      "screenshot": "step_05_certificate_verify_page_20260920040547.png"
+    },
+    {
+      "step": 6,
+      "page": "강좌 404 Fallback",
+      "interaction": "잘못된 courseId 진입",
+      "expected": "강좌를 찾을 수 없습니다 안내 UI 및 목록 버튼 노출",
+      "actual": "안내 UI 정상 노출 (크래시 없음)",
+      "passed": true,
+      "screenshot": "step_06_negative_course_not_found_20260920040547.png"
+    },
+    {
+      "step": 7,
+      "page": "강의 404 Fallback",
+      "interaction": "잘못된 lectureId 진입",
+      "expected": "강의를 찾을 수 없습니다 안내 UI 및 복귀 버튼 노출",
+      "actual": "안내 UI 정상 노출 (크래시 없음)",
+      "passed": true,
+      "screenshot": "step_07_negative_watch_not_found_20260920040547.png"
+    }
+  ],
+  "artifacts": [
+    "step_01_main_init_20260920040547.png",
+    "step_02_course_detail_20260920040547.png",
+    "step_03_curriculum_toggle_20260920040547.png",
+    "step_04_about_tab_switch_20260920040547.png",
+    "step_05_certificate_verify_page_20260920040547.png",
+    "step_06_negative_course_not_found_20260920040547.png",
+    "step_07_negative_watch_not_found_20260920040547.png"
+  ],
+  "recordingPath": "C:\\Users\\sehyeon\\OneDrive - kyonggi.ac.kr\\문서\\불교 - 복사본\\test-results\\recordings\\full_flow_20260920040547.webm",
+  "recordingSize": "164.3 KB",
+  "timestamp": "20260920040547"
+}

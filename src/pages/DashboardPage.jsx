@@ -91,22 +91,24 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
     return diffDays > 0 ? diffDays : 0;
   };
 
-  const handleOpenCert = (course) => {
+  const handleOpenCert = async (course) => {
     let cert = getCertificate(currentUser.id, course.id);
     if (!cert) {
       try {
-        cert = claimCertificate(course.id);
+        cert = await claimCertificate(course.id);
       } catch (e) {
         showAlert(e.message, { type: 'error', title: '수료증 발급 오류' });
         return;
       }
     }
-    setActiveCert(cert);
+    if (cert) {
+      setActiveCert(cert);
+    }
   };
 
   // Direct Apply from Dashboard
-  const handleApplyCourseFromDashboard = (courseId) => {
-    enrollStudent(currentUser.id, courseId, 'pending');
+  const handleApplyCourseFromDashboard = async (courseId) => {
+    await enrollStudent(currentUser.id, courseId, 'pending');
     showAlert(`수강 신청이 정상 접수되었습니다!\n\n현재 [대기상태 (대면 수납 대기)]로 등록되었습니다.\n교학처(02-2260-8888)에 방문하시어 수납을 완료하시면 [수강 중]으로 전환됩니다.`, { type: 'success', title: '수강 신청 접수 완료' });
     refreshData();
   };

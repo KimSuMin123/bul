@@ -96,6 +96,8 @@ export default function CourseExamModal({
 
   const currentQ = examQuestions[currentIndex] || null;
 
+  if (!course) return null;
+
   return (
     <div className="modal-backdrop" style={{ zIndex: 9999, padding: '16px' }}>
       <div 

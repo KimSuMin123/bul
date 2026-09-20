@@ -91,7 +91,7 @@ export default function App() {
         const id = params.get('id') || 'lec-ritual-08-1';
         setSelectedLectureId(id);
         setCurrentView('watch');
-      } else if (route === 'courseDetail') {
+      } else if (route === 'courseDetail' || route === 'course') {
         const id = params.get('id') || 'course-ritual-8-11';
         setSelectedCourseId(id);
         setCurrentView('courseDetail');

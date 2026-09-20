@@ -1,8 +1,9 @@
 // Supabase & External DB REST Client (Lightweight Native Fetch Adapter)
 // Secure Pure-Client Architecture: All sensitive operations authenticated safely via Anon Key & Web Crypto
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' ? process.env : {});
+const SUPABASE_URL = env?.VITE_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = env?.VITE_SUPABASE_ANON_KEY || '';
 
 export const isExternalDbConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 export const isStorageConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);

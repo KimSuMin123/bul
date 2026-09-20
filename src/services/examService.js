@@ -327,6 +327,8 @@ export function getCourseExamPool(courseId, coursesList = []) {
   return PRESET_EXAM_QUESTIONS;
 }
 
+export const getExamPool = getCourseExamPool;
+
 /**
  * 시험 응시 결과 저장 (100% Supabase Direct)
  */
@@ -375,5 +377,9 @@ export function hasPassedCourseExam(userId, courseId, attemptsList = []) {
     return attemptsList.some(a => a.userId === userId && a.courseId === courseId && a.passed === true);
   }
   return false;
+}
+
+export function isExamPassed(result) {
+  return Boolean(result && result.passed);
 }
 

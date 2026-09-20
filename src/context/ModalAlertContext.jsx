@@ -187,6 +187,9 @@ export function ModalAlertProvider({ children }) {
 
   // Hook global window.alert and window.confirm to ALWAYS open this custom modal
   useEffect(() => {
+    const origAlert = window.alert;
+    const origConfirm = window.confirm;
+
     window.alert = (msg) => {
       showAlert(msg);
     };
@@ -198,6 +201,14 @@ export function ModalAlertProvider({ children }) {
     window.__showModalConfirm = showConfirm;
     window.__closeModalAlert = () => {
       setModalState(prev => ({ ...prev, isOpen: false }));
+    };
+
+    return () => {
+      window.alert = origAlert;
+      window.confirm = origConfirm;
+      delete window.__showModalAlert;
+      delete window.__showModalConfirm;
+      delete window.__closeModalAlert;
     };
   }, [showAlert, showConfirm]);
 

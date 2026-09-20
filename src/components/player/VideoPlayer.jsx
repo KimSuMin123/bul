@@ -91,6 +91,15 @@ export default function VideoPlayer({
     };
   }, [isPseudoFullscreen]);
 
+  // Clean up controls debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Load saved progress on lecture change (once per lecture)
   useEffect(() => {
     if (!lecture?.id || !userId) return;
@@ -237,7 +246,7 @@ export default function VideoPlayer({
   // Jump forward / backward
   const handleSkip = (seconds) => {
     if (!videoRef.current) return;
-    const target = Math.min(Math.max(0, videoRef.current.currentTime + seconds), duration || lecture.durationSeconds);
+    const target = Math.min(Math.max(0, videoRef.current.currentTime + seconds), duration || lecture?.durationSeconds || 0);
     videoRef.current.currentTime = target;
     setCurrentTime(target);
   };
@@ -380,8 +389,8 @@ export default function VideoPlayer({
       <video
         ref={videoRef}
         className="player-video"
-        src={lecture.videoUrl}
-        poster={lecture.thumbnail || undefined}
+        src={lecture?.videoUrl || ''}
+        poster={lecture?.thumbnail || undefined}
         preload="metadata"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
