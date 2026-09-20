@@ -42,6 +42,15 @@ const SEO_CONFIG = {
   }
 };
 
+const ABOUT_TAB_TITLES = {
+  intro: '설립목적 | 세화불학원 소개 (About SBA)',
+  charter: '신행헌장 | 세화불학원 소개 (About SBA)',
+  history: '학회연혁 | 세화불학원 소개 (About SBA)',
+  constitution: '학회정관 | 세화불학원 소개 (About SBA)',
+  committed: '조직활동 | 세화불학원 소개 (About SBA)',
+  sba: 'About SBA 총람 | 세화불학원 소개 (About SBA)'
+};
+
 export function updatePageSEO(view, extraData = {}) {
   if (typeof document === 'undefined') return;
 
@@ -49,7 +58,10 @@ export function updatePageSEO(view, extraData = {}) {
   let title = pageConfig.title;
   let desc = pageConfig.description;
 
-  if (view === 'courseDetail' && extraData.courseTitle) {
+  if (view === 'about' && extraData.tab && ABOUT_TAB_TITLES[extraData.tab]) {
+    title = `${ABOUT_TAB_TITLES[extraData.tab]} | 세화붓다아카데미`;
+    desc = `사단법인 세화불학원(世花佛學院) ${ABOUT_TAB_TITLES[extraData.tab]} 안내. 불교의례의 정통성과 체계적인 현대 교육을 선도합니다.`;
+  } else if (view === 'courseDetail' && extraData.courseTitle) {
     title = `${extraData.courseTitle} | 세화붓다아카데미`;
     if (extraData.courseSubtitle) desc = extraData.courseSubtitle;
   } else if (view === 'watch' && extraData.lectureTitle) {

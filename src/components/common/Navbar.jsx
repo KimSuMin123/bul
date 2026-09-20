@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, Shield, User, LogOut, LogIn, UserPlus, Menu, X, Landmark, ChevronDown } from 'lucide-react';
+import { BookOpen, Shield, User, LogOut, LogIn, UserPlus, Menu, X, Landmark, ChevronDown, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Navbar({ currentView, onNavigate }) {
@@ -84,31 +84,47 @@ export default function Navbar({ currentView, onNavigate }) {
                   { id: 'history', label: '학회연혁' },
                   { id: 'constitution', label: '학회정관' },
                   { id: 'committed', label: '조직활동' },
-                  { id: 'sba', label: 'About SBA' }
+                  { id: 'sba', label: 'About SBA' },
+                  { id: 'contact', label: 'Band 바로가기' }
                 ].map(item => (
                   <button
                     key={item.id}
-                    onClick={() => handleNavClick('about', item.id)}
+                    onClick={() => {
+                      if (item.id === 'contact') {
+                        window.open('https://band.us/n/a7a2b3X7k88dC', '_blank', 'noopener,noreferrer');
+                        setAboutDropdownOpen(false);
+                      } else {
+                        handleNavClick('about', item.id);
+                      }
+                    }}
                     style={{
                       background: 'none',
                       border: 'none',
                       padding: '8px 16px',
                       textAlign: 'left',
                       fontSize: '13.5px',
-                      color: 'var(--color-charcoal)',
+                      color: item.id === 'contact' ? '#00c73c' : 'var(--color-charcoal)',
+                      fontWeight: item.id === 'contact' ? 600 : 400,
                       cursor: 'pointer',
-                      transition: 'all 0.15s ease'
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      transition: 'all 0.15s ease',
+                      borderTop: item.id === 'contact' ? '1px solid var(--color-border-warm)' : 'none'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = 'var(--color-surface-warm)';
-                      e.currentTarget.style.color = 'var(--color-sage)';
+                      e.currentTarget.style.color = item.id === 'contact' ? '#009f30' : 'var(--color-sage)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = 'var(--color-charcoal)';
+                      e.currentTarget.style.color = item.id === 'contact' ? '#00c73c' : 'var(--color-charcoal)';
                     }}
                   >
-                    {item.label}
+                    <span>{item.label}</span>
+                    {item.id === 'contact' && (
+                      <ExternalLink size={12} style={{ marginLeft: '4px', opacity: 0.8 }} />
+                    )}
                   </button>
                 ))}
               </div>
@@ -269,6 +285,18 @@ export default function Navbar({ currentView, onNavigate }) {
               >
                 <Landmark size={18} color="var(--color-sage)" />
                 <span>About SBA (학회 소개)</span>
+              </button>
+
+              <button 
+                className="btn btn-ghost"
+                style={{ justifyContent: 'flex-start', padding: '12px 14px', fontSize: '15px', color: '#00c73c', fontWeight: 600 }}
+                onClick={() => {
+                  window.open('https://band.us/n/a7a2b3X7k88dC', '_blank', 'noopener,noreferrer');
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <ExternalLink size={18} color="#00c73c" />
+                <span>Band 바로가기</span>
               </button>
 
               <button 

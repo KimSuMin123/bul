@@ -47,28 +47,53 @@ export default function Footer() {
               인류의 성자 붓다의 교학을 근본으로 정통 불교 인문학 및 명상 강좌를 제공합니다.
               체계적인 VOD 강의와 정식 수료증 발급 시스템을 통해 마음의 평안과 바른 지혜를 함께 닦아갑니다.
             </p>
-            <a
-              href="https://www.xn--wr3bl1e16firr29a.org"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '12.5px',
-                color: 'var(--color-amber)',
-                textDecoration: 'none',
-                background: 'rgba(212, 155, 75, 0.12)',
-                padding: '7px 14px',
-                borderRadius: '6px',
-                border: '1px solid rgba(212, 155, 75, 0.3)',
-                fontWeight: 500,
-                transition: 'all 0.2s'
-              }}
-            >
-              <span>세화불학원 공식 본원 바로가기</span>
-              <ExternalLink size={13} />
-            </a>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <a
+                href="https://www.xn--wr3bl1e16firr29a.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12.5px',
+                  color: 'var(--color-amber)',
+                  textDecoration: 'none',
+                  background: 'rgba(212, 155, 75, 0.12)',
+                  padding: '7px 14px',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(212, 155, 75, 0.3)',
+                  fontWeight: 500,
+                  transition: 'all 0.2s'
+                }}
+              >
+                <span>세화불학원 공식 본원</span>
+                <ExternalLink size={13} />
+              </a>
+
+              <a
+                href="https://band.us/n/a7a2b3X7k88dC"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12.5px',
+                  color: '#4ADE80',
+                  textDecoration: 'none',
+                  background: 'rgba(74, 222, 128, 0.1)',
+                  padding: '7px 14px',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(74, 222, 128, 0.25)',
+                  fontWeight: 500,
+                  transition: 'all 0.2s'
+                }}
+              >
+                <span>네이버 밴드 바로가기</span>
+                <ExternalLink size={13} />
+              </a>
+            </div>
           </div>
 
           <div>

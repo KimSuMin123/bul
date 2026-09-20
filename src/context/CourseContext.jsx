@@ -27,6 +27,13 @@ export function CourseProvider({ children }) {
   const [qaPosts, setQaPosts] = useState([]);
   const [examAttempts, setExamAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Admin bypass mode for sequential lock testing (default false: enforce lock even for admin)
+  const [adminBypassLock, setAdminBypassLock] = useState(false);
+
+  const toggleAdminBypassLock = useCallback(() => {
+    setAdminBypassLock(prev => !prev);
+  }, []);
+
 
   // 100% Supabase Cloud DB Direct Fetch
   const refreshData = useCallback(async () => {
@@ -115,25 +122,41 @@ export function CourseProvider({ children }) {
     return hasCourseAccess(userId, lec.courseId);
   }, [lectures, hasCourseAccess, isAdmin]);
 
-  const isLectureLocked = useCallback((userId, lectureId) => {
-    if (isAdmin) return false;
+  const isLectureLocked = useCallback((userId, lectureId, options = {}) => {
+    // If admin explicitly enabled bypass mode, allow unlock for testing
+    if (isAdmin && (adminBypassLock || options.bypassAdmin)) return false;
+
     const currentLec = lectures.find(l => l.id === lectureId);
     if (!currentLec) return false;
 
     const course = courses.find(c => c.id === currentLec.courseId);
-    if (!course || !course.sequentialUnlock) return false;
+    if (!course) return false;
 
+    // Check if sequential unlock is enabled (default is true if undefined)
+    const rawSeq = course.sequentialUnlock !== undefined ? course.sequentialUnlock : course.sequential_unlock;
+    const isSeqEnabled = rawSeq === undefined || rawSeq === null || rawSeq === true || rawSeq === 'true' || rawSeq === 1;
+    if (!isSeqEnabled) return false;
+
+    // Sort lectures by orderIndex
     const courseLecs = lectures
       .filter(l => l.courseId === currentLec.courseId)
-      .sort((a, b) => a.orderIndex - b.orderIndex);
+      .sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
 
     const currentIndex = courseLecs.findIndex(l => l.id === lectureId);
-    if (currentIndex <= 0) return false;
+    if (currentIndex <= 0) return false; // 1st lecture is always unlocked
+
+    // Check previous lecture completion
+    const targetUserId = userId || currentUser?.id;
+    if (!targetUserId) return true; // not logged in -> locked
 
     const prevLec = courseLecs[currentIndex - 1];
-    const prevProg = progressList.find(p => p.userId === userId && p.lectureId === prevLec.id);
-    return !(prevProg && (prevProg.completed || prevProg.progressRate >= 99));
-  }, [lectures, courses, progressList, isAdmin]);
+    const prevProg = progressList.find(p => String(p.userId) === String(targetUserId) && p.lectureId === prevLec.id);
+    
+    // Completed if marked completed OR progressRate >= 95
+    const isCompleted = Boolean(prevProg && (prevProg.completed === true || (Number(prevProg.progressRate) || 0) >= 95));
+    return !isCompleted;
+  }, [lectures, courses, progressList, isAdmin, adminBypassLock, currentUser?.id]);
+
 
   // =========================================================================
   // Video Progress Tracking (100% Supabase Direct)
@@ -611,6 +634,8 @@ export function CourseProvider({ children }) {
         hasCourseAccess,
         hasLectureAccess,
         isLectureLocked,
+        adminBypassLock,
+        toggleAdminBypassLock,
         getLectureProgress,
         updateProgress,
         getCourseProgress,

@@ -11,12 +11,17 @@ import { useModalAlert } from '../../context/ModalAlertContext';
 export default function LectureQABoard({ 
   lecture, 
   course, 
+  lectureId,
+  courseId,
   currentVideoTime = 0, 
   onSeek 
 }) {
   const { currentUser, isAdmin } = useAuth();
   const { qaPosts, addQAPost, addQAAnswer, deleteQAPost } = useCourse();
   const { showAlert, showConfirm } = useModalAlert();
+
+  const currentLecId = lecture?.id || lectureId || '';
+  const currentCrsId = course?.id || courseId || '';
 
   // Filter: 'all' | 'pending' | 'answered'
   const [filter, setFilter] = useState('all');
@@ -36,8 +41,9 @@ export default function LectureQABoard({
 
   // Questions for this lecture
   const lectureQuestions = useMemo(() => {
-    return (qaPosts || []).filter(p => p.lectureId === lecture.id);
-  }, [qaPosts, lecture.id]);
+    if (!currentLecId) return [];
+    return (qaPosts || []).filter(p => p.lectureId === currentLecId);
+  }, [qaPosts, currentLecId]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -109,8 +115,8 @@ export default function LectureQABoard({
     setSubmitting(true);
     try {
       addQAPost({
-        courseId: course.id,
-        lectureId: lecture.id,
+        courseId: currentCrsId,
+        lectureId: currentLecId,
         title: newTitle,
         content: newContent,
         timestampSeconds: attachTimestamp ? timestampSecs : null,

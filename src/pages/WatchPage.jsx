@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Lock, CheckCircle, FileText, Download, ChevronLeft, 
-  ChevronRight, BookOpen, Clock, AlertTriangle, ArrowLeft, MessageSquare 
+  ChevronRight, BookOpen, Clock, AlertTriangle, ArrowLeft, MessageSquare,
+  ChevronDown, ChevronUp, Layers, Shield
 } from 'lucide-react';
 import VideoPlayer from '../components/player/VideoPlayer';
 import AccessDeniedModal from '../components/common/AccessDeniedModal';
@@ -11,11 +12,11 @@ import { useAuth } from '../context/AuthContext';
 import { useModalAlert } from '../context/ModalAlertContext';
 
 export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
-  const { currentUser } = useAuth();
+  const { currentUser, isAdmin } = useAuth();
   const { showAlert, showConfirm } = useModalAlert();
   const { 
     lectures, courses, hasLectureAccess, isLectureLocked, 
-    getLectureProgress, qaPosts 
+    getLectureProgress, qaPosts, adminBypassLock, toggleAdminBypassLock 
   } = useCourse();
 
   const [currentLecture, setCurrentLecture] = useState(null);
@@ -46,6 +47,66 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
     }
   }, [lectureId, lectures, courses, currentUser?.id, hasLectureAccess]);
 
+  // Course playlist
+  const courseLectures = useMemo(() => {
+    if (!course) return [];
+    return lectures
+      .filter(l => l.courseId === course.id)
+      .sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
+  }, [lectures, course?.id]);
+
+  // Group playlist into collapsible parts (10 lectures per part)
+  const chunkSize = 10;
+  const lectureGroups = useMemo(() => {
+    const groups = [];
+    for (let i = 0; i < courseLectures.length; i += chunkSize) {
+      const slice = courseLectures.slice(i, i + chunkSize);
+      const startNum = slice[0]?.orderIndex;
+      const endNum = slice[slice.length - 1]?.orderIndex;
+      const partIndex = Math.floor(i / chunkSize) + 1;
+      groups.push({
+        id: `watch-part-${partIndex}`,
+        partIndex,
+        title: `제${partIndex}부: 제${String(startNum).padStart(2, '0')}강 ~ 제${String(endNum).padStart(2, '0')}강`,
+        lectures: slice
+      });
+    }
+    return groups;
+  }, [courseLectures]);
+
+  // Open groups state in sidebar
+  const [openGroupIds, setOpenGroupIds] = useState(() => new Set(['watch-part-1']));
+
+  // Automatically open the part that contains currentLecture
+  useEffect(() => {
+    if (!currentLecture || courseLectures.length === 0) return;
+    const curIdx = courseLectures.findIndex(l => l.id === currentLecture.id);
+    if (curIdx >= 0) {
+      const partIdx = Math.floor(curIdx / chunkSize) + 1;
+      setOpenGroupIds(new Set([`watch-part-${partIdx}`]));
+    }
+  }, [currentLecture?.id, courseLectures.length]);
+
+  const toggleGroup = (groupId) => {
+    setOpenGroupIds(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  };
+
+  const expandAll = () => {
+    setOpenGroupIds(new Set(lectureGroups.map(g => g.id)));
+  };
+
+  const collapseAll = () => {
+    setOpenGroupIds(new Set());
+  };
+
   if (!currentLecture || !course) {
     return (
       <div className="container" style={{ padding: '60px 0', textAlign: 'center' }}>
@@ -53,11 +114,6 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
       </div>
     );
   }
-
-  // Course playlist
-  const courseLectures = lectures
-    .filter(l => l.courseId === course.id)
-    .sort((a, b) => a.orderIndex - b.orderIndex);
 
   const currentIndex = courseLectures.findIndex(l => l.id === currentLecture.id);
   const prevLec = currentIndex > 0 ? courseLectures[currentIndex - 1] : null;
@@ -73,7 +129,10 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
 
     // Check sequential lock
     if (isLectureLocked(currentUser?.id, targetLec.id)) {
-      showAlert('이전 차시를 100% 완강하셔야 다음 차시를 수강하실 수 있습니다. (순차 학습 적용)', { type: 'warning', title: '순차 학습 제한' });
+      showAlert(`이전 차시(제${Number(targetLec.orderIndex) - 1}강)를 100% 완강하셔야 다음 차시를 수강하실 수 있습니다. (순차 학습 적용)`, { 
+        type: 'warning', 
+        title: '🔒 순차 학습 잠금 안내' 
+      });
       return;
     }
 
@@ -84,7 +143,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
     // If there's a next lecture, notify user
     if (nextLec) {
       setTimeout(async () => {
-        const ok = await showConfirm('현재 차시를 완강하셨습니다! 다음 차시로 바로 이동하시겠습니까?', {
+        const ok = await showConfirm(`제${currentLecture.orderIndex}강을 완강하셨습니다!\n다음 차시(제${nextLec.orderIndex}강)로 바로 이동하시겠습니까?`, {
           title: '🎉 차시 완강 축하',
           type: 'success',
           confirmText: '다음 차시 이동'
@@ -103,8 +162,8 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
     <div style={{ padding: '24px 0 60px 0' }}>
       <div className="container">
         
-        {/* Top Header & Breadcrumb */}
-        <div className="watch-header-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '10px' }}>
+        {/* Top Header & Breadcrumb & Admin Bypass Controls */}
+        <div className="watch-header-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
           <div className="watch-breadcrumb-left" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minWidth: 0 }}>
             <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('dashboard')} style={{ whiteSpace: 'nowrap' }}>
               <ArrowLeft size={15} />
@@ -114,8 +173,39 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
             <span className="watch-breadcrumb-title" style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--color-sage)' }}>{course.title}</span>
           </div>
 
-          <div className="badge badge-sage" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
-            {currentLecture.orderIndex}차시 / 총 {courseLectures.length}차시
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            {/* Admin Bypass Lock Test Switch */}
+            {isAdmin && (
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  backgroundColor: '#FFFFFF', 
+                  padding: '4px 10px', 
+                  borderRadius: '6px', 
+                  border: adminBypassLock ? '1px solid #16A34A' : '1px solid #D97706',
+                  fontSize: '12px'
+                }}
+              >
+                <span style={{ fontWeight: 700, color: adminBypassLock ? '#16A34A' : '#D97706' }}>
+                  {adminBypassLock ? '🔓 관리자 프리패스 ON (잠금 해제)' : '🔒 순차 잠금 테스트 중 (잠금 적용)'}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontSize: '11px', padding: '2px 8px', height: '24px' }}
+                  onClick={toggleAdminBypassLock}
+                  title="관리자 권한으로 잠금을 강제 해제하거나 일반 학생과 동일한 잠금을 테스트합니다."
+                >
+                  {adminBypassLock ? '잠금 테스트하기' : '프리패스 켜기'}
+                </button>
+              </div>
+            )}
+
+            <div className="badge badge-sage" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+              {currentLecture.orderIndex}차시 / 총 {courseLectures.length}차시
+            </div>
           </div>
         </div>
 
@@ -174,19 +264,33 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                   backgroundColor: '#161819',
                   color: '#FFFFFF',
                   textAlign: 'center',
-                  padding: '30px'
+                  padding: '40px 24px'
                 }}
               >
-                <Lock size={40} color="var(--color-amber)" style={{ marginBottom: '14px' }} />
+                <div 
+                  style={{ 
+                    width: '64px', 
+                    height: '64px', 
+                    borderRadius: '50%', 
+                    background: 'rgba(217, 119, 6, 0.18)', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    marginBottom: '16px' 
+                  }}
+                >
+                  <Lock size={36} color="var(--color-amber)" />
+                </div>
                 <h3 className="heading-2" style={{ color: '#FFFFFF', marginBottom: '8px' }}>
-                  선수 차시 학습이 필요합니다
+                  선수 차시 학습이 필요합니다 (순차 학습 잠금)
                 </h3>
-                <p style={{ color: '#CBD5E1', fontSize: '14px', maxWidth: '420px', lineHeight: '1.6', marginBottom: '16px' }}>
-                  본 코스는 단계별 깊이 있는 이해를 돕기 위해 <strong>이전 차시 완강(100%)</strong> 후 순차적으로 열립니다.
+                <p style={{ color: '#CBD5E1', fontSize: '14px', maxWidth: '460px', lineHeight: '1.6', marginBottom: '20px' }}>
+                  본 과정은 단계별 체계적인 학습을 위해 <strong>이전 차시(제{Number(currentLecture.orderIndex) - 1}강)를 100% 완강</strong>하셔야 본 차시가 오픈됩니다.
                 </p>
                 {prevLec && (
                   <button className="btn btn-amber btn-sm" onClick={() => handleSelectEpisode(prevLec)}>
-                    이전 {prevLec.orderIndex}차시 학습하러 가기
+                    <ChevronLeft size={15} />
+                    <span>이전 제{prevLec.orderIndex}강 학습하러 가기</span>
                   </button>
                 )}
               </div>
@@ -260,58 +364,54 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                   <h2 className="heading-1 font-serif" style={{ fontSize: '22px' }}>
                     {currentLecture.title}
                   </h2>
-                  <span className="badge badge-neutral">
-                    <Clock size={12} />
-                    <span>약 {Math.round(currentLecture.durationSeconds / 60)}분</span>
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="badge badge-sage">
+                      제{currentLecture.orderIndex}강
+                    </span>
+                    <span className="badge badge-neutral">
+                      약 {Math.round((currentLecture.durationSeconds || 2400) / 60)}분
+                    </span>
+                  </div>
                 </div>
 
-                <p style={{ fontSize: '14.5px', color: '#334155', lineHeight: '1.8', marginBottom: '24px' }}>
-                  {currentLecture.description}
+                <p style={{ fontSize: '14.5px', color: '#4A5568', lineHeight: '1.7', marginBottom: '24px' }}>
+                  {currentLecture.description || `${course.title}의 ${currentLecture.orderIndex}차시 강의입니다. 경전과 의식집의 핵심 구절을 살피며 심도 있는 해설과 집전 방법을 학습합니다.`}
                 </p>
 
-                {/* Attachments Section (PDF 등 교재 다운로드) */}
-                {currentLecture.attachments && currentLecture.attachments.length > 0 && (
-                  <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '20px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-charcoal)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <FileText size={16} color="var(--color-sage)" />
-                      <span>강의 교안 및 첨부자료 ({currentLecture.attachments.length})</span>
-                    </h4>
+                {/* Attachments Download */}
+                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '20px' }}>
+                  <h4 style={{ fontSize: '14.5px', fontWeight: 600, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <FileText size={16} color="var(--color-sage)" />
+                    <span>학습 교안 및 교재 다운로드</span>
+                  </h4>
+                  {currentLecture.attachments && currentLecture.attachments.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {currentLecture.attachments.map((file, idx) => (
-                        <div 
-                          key={idx} 
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'space-between',
-                            padding: '10px 14px',
-                            backgroundColor: 'var(--color-surface-warm)',
-                            borderRadius: 'var(--radius-sm)',
-                            border: '1px solid var(--color-border-warm)'
-                          }}
+                      {currentLecture.attachments.map((att, idx) => (
+                        <a
+                          key={idx}
+                          href={att.url}
+                          download={att.name}
+                          className="btn btn-secondary btn-sm"
+                          style={{ justifyContent: 'space-between', padding: '10px 16px', fontSize: '13px' }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                            <FileText size={15} color="#E06D53" />
-                            <span style={{ fontWeight: 500 }}>{file.name}</span>
-                            <span style={{ color: 'var(--color-text-muted)', fontSize: '11.5px' }}>({file.size})</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <FileText size={14} color="var(--color-sage)" />
+                            <span>{att.name}</span>
                           </div>
-                          <button 
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => showAlert(`[${file.name}] 교안 다운로드가 시작되었습니다.`, { type: 'info', title: '교안 다운로드' })}
-                          >
-                            <Download size={13} />
-                            <span>다운로드</span>
-                          </button>
-                        </div>
+                          <Download size={14} />
+                        </a>
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div style={{ padding: '14px', backgroundColor: 'var(--color-surface-warm)', borderRadius: 'var(--radius-sm)', fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                      본 차시에는 별도 첨부된 PDF 교안이 없습니다. 영상 내 자막과 강의 교재를 참고해 주십시오.
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Tab 2: Learning Q&A Community Board */}
+            {/* Tab 2: Q&A Board */}
             {activeTab === 'qa' && (
               <div style={{ marginTop: '16px' }}>
                 <LectureQABoard
@@ -327,90 +427,186 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
             )}
           </div>
 
-          {/* Right Column: Lecture Curriculum Playlist */}
+          {/* Right Column: Lecture Curriculum Playlist (Collapsible Accordion by Parts) */}
           <div>
             <div className="card" style={{ padding: '20px' }}>
-              <h3 className="heading-3 font-serif" style={{ marginBottom: '6px' }}>
-                강의 커리큘럼 목차
-              </h3>
-              <p className="text-caption" style={{ marginBottom: '16px' }}>
-                {course.sequentialUnlock ? '순차 학습 적용 (완강 시 다음 차시 오픈)' : '자유 수강 코스'}
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', gap: '8px' }}>
+                <div>
+                  <h3 className="heading-3 font-serif" style={{ fontSize: '17px', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Layers size={17} color="var(--color-sage)" />
+                    <span>강의 커리큘럼 목차</span>
+                  </h3>
+                  <p className="text-caption" style={{ marginTop: '4px', marginBottom: 0 }}>
+                    {course.sequentialUnlock !== false ? '🔒 순차 학습 적용 (완강 시 오픈)' : '자유 수강 코스'}
+                  </p>
+                </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {courseLectures.map((lec) => {
-                  const isCurrent = lec.id === currentLecture.id;
-                  const prog = getLectureProgress(currentUser?.id, lec.id);
-                  const isEpCompleted = prog?.completed || prog?.progressRate >= 99;
-                  const isEpLocked = isLectureLocked(currentUser?.id, lec.id);
-                  const hasEpAccess = hasLectureAccess(currentUser?.id, lec.id);
+                {/* Quick Toggle All */}
+                {lectureGroups.length > 1 && (
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button 
+                      type="button" 
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: '11px', padding: '3px 6px', color: '#64748B' }}
+                      onClick={expandAll}
+                      title="모든 파트 펼치기"
+                    >
+                      전체 펼침
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: '11px', padding: '3px 6px', color: '#64748B' }}
+                      onClick={collapseAll}
+                      title="모든 파트 접기"
+                    >
+                      접기
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '14px' }}>
+                {lectureGroups.map((group) => {
+                  const isOpen = openGroupIds.has(group.id);
+                  const isCurrentInGroup = group.lectures.some(l => l.id === currentLecture.id);
+                  const completedInGroup = group.lectures.filter(l => {
+                    const p = getLectureProgress(currentUser?.id, l.id);
+                    return p && (p.completed || (Number(p.progressRate) || 0) >= 95);
+                  }).length;
 
                   return (
-                    <div
-                      key={lec.id}
-                      onClick={() => handleSelectEpisode(lec)}
+                    <div 
+                      key={group.id}
                       style={{
-                        padding: '14px',
                         borderRadius: 'var(--radius-sm)',
-                        backgroundColor: isCurrent ? 'var(--color-surface-warm)' : '#FFFFFF',
-                        border: isCurrent ? '1.5px solid var(--color-sage)' : '1px solid var(--color-border)',
-                        cursor: 'pointer',
-                        transition: 'var(--transition)',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '12px'
+                        border: isCurrentInGroup ? '1.5px solid var(--color-sage)' : '1px solid var(--color-border)',
+                        overflow: 'hidden',
+                        backgroundColor: '#FFFFFF'
                       }}
                     >
-                      {/* Status Icon */}
-                      <div style={{ marginTop: '2px' }}>
-                        {isEpCompleted ? (
-                          <CheckCircle size={18} color="var(--color-sage)" />
-                        ) : !hasEpAccess ? (
-                          <Lock size={17} color="var(--color-coral)" />
-                        ) : isEpLocked ? (
-                          <Lock size={17} color="#94A3B8" />
-                        ) : (
-                          <div 
+                      {/* Part Accordion Header */}
+                      <div
+                        onClick={() => toggleGroup(group.id)}
+                        style={{
+                          padding: '10px 12px',
+                          backgroundColor: isCurrentInGroup ? 'var(--color-surface-warm)' : '#F8FAFC',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          userSelect: 'none',
+                          borderBottom: isOpen ? '1px solid var(--color-border)' : 'none'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                          <span 
                             style={{ 
-                              width: '18px', 
-                              height: '18px', 
-                              borderRadius: '50%', 
-                              border: '2px solid #CBD5E1', 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center',
-                              fontSize: '10px',
-                              fontWeight: 700,
-                              color: '#64748B'
+                              fontSize: '11px', 
+                              fontWeight: 700, 
+                              padding: '2px 6px', 
+                              borderRadius: '4px',
+                              backgroundColor: isCurrentInGroup ? 'var(--color-sage)' : '#E2E8F0',
+                              color: isCurrentInGroup ? '#FFFFFF' : '#475569'
                             }}
                           >
-                            {lec.orderIndex}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Mini Thumbnail */}
-                      <div style={{ width: '48px', height: '30px', borderRadius: '4px', overflow: 'hidden', backgroundColor: '#1E2022', flexShrink: 0, marginTop: '2px' }}>
-                        <img 
-                          src={lec.thumbnail || course?.thumbnail} 
-                          alt={lec.title} 
-                          onError={(e) => { e.target.style.display = 'none'; }}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                        />
-                      </div>
-
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '13.5px', fontWeight: isCurrent ? 700 : 500, color: 'var(--color-charcoal)', lineHeight: '1.4' }}>
-                          {lec.title}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', fontSize: '11.5px', color: 'var(--color-text-muted)' }}>
-                          <span>{Math.round(lec.durationSeconds / 60)}분</span>
-                          <span>•</span>
-                          <span>
-                            {isEpCompleted ? '완강 (100%)' : prog?.progressRate > 0 ? `진도율 ${prog.progressRate}%` : '미수강'}
+                            {group.partIndex}부
+                          </span>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-charcoal)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {group.title}
                           </span>
                         </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                          <span style={{ fontSize: '11px', color: '#64748B' }}>
+                            {completedInGroup}/{group.lectures.length}
+                          </span>
+                          {isOpen ? <ChevronUp size={14} color="#64748B" /> : <ChevronDown size={14} color="#64748B" />}
+                        </div>
                       </div>
+
+                      {/* Part Lecture Items */}
+                      {isOpen && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '6px' }}>
+                          {group.lectures.map((lec) => {
+                            const isCurrent = lec.id === currentLecture.id;
+                            const prog = getLectureProgress(currentUser?.id, lec.id);
+                            const isEpCompleted = Boolean(prog && (prog.completed || (Number(prog.progressRate) || 0) >= 95));
+                            const isEpLocked = isLectureLocked(currentUser?.id, lec.id);
+                            const hasEpAccess = hasLectureAccess(currentUser?.id, lec.id);
+
+                            return (
+                              <div
+                                key={lec.id}
+                                onClick={() => handleSelectEpisode(lec)}
+                                style={{
+                                  padding: '10px 12px',
+                                  borderRadius: 'var(--radius-sm)',
+                                  backgroundColor: isCurrent ? 'var(--color-surface-warm)' : '#FFFFFF',
+                                  border: isCurrent ? '1.5px solid var(--color-sage)' : '1px solid transparent',
+                                  cursor: 'pointer',
+                                  transition: 'var(--transition)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '10px',
+                                  opacity: isEpLocked ? 0.72 : 1
+                                }}
+                              >
+                                {/* Status Icon */}
+                                <div style={{ flexShrink: 0 }}>
+                                  {isEpCompleted ? (
+                                    <CheckCircle size={16} color="var(--color-sage)" />
+                                  ) : !hasEpAccess ? (
+                                    <Lock size={15} color="var(--color-coral)" />
+                                  ) : isEpLocked ? (
+                                    <Lock size={15} color="#94A3B8" />
+                                  ) : (
+                                    <div 
+                                      style={{ 
+                                        width: '18px', 
+                                        height: '18px', 
+                                        borderRadius: '50%', 
+                                        border: '1.5px solid #CBD5E1', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center',
+                                        fontSize: '10px',
+                                        fontWeight: 700,
+                                        color: '#64748B'
+                                      }}
+                                    >
+                                      {lec.orderIndex}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Mini Thumbnail */}
+                                <div style={{ width: '42px', height: '26px', borderRadius: '4px', overflow: 'hidden', backgroundColor: '#1E2022', flexShrink: 0 }}>
+                                  <img 
+                                    src={lec.thumbnail || course?.thumbnail} 
+                                    alt={lec.title} 
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                  />
+                                </div>
+
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: '12.5px', fontWeight: isCurrent ? 700 : 500, color: 'var(--color-charcoal)', lineHeight: '1.3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {lec.orderIndex}강. {lec.title}
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                                    <span>{Math.round((lec.durationSeconds || 2400) / 60)}분</span>
+                                    <span>•</span>
+                                    <span>
+                                      {isEpCompleted ? '완강 (100%)' : isEpLocked ? '🔒 이전 완강 필요' : prog?.progressRate > 0 ? `진도 ${prog.progressRate}%` : '미수강'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

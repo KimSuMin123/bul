@@ -178,7 +178,7 @@
   max-width: 1050px;
   margin: 0 auto;
   text-align: center;
-  word-break: keep-all;
+  /* word-break: keep-all; */
 }
 
 .wrap_intro .intro_sentence {
@@ -471,25 +471,68 @@
 }
 
 /* Utility classes used in original templates */
-.about-page-wrapper .text-center { text-align: center; }
-.about-page-wrapper .text-left { text-align: left; }
-.about-page-wrapper .text-right { text-align: right; }
+.about-page-wrapper .text-center {
+  text-align: center;
+}
 
-.about-page-wrapper .mt-3 { margin-top: 1rem; }
-.about-page-wrapper .mt-4 { margin-top: 1.5rem; }
-.about-page-wrapper .mt-5 { margin-top: 3rem; }
+.about-page-wrapper .text-left {
+  text-align: left;
+}
 
-.about-page-wrapper .mb-1 { margin-bottom: 0.25rem; }
-.about-page-wrapper .mb-2 { margin-bottom: 0.5rem; }
-.about-page-wrapper .mb-3 { margin-bottom: 1rem; }
-.about-page-wrapper .mb-4 { margin-bottom: 1.5rem; }
-.about-page-wrapper .mb-5 { margin-bottom: 3rem; }
+.about-page-wrapper .text-right {
+  text-align: right;
+}
 
-.about-page-wrapper .pt-4 { padding-top: 1.5rem; }
-.about-page-wrapper .pb-5 { padding-bottom: 3rem; }
-.about-page-wrapper .mr-4 { margin-right: 1.5rem; }
+.about-page-wrapper .mt-3 {
+  margin-top: 1rem;
+}
+
+.about-page-wrapper .mt-4 {
+  margin-top: 1.5rem;
+}
+
+.about-page-wrapper .mt-5 {
+  margin-top: 3rem;
+}
+
+.about-page-wrapper .mb-1 {
+  margin-bottom: 0.25rem;
+}
+
+.about-page-wrapper .mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.about-page-wrapper .mb-3 {
+  margin-bottom: 1rem;
+}
+
+.about-page-wrapper .mb-4 {
+  margin-bottom: 1.5rem;
+}
+
+.about-page-wrapper .mb-5 {
+  margin-bottom: 3rem;
+}
+
+.about-page-wrapper .pt-4 {
+  padding-top: 1.5rem;
+}
+
+.about-page-wrapper .pb-5 {
+  padding-bottom: 3rem;
+}
+
+.about-page-wrapper .mr-4 {
+  margin-right: 1.5rem;
+}
 
 @media (min-width: 768px) {
-  .about-page-wrapper .mb-md-4 { margin-bottom: 1.5rem; }
-  .about-page-wrapper .pt-md-5 { padding-top: 3rem; }
+  .about-page-wrapper .mb-md-4 {
+    margin-bottom: 1.5rem;
+  }
+
+  .about-page-wrapper .pt-md-5 {
+    padding-top: 3rem;
+  }
 }

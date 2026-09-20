@@ -18,6 +18,7 @@ export default function RegisterPage({ onNavigate }) {
   const [idCheckMsg, setIdCheckMsg] = useState({ text: '', isError: false });
   const [error, setError] = useState('');
   const [successResult, setSuccessResult] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,7 +29,7 @@ export default function RegisterPage({ onNavigate }) {
     }
   };
 
-  const handleCheckId = () => {
+  const handleCheckId = async () => {
     const id = formData.id.trim();
     if (!id) {
       setIdCheckMsg({ text: '아이디를 입력해 주세요.', isError: true });
@@ -39,17 +40,21 @@ export default function RegisterPage({ onNavigate }) {
       return;
     }
 
-    const available = checkIdAvailable(id);
-    if (available) {
-      setIdChecked(true);
-      setIdCheckMsg({ text: '사용 가능한 멋진 아이디입니다.', isError: false });
-    } else {
-      setIdChecked(false);
-      setIdCheckMsg({ text: '이미 사용 중인 아이디입니다.', isError: true });
+    try {
+      const available = await checkIdAvailable(id);
+      if (available) {
+        setIdChecked(true);
+        setIdCheckMsg({ text: '사용 가능한 멋진 아이디입니다.', isError: false });
+      } else {
+        setIdChecked(false);
+        setIdCheckMsg({ text: '이미 사용 중인 아이디입니다.', isError: true });
+      }
+    } catch (err) {
+      setIdCheckMsg({ text: '중복 확인 중 오류가 발생했습니다.', isError: true });
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -63,8 +68,9 @@ export default function RegisterPage({ onNavigate }) {
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      const newUser = register({
+      const newUser = await register({
         id: formData.id,
         password: formData.password,
         name: formData.name,
@@ -75,6 +81,8 @@ export default function RegisterPage({ onNavigate }) {
       setSuccessResult(newUser);
     } catch (err) {
       setError(err.message || '회원가입에 실패했습니다.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -266,9 +274,10 @@ export default function RegisterPage({ onNavigate }) {
               <button 
                 type="submit" 
                 className="btn btn-primary" 
-                style={{ width: '100%', padding: '12px', marginTop: '12px' }}
+                style={{ width: '100%', padding: '12px', marginTop: '12px', opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+                disabled={isSubmitting}
               >
-                <span>회원가입 완료</span>
+                <span>{isSubmitting ? '가입 처리 중...' : '회원가입 완료'}</span>
                 <ArrowRight size={16} />
               </button>
             </form>

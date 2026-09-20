@@ -133,24 +133,66 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Student Search state
+  // Student Search state & All users
+  const allUsers = useMemo(() => {
+    return users || [];
+  }, [users]);
+
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Certificate Register & Verify state
+  // Certificate Register & Verify state (Include all completed enrollments & certificates)
   const [certKeyword, setCertKeyword] = useState('');
   const [selectedCert, setSelectedCert] = useState(null);
 
+  const allCompletedCertificates = useMemo(() => {
+    const certList = [...(certificates || [])];
+
+    // Add any student who has completed enrollment (status === 'completed')
+    (enrollments || []).forEach(enr => {
+      if (enr.status === 'completed') {
+        const user = allUsers.find(u => u.id === enr.userId);
+        const course = courses.find(c => c.id === enr.courseId);
+        const alreadyExists = certList.some(c => String(c.userId) === String(enr.userId) && String(c.courseId) === String(enr.courseId));
+        if (!alreadyExists && user && course) {
+          const autoCertNo = `CERT-${course.id.toUpperCase().replace(/[^A-Z0-9]/g, '')}-${user.memberNo || user.id}`;
+          const autoCertRegNo = course.certRegNo || `제 2026-${course.certGrade || '2급'}-${user.memberNo || '00100'} 호`;
+          certList.push({
+            id: `auto_${enr.id}`,
+            certNo: autoCertNo,
+            certRegNo: autoCertRegNo,
+            userId: user.id,
+            studentName: user.name,
+            birthDate: user.birthDate || '1970-01-01',
+            memberNo: user.memberNo || user.id,
+            courseId: course.id,
+            courseTitle: course.title,
+            certType: course.certType || '불교의례해설사',
+            certGrade: course.certGrade || '2급',
+            certTypeFull: course.certTypeFull || `${course.certType || '불교의례해설사'} ${course.certGrade || '2급'}`,
+            certRegOffice: course.certRegOffice || '문화체육관광부 (민간자격 등록번호: 제 2026- 001836 호)',
+            issuedAt: enr.enrolledAt || new Date().toISOString().split('T')[0],
+            status: 'valid'
+          });
+        }
+      }
+    });
+
+    return certList;
+  }, [certificates, enrollments, allUsers, courses]);
+
   const filteredCertificates = useMemo(() => {
-    if (!certKeyword.trim()) return certificates || [];
+    if (!certKeyword.trim()) return allCompletedCertificates;
     const kw = certKeyword.trim().toLowerCase();
-    return (certificates || []).filter(c =>
-      c.certNo.toLowerCase().includes(kw) ||
+    return allCompletedCertificates.filter(c =>
+      (c.certNo && c.certNo.toLowerCase().includes(kw)) ||
+      (c.certRegNo && c.certRegNo.toLowerCase().includes(kw)) ||
       (c.memberNo && c.memberNo.toLowerCase().includes(kw)) ||
-      c.studentName.toLowerCase().includes(kw) ||
-      c.courseTitle.toLowerCase().includes(kw)
+      (c.studentName && c.studentName.toLowerCase().includes(kw)) ||
+      (c.courseTitle && c.courseTitle.toLowerCase().includes(kw))
     );
-  }, [certificates, certKeyword]);
+  }, [allCompletedCertificates, certKeyword]);
+
 
   // Q&A Management state
   const [qaKeyword, setQaKeyword] = useState('');
@@ -818,7 +860,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
     });
     if (ok) {
       try {
-        adminDeleteUser(user.id);
+        await adminDeleteUser(user.id);
         setUsersVersion(v => v + 1);
         refreshData();
         showAlert(`[${user.name}] 회원 계정이 정상적으로 삭제되었습니다.`, { type: 'success', title: '회원 삭제 완료' });
@@ -828,7 +870,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
     }
   };
 
-  const handleExecuteResetPassword = (e) => {
+  const handleExecuteResetPassword = async (e) => {
     e.preventDefault();
     if (!resetPwUser) return;
     if (!newTempPassword || newTempPassword.trim().length < 4) {
@@ -838,7 +880,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
     try {
       setIsResettingPw(true);
-      adminResetPassword(resetPwUser.id, newTempPassword.trim());
+      await adminResetPassword(resetPwUser.id, newTempPassword.trim());
       setUsersVersion(v => v + 1);
       showAlert(`[${resetPwUser.name}] 님의 비밀번호가 '${newTempPassword.trim()}'(으)로 성공적으로 초기화되었습니다.\n학인에게 변경된 비밀번호를 안내해 주시기 바랍니다.`, { type: 'success', title: '비밀번호 초기화 완료' });
       setResetPwUser(null);
@@ -848,11 +890,6 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
       setIsResettingPw(false);
     }
   };
-
-  // Get all users from Supabase-backed AuthContext
-  const allUsers = useMemo(() => {
-    return users || [];
-  }, [users]);
 
   // Filtered users by search keyword (name or phone)
   const filteredUsers = useMemo(() => {
@@ -870,11 +907,24 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
   const handleGrantEnrollment = (e) => {
     e.preventDefault();
     if (!selectedUser) return;
-    enrollStudent(selectedUser.id, grantCourseId, grantStatus);
-    showAlert(`${selectedUser.name} 님에게 [${courses.find(c => c.id === grantCourseId)?.title}] 강좌의 권한(${grantStatus})이 성공적으로 부여되었습니다.`, { type: 'success', title: '수강 권한 부여 완료' });
+    const targetCourse = courses.find(c => c.id === grantCourseId) || courses[0];
+    const courseTitle = targetCourse ? targetCourse.title : '선택 강좌';
+    const statusLabels = {
+      active: '수강 중',
+      pending: '결제 대기',
+      applied: '접수 대기'
+    };
+    const statusLabel = statusLabels[grantStatus] || grantStatus;
+
+    enrollStudent(selectedUser.id, targetCourse ? targetCourse.id : grantCourseId, grantStatus);
+    showAlert(`${selectedUser.name} 님에게 [${courseTitle}] 수강 권한이 [${statusLabel}] 상태로 정상 반영되었습니다.`, { 
+      type: 'success', 
+      title: '수강 권한 처리 완료' 
+    });
     setShowGrantModal(false);
     refreshData();
   };
+
 
   // Handle In-Person Payment Record
   const handleRecordPayment = (e) => {
@@ -1251,8 +1301,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             onClick={() => setActiveTab('cert')}
           >
             <Award size={16} />
-            <span>수료증 발급 및 진위 확인 대장 ({certificates?.length || 0})</span>
+            <span>수료증 발급 및 진위 확인 대장 ({allCompletedCertificates.length})</span>
           </button>
+
         </div>
 
         {/* TAB 1: 수강생 및 권한 관리 (Search by name/phone, manual grant) */}
@@ -1387,12 +1438,15 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                               title="수강 권한 부여/수정"
                               onClick={() => {
                                 setSelectedUser(user);
+                                setGrantCourseId(courses[0]?.id || 'course_rit_02');
+                                setGrantStatus('active');
                                 setShowGrantModal(true);
                               }}
                             >
                               <Edit3 size={13} />
                               <span>권한 관리</span>
                             </button>
+
                             <button
                               className="btn btn-ghost btn-sm"
                               title="임시 비밀번호로 초기화"
@@ -2777,9 +2831,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   <option value="active">▶ 수강중 (대면 결제 완료 - 즉시 시청 승인)</option>
                   <option value="pending">⏳ 결제대기 (수납 미완료 - 시청 대기)</option>
                   <option value="applied">수강신청 접수</option>
-                  <option value="completed">🏆 수료 (전 과정 이수 및 수료증 발급)</option>
                 </select>
               </div>
+
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
                 <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowGrantModal(false)}>

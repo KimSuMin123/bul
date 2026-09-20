@@ -17,7 +17,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
     courses, lectures, enrollments, getCourseProgress, 
     progressList, claimCertificate, getCertificate,
     checkLecturesCompleted, isExamPassed, getExamResult,
-    enrollStudent, updateProgress, refreshData
+    enrollStudent, updateProgress, refreshData, isLectureLocked
   } = useCourse();
 
   const [activeCert, setActiveCert] = useState(null);
@@ -439,8 +439,16 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                             className="btn btn-primary btn-md" 
                             style={{ width: '100%', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px' }}
                             onClick={() => {
-                              const firstLec = lectures.find(l => l.courseId === course.id);
-                              if (firstLec) onStartLecture(firstLec.id);
+                              const sortedLecs = lectures
+                                .filter(l => l.courseId === course.id)
+                                .sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
+                              // Find first uncompleted and unlocked lecture
+                              const targetLec = sortedLecs.find(l => {
+                                const p = progressList.find(prog => String(prog.userId) === String(currentUser?.id) && prog.lectureId === l.id);
+                                const isDone = p && (p.completed || (Number(p.progressRate) || 0) >= 95);
+                                return !isDone && !isLectureLocked(currentUser?.id, l.id);
+                              }) || sortedLecs[0];
+                              if (targetLec) onStartLecture(targetLec.id);
                             }}
                           >
                             <PlayCircle size={16} />

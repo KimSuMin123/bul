@@ -36,11 +36,11 @@ export default function LoginPage({ onNavigate }) {
     }
   };
 
-  const handleResetPassword = (e) => {
+  const handleResetPassword = async (e) => {
     e.preventDefault();
     setForgotMsg({ text: '', isError: false });
     try {
-      resetPassword({
+      await resetPassword({
         id: forgotId,
         name: forgotName,
         phone: forgotPhone,

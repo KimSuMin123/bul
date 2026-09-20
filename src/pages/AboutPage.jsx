@@ -14,6 +14,10 @@ export default function AboutPage({ initialTab = 'intro', onNavigate }) {
   const currentTab = ABOUT_TABS.find(t => t.id === activeTabId) || ABOUT_TABS[0];
 
   const handleTabClick = (tabId) => {
+    if (tabId === 'contact') {
+      window.open('https://band.us/n/a7a2b3X7k88dC', '_blank', 'noopener,noreferrer');
+      return;
+    }
     setActiveTabId(tabId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

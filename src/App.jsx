@@ -16,6 +16,7 @@ import AboutPage from './pages/AboutPage';
 import { useAuth } from './context/AuthContext';
 import { useModalAlert } from './context/ModalAlertContext';
 import { updatePageSEO } from './services/seoService';
+import { getStored, STORAGE_KEYS } from './services/storage';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
 // Global Error Boundary to prevent White Screen on any runtime error
@@ -91,9 +92,25 @@ export default function App() {
         setCurrentView('courseDetail');
       } else if (route === 'about') {
         const tab = params.get('tab') || 'intro';
+        if (tab === 'contact') {
+          window.open('https://band.us/n/a7a2b3X7k88dC', '_blank', 'noopener,noreferrer');
+          setAboutTab('intro');
+          setCurrentView('about');
+          return;
+        }
         setAboutTab(tab);
         setCurrentView('about');
       } else if (['home', 'dashboard', 'login', 'register', 'verify', 'admin'].includes(route)) {
+        if (route === 'admin') {
+          const activeUser = currentUser || getStored(STORAGE_KEYS.CURRENT_USER);
+          const userIsAdmin = activeUser?.role === 'admin' || activeUser?.id === 'admin' || isAdmin;
+          if (!userIsAdmin) {
+            showAlert('관리자 계정(admin)만 접근할 수 있는 페이지입니다.', { type: 'warning', title: '접근 권한 제한' });
+            setCurrentView('login');
+            window.location.hash = 'login';
+            return;
+          }
+        }
         setCurrentView(route);
       }
     };
@@ -101,19 +118,17 @@ export default function App() {
     parseHash();
     window.addEventListener('hashchange', parseHash);
     return () => window.removeEventListener('hashchange', parseHash);
-  }, []);
+  }, [currentUser, isAdmin]);
 
   // Scroll to top & update SEO meta tags on view change
   useEffect(() => {
     window.scrollTo(0, 0);
-    updatePageSEO(currentView);
-  }, [currentView, selectedLectureId, selectedCourseId]);
+    updatePageSEO(currentView, { tab: aboutTab });
+  }, [currentView, aboutTab, selectedLectureId, selectedCourseId]);
 
   const handleNavigate = (view, subParam) => {
-    const activeUser = currentUser || (() => {
-      try { return JSON.parse(localStorage.getItem('buddha_lms_current_user') || 'null'); } catch { return null; }
-    })();
-    const userIsAdmin = activeUser?.role === 'admin';
+    const activeUser = currentUser || getStored(STORAGE_KEYS.CURRENT_USER);
+    const userIsAdmin = activeUser?.role === 'admin' || activeUser?.id === 'admin' || isAdmin;
 
     if (view === 'admin' && !userIsAdmin) {
       showAlert('관리자 계정(admin)만 접근할 수 있는 페이지입니다.', { type: 'warning', title: '접근 권한 제한' });
@@ -122,6 +137,10 @@ export default function App() {
 
     if (view === 'about') {
       const tab = subParam || 'intro';
+      if (tab === 'contact') {
+        window.open('https://band.us/n/a7a2b3X7k88dC', '_blank', 'noopener,noreferrer');
+        return;
+      }
       setAboutTab(tab);
       window.location.hash = `about?tab=${tab}`;
       setCurrentView('about');

@@ -98,7 +98,13 @@ async function supabaseFetch(endpoint, options = {}) {
   }
 
   if (res.status === 204) return null; // No Content
-  return res.json();
+  const text = await res.text();
+  if (!text || text.trim() === '') return null;
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    return null;
+  }
 }
 
 /**
@@ -187,12 +193,13 @@ export const remoteDb = {
         member_no: userData.memberNo,
         role: userData.role || 'student'
       };
-      const [inserted] = await supabaseFetch('/users', {
+      const res = await supabaseFetch('/users', {
         method: 'POST',
-        prefer: 'resolution=merge-duplicates',
+        prefer: 'resolution=merge-duplicates,return=representation',
         body: JSON.stringify(payload)
       });
-      return inserted;
+      const inserted = Array.isArray(res) ? res[0] : res;
+      return inserted || payload;
     } catch (err) {
       console.warn('Remote insertUser failed:', err);
       return null;

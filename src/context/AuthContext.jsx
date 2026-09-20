@@ -38,15 +38,20 @@ export function AuthProvider({ children }) {
         const remoteUsers = await refreshUsers();
         const storedUser = getStored(STORAGE_KEYS.CURRENT_USER);
 
-        if (storedUser && Array.isArray(remoteUsers)) {
-          const matched = remoteUsers.find(u => u.id === storedUser.id);
-          if (matched) {
-            // Restore session with latest profile from Supabase
-            setCurrentUser({ ...matched, activeSessionToken: storedUser.activeSessionToken });
+        if (storedUser) {
+          if (Array.isArray(remoteUsers) && remoteUsers.length > 0) {
+            const matched = remoteUsers.find(u => u.id === storedUser.id);
+            if (matched) {
+              // Restore session with latest profile from Supabase
+              setCurrentUser({ ...matched, activeSessionToken: storedUser.activeSessionToken });
+            } else {
+              // User confirmed deleted from Supabase (only when remote users successfully loaded)
+              removeStored(STORAGE_KEYS.CURRENT_USER);
+              setCurrentUser(null);
+            }
           } else {
-            // User no longer exists in Supabase, clear session ticket
-            removeStored(STORAGE_KEYS.CURRENT_USER);
-            setCurrentUser(null);
+            // Remote fetch empty or pending: keep active stored session safely
+            setCurrentUser(storedUser);
           }
         }
       } catch (err) {
@@ -84,14 +89,17 @@ export function AuthProvider({ children }) {
   }, [refreshUsers]);
 
   // Check ID availability
-  const checkIdAvailable = (id) => {
-    return !users.some(u => u.id.toLowerCase() === id.trim().toLowerCase());
+  const checkIdAvailable = async (id) => {
+    const cleanId = id.trim().toLowerCase();
+    const currentList = users.length > 0 ? users : (await refreshUsers()) || [];
+    return !currentList.some(u => u.id && u.id.toLowerCase() === cleanId);
   };
 
   // Check Phone availability (prevent duplicate sign up)
-  const checkPhoneAvailable = (phone) => {
+  const checkPhoneAvailable = async (phone) => {
     const cleanPhone = phone.replace(/[^0-9]/g, '');
-    return !users.some(u => u.phone && u.phone.replace(/[^0-9]/g, '') === cleanPhone);
+    const currentList = users.length > 0 ? users : (await refreshUsers()) || [];
+    return !currentList.some(u => u.phone && u.phone.replace(/[^0-9]/g, '') === cleanPhone);
   };
 
   // Register New Member (100% Supabase Direct)
@@ -306,7 +314,7 @@ export function AuthProvider({ children }) {
         checkIdAvailable,
         checkPhoneAvailable,
         resetPassword,
-        isAdmin: currentUser?.role === 'admin'
+        isAdmin: currentUser?.role === 'admin' || currentUser?.id === 'admin'
       }}
     >
       {children}
