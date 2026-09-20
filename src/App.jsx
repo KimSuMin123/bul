@@ -16,6 +16,7 @@ import AboutPage from './pages/AboutPage';
 const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage'));
 
 import { useAuth } from './context/AuthContext';
+import { useCourse } from './context/CourseContext';
 import { useModalAlert } from './context/ModalAlertContext';
 import { updatePageSEO } from './services/seoService';
 import { getStored, STORAGE_KEYS } from './services/storage';
@@ -68,6 +69,7 @@ class ErrorBoundary extends React.Component {
 export default function App() {
   const { currentUser, isAdmin, loading } = useAuth();
   const { showAlert } = useModalAlert();
+  const { refreshData } = useCourse();
 
   // Navigation state: 'home' | 'about' | 'dashboard' | 'courseDetail' | 'watch' | 'login' | 'register' | 'verify' | 'admin'
   const [currentView, setCurrentView] = useState('home');
@@ -125,11 +127,14 @@ export default function App() {
     return () => window.removeEventListener('hashchange', parseHash);
   }, [currentUser, isAdmin]);
 
-  // Scroll to top & update SEO meta tags on view change
+  // Scroll to top & update SEO meta tags on view change & reactive data sync
   useEffect(() => {
     window.scrollTo(0, 0);
     updatePageSEO(currentView, { tab: aboutTab });
-  }, [currentView, aboutTab, selectedLectureId, selectedCourseId]);
+    if (refreshData) {
+      refreshData().catch(() => {});
+    }
+  }, [currentView, aboutTab, selectedLectureId, selectedCourseId, refreshData]);
 
   const handleNavigate = (view, subParam) => {
     const activeUser = currentUser || getStored(STORAGE_KEYS.CURRENT_USER);

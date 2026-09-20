@@ -33,6 +33,7 @@ export default function VideoPlayer({
   const [resumeNotice, setResumeNotice] = useState(null);
   const [justCompleted, setJustCompleted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
   const [controlsTimeout, setControlsTimeout] = useState(null);
   const controlsTimeoutRef = useRef(null);

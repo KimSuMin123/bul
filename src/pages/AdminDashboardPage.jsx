@@ -927,14 +927,14 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
 
   // Handle In-Person Payment Record
-  const handleRecordPayment = (e) => {
+  const handleRecordPayment = async (e) => {
     e.preventDefault();
     if (!payUserId) {
       showAlert('회원을 선택해 주세요.', { type: 'warning', title: '입력 확인' });
       return;
     }
 
-    recordPayment({
+    await recordPayment({
       userId: payUserId,
       courseId: payCourseId,
       manager: payManager,
@@ -945,7 +945,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
     showAlert('대면 수납 내역이 장부에 기록되었으며, 해당 회원의 수강 상태가 [수강중(결제완료)]으로 전환되었습니다.', { type: 'success', title: '수납 처리 완료' });
     setShowPaymentModal(false);
-    refreshData();
+    await refreshData();
   };
 
   // Pending Enrollments (waiting for in-person payment)
@@ -990,7 +990,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
       confirmText: '수납 승인'
     });
     if (ok) {
-      recordPayment({
+      await recordPayment({
         userId: enr.userId,
         courseId: enr.courseId,
         manager: currentUser?.name || '교학처 관리자',
@@ -999,7 +999,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
         paidAt: new Date().toISOString().split('T')[0]
       });
       showAlert(`[${studentName}] 학인의 대면 수납 승인이 완료되었습니다!\n장부에 정상 등재되었으며, 이제 수강이 시작됩니다.`, { type: 'success', title: '수납 승인 완료' });
-      refreshData();
+      await refreshData();
     }
   };
 

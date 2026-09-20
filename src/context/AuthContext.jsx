@@ -72,8 +72,24 @@ export function AuthProvider({ children }) {
       console.warn('BroadcastChannel not supported', e);
     }
 
+    // Reactive listener for session updates without page reload
+    const handleAuthSync = () => {
+      const stored = getStored(STORAGE_KEYS.CURRENT_USER);
+      setCurrentUser(stored);
+      if (stored?.role === 'admin') {
+        refreshUsers().catch(() => {});
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('buddha_sync_update', handleAuthSync);
+    }
+
     return () => {
       if (authChannel) authChannel.close();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('buddha_sync_update', handleAuthSync);
+      }
     };
   }, [refreshUsers]);
 

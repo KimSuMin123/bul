@@ -14,6 +14,90 @@ import { remoteDb, isExternalDbConfigured, deleteLectureVideo } from '../service
 import { notifyAdminCourseApplication } from '../services/notificationService.js';
 import { useAuth } from './AuthContext.jsx';
 
+export const DEFAULT_COURSES = [
+  {
+    id: 'course-ritual-8-11',
+    title: '불교의례법사 과정 I (8강~11강)',
+    subtitle: '하단시식 및 칠칠재 영혼식 등 핵심 불교의례 집전과 해설',
+    category: '불교의례법사',
+    thumbnail: 'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?auto=format&fit=crop&w=800&q=80',
+    defaultPeriodDays: 90,
+    sequentialUnlock: true,
+    price: 50000,
+    instructor: '불교의례 전문 법사',
+    certType: '불교의례해설사',
+    certGrade: '2급',
+    certTypeFull: '불교의례해설사 2급',
+    certRegNo: '민간자격 등록번호 제 2026- 00183호',
+    certRegOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
+    rawExamText: ''
+  },
+  {
+    id: 'course-ritual-12-15',
+    title: '불교의례법사 과정 II (12강~15강)',
+    subtitle: '심화 불교의례 및 영산수륙예수 작법 실습',
+    category: '불교의례법사',
+    thumbnail: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=800&q=80',
+    defaultPeriodDays: 90,
+    sequentialUnlock: true,
+    price: 50000,
+    instructor: '불교의례 전문 법사',
+    certType: '불교의례해설사',
+    certGrade: '1급',
+    certTypeFull: '불교의례해설사 1급',
+    certRegNo: '민간자격 등록번호 제 2026- 00183호',
+    certRegOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
+    rawExamText: ''
+  }
+];
+
+export const DEFAULT_LECTURES = [
+  {
+    id: 'lec-ritual-08-1',
+    courseId: 'course-ritual-8-11',
+    orderIndex: 8,
+    title: '제8강 불교 영가천도의 의미와 하단시식 개요',
+    description: '불교 영가천도의 근본 종지와 하단시식의 의식 구조 및 봉송 절차를 체계적으로 학습합니다.',
+    durationSeconds: 2400,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    attachmentName: '제8강_불교영가천도_교안.pdf',
+    attachments: [{ name: '제8강_불교영가천도_교안.pdf', size: '2.5 MB' }]
+  },
+  {
+    id: 'lec-ritual-09-1',
+    courseId: 'course-ritual-8-11',
+    orderIndex: 9,
+    title: '제9강 칠칠재 영혼식의 구성과 의궤 해설',
+    description: '초재부터 칠재까지 49재 영혼식의 각 단별 독송 진언과 집전 순서를 상세히 익힙니다.',
+    durationSeconds: 2400,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    attachmentName: '제9강_칠칠재_영혼식_의궤.pdf',
+    attachments: [{ name: '제9강_칠칠재_영혼식_의궤.pdf', size: '3.1 MB' }]
+  },
+  {
+    id: 'lec-ritual-10-1',
+    courseId: 'course-ritual-8-11',
+    orderIndex: 10,
+    title: '제10강 각 칠재의례 및 영반 실수 실습',
+    description: '사찰 영반 집전 시 바라 및 요령 타법과 영가 이양의식을 실무 중심으로 학습합니다.',
+    durationSeconds: 2400,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    attachmentName: '제10강_영반실수_해설.pdf',
+    attachments: [{ name: '제10강_영반실수_해설.pdf', size: '2.8 MB' }]
+  },
+  {
+    id: 'lec-ritual-11-1',
+    courseId: 'course-ritual-8-11',
+    orderIndex: 11,
+    title: '제11강 하단 퇴공 및 봉송 회향의식',
+    description: '시식 회향 및 영가 봉송 의식의 핵심 게송과 회향발원을 정리합니다.',
+    durationSeconds: 2400,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    attachmentName: '제11강_봉송회향_교안.pdf',
+    attachments: [{ name: '제11강_봉송회향_교안.pdf', size: '1.9 MB' }]
+  }
+];
+
 const CourseContext = createContext(null);
 
 export function CourseProvider({ children }) {
@@ -34,90 +118,152 @@ export function CourseProvider({ children }) {
     setAdminBypassLock(prev => !prev);
   }, []);
 
-
-  // 100% Supabase Cloud DB Direct Fetch (Optimized Lazy Fetching)
+  // 100% Supabase Cloud DB Direct Fetch (Optimized Lazy Fetching + Seamless Fallback)
   const refreshData = useCallback(async () => {
-    if (!isExternalDbConfigured) {
-      setLoading(false);
-      return;
-    }
-
     try {
-      // 1. Fetch public courses and lectures for everyone (lightweight)
-      const [rCourses, rLecs] = await Promise.all([
-        remoteDb.getCourses(),
-        remoteDb.getLectures()
-      ]);
+      let activeCourses = DEFAULT_COURSES;
+      let activeLecs = DEFAULT_LECTURES;
 
-      const activeLecs = Array.isArray(rLecs) ? rLecs : [];
+      if (isExternalDbConfigured) {
+        // 1. Fetch public courses and lectures for everyone
+        const [rCourses, rLecs] = await Promise.all([
+          remoteDb.getCourses().catch(() => null),
+          remoteDb.getLectures().catch(() => null)
+        ]);
+
+        if (Array.isArray(rLecs) && rLecs.length > 0) {
+          activeLecs = rLecs;
+        }
+        if (Array.isArray(rCourses) && rCourses.length > 0) {
+          activeCourses = rCourses;
+        }
+      }
+
       setLectures(activeLecs);
 
-      if (Array.isArray(rCourses)) {
-        const populated = rCourses.map(c => {
-          let parsedExam = [];
-          if (c.rawExamText && c.rawExamText.trim()) {
-            parsedExam = parseExamText(c.rawExamText);
-          } else {
-            parsedExam = PRESET_EXAM_QUESTIONS;
-          }
-          return {
-            ...c,
-            examQuestions: parsedExam,
-            lectureIds: activeLecs.filter(l => l.courseId === c.id).map(l => l.id)
-          };
-        });
-        setCourses(populated);
-      }
+      const populated = activeCourses.map(c => {
+        let parsedExam = [];
+        if (c.rawExamText && c.rawExamText.trim()) {
+          parsedExam = parseExamText(c.rawExamText);
+        } else {
+          parsedExam = PRESET_EXAM_QUESTIONS;
+        }
+        return {
+          ...c,
+          examQuestions: parsedExam,
+          lectureIds: activeLecs.filter(l => l.courseId === c.id).map(l => l.id)
+        };
+      });
+      setCourses(populated);
 
-      // 2. Role-based targeted lazy fetching
+      // 2. Role-based targeted lazy fetching & seamless state preservation
+      const localEnrs = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('buddha_lms_enrollments') || '[]') : [];
+
       if (isAdmin) {
-        // Admin: Load all operational data
-        const [rEnrs, rPays, rProg, rCerts, rQA, rAttempts] = await Promise.all([
-          remoteDb.getEnrollments(),
-          remoteDb.getPayments(),
-          remoteDb.getProgress(),
-          remoteDb.getCertificates(),
-          remoteDb.getQAPosts(),
-          remoteDb.getExamAttempts()
-        ]);
-        if (Array.isArray(rEnrs)) setEnrollments(rEnrs);
-        if (Array.isArray(rPays)) setPayments(rPays);
-        if (Array.isArray(rProg)) setProgressList(rProg);
-        if (Array.isArray(rCerts)) setCertificates(rCerts);
-        if (Array.isArray(rQA)) setQaPosts(rQA);
-        if (Array.isArray(rAttempts)) setExamAttempts(rAttempts);
+        if (isExternalDbConfigured) {
+          const [rEnrs, rPays, rProg, rCerts, rQA, rAttempts] = await Promise.all([
+            remoteDb.getEnrollments().catch(() => []),
+            remoteDb.getPayments().catch(() => []),
+            remoteDb.getProgress().catch(() => []),
+            remoteDb.getCertificates().catch(() => []),
+            remoteDb.getQAPosts().catch(() => []),
+            remoteDb.getExamAttempts().catch(() => [])
+          ]);
+          setEnrollments(prev => {
+            const combined = [...(Array.isArray(rEnrs) ? rEnrs : [])];
+            [...localEnrs, ...prev].forEach(p => {
+              if (!combined.some(c => c.id === p.id || (c.userId === p.userId && c.courseId === p.courseId))) {
+                combined.push(p);
+              }
+            });
+            return combined;
+          });
+          if (Array.isArray(rPays) && rPays.length > 0) setPayments(rPays);
+          if (Array.isArray(rProg) && rProg.length > 0) setProgressList(rProg);
+          if (Array.isArray(rCerts) && rCerts.length > 0) setCertificates(rCerts);
+          if (Array.isArray(rQA)) setQaPosts(rQA);
+          if (Array.isArray(rAttempts) && rAttempts.length > 0) setExamAttempts(rAttempts);
+        } else {
+          setEnrollments(localEnrs);
+        }
       } else if (currentUser?.id) {
-        // Student: Only fetch their own records (80%+ payload reduction)
-        const [rEnrs, rProg, rCerts, rQA, rAttempts] = await Promise.all([
-          remoteDb.getEnrollments(currentUser.id),
-          remoteDb.getProgress(currentUser.id),
-          remoteDb.getCertificates(currentUser.id),
-          remoteDb.getQAPosts(),
-          remoteDb.getExamAttempts(currentUser.id)
-        ]);
-        if (Array.isArray(rEnrs)) setEnrollments(rEnrs);
-        if (Array.isArray(rProg)) setProgressList(rProg);
-        if (Array.isArray(rCerts)) setCertificates(rCerts);
-        if (Array.isArray(rQA)) setQaPosts(rQA);
-        if (Array.isArray(rAttempts)) setExamAttempts(rAttempts);
-      } else {
-        // Guest: No extra DB queries needed
-        setEnrollments([]);
-        setPayments([]);
-        setProgressList([]);
-        setCertificates([]);
-        setExamAttempts([]);
+        if (isExternalDbConfigured) {
+          const [rEnrs, rProg, rCerts, rQA, rAttempts] = await Promise.all([
+            remoteDb.getEnrollments(currentUser.id).catch(() => []),
+            remoteDb.getProgress(currentUser.id).catch(() => []),
+            remoteDb.getCertificates(currentUser.id).catch(() => []),
+            remoteDb.getQAPosts().catch(() => []),
+            remoteDb.getExamAttempts(currentUser.id).catch(() => [])
+          ]);
+          setEnrollments(prev => {
+            const combined = [...(Array.isArray(rEnrs) ? rEnrs : [])];
+            [...localEnrs, ...prev].forEach(p => {
+              if (p.userId === currentUser.id && !combined.some(c => c.id === p.id || (c.userId === p.userId && c.courseId === p.courseId))) {
+                combined.push(p);
+              }
+            });
+            return combined;
+          });
+          if (Array.isArray(rProg) && rProg.length > 0) setProgressList(rProg);
+          if (Array.isArray(rCerts) && rCerts.length > 0) setCertificates(rCerts);
+          if (Array.isArray(rQA)) setQaPosts(rQA);
+          if (Array.isArray(rAttempts) && rAttempts.length > 0) setExamAttempts(rAttempts);
+        } else {
+          setEnrollments(localEnrs.filter(e => e.userId === currentUser.id));
+        }
       }
-
     } catch (err) {
-      console.warn('Supabase pure data fetch warning:', err);
+      console.warn('CourseContext refreshData error:', err);
     } finally {
       setLoading(false);
     }
   }, [currentUser?.id, isAdmin]);
 
+  // Real-time synchronization helper (Cross-tab & Same-tab without page reload)
+  const notifySyncUpdate = useCallback((detail = {}) => {
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const ch = new BroadcastChannel('buddha_course_sync_channel');
+        ch.postMessage({ type: 'COURSE_SYNC_REFRESH', ...detail });
+        ch.close();
+      }
+    } catch (e) {}
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('buddha_sync_update', { detail }));
+    }
+  }, []);
+
+  // Listen for real-time synchronization updates without manual refresh
   useEffect(() => {
     refreshData();
+
+    let syncChannel = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        syncChannel = new BroadcastChannel('buddha_course_sync_channel');
+        syncChannel.onmessage = (e) => {
+          if (e.data && e.data.type === 'COURSE_SYNC_REFRESH') {
+            refreshData();
+          }
+        };
+      }
+    } catch (e) {
+      console.warn('Sync BroadcastChannel not available:', e);
+    }
+
+    const handleLocalSync = () => {
+      refreshData();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('buddha_sync_update', handleLocalSync);
+    }
+
+    return () => {
+      if (syncChannel) syncChannel.close();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('buddha_sync_update', handleLocalSync);
+      }
+    };
   }, [refreshData]);
 
   // =========================================================================
@@ -259,7 +405,8 @@ export function CourseProvider({ children }) {
         }
       }
     }
-  }, [progressList, lectures, courses, enrollments, examAttempts]);
+    notifySyncUpdate({ type: 'PROGRESS_UPDATED', userId, lectureId });
+  }, [progressList, lectures, courses, enrollments, examAttempts, notifySyncUpdate]);
 
   const getCourseProgress = useCallback((userId, courseId) => {
     if (!userId) return 0;
@@ -328,8 +475,9 @@ export function CourseProvider({ children }) {
       }).catch(err => console.warn('Admin push notification dispatch note:', err));
     }
 
+    notifySyncUpdate({ type: 'ENROLLMENT_UPDATED', userId, courseId, status });
     return item;
-  }, [courses, enrollments, currentUser]);
+  }, [courses, enrollments, currentUser, notifySyncUpdate]);
 
   const recordPayment = useCallback(async ({ userId, courseId, manager, amount, methodMemo, paidAt }) => {
     const newPay = {
@@ -380,8 +528,9 @@ export function CourseProvider({ children }) {
       await enrollStudent(userId, courseId, 'active');
     }
 
+    notifySyncUpdate({ type: 'PAYMENT_RECORDED', userId, courseId });
     return newPay;
-  }, [enrollStudent]);
+  }, [enrollStudent, notifySyncUpdate]);
 
   const updateCourseSettings = useCallback(async (courseId, updates) => {
     let finalUpdates = { ...updates };
@@ -630,8 +779,9 @@ export function CourseProvider({ children }) {
       await remoteDb.insertCertificate(newCert).catch(err => console.warn('Supabase insertCertificate warning:', err));
     }
 
+    notifySyncUpdate({ type: 'CERTIFICATE_CLAIMED', userId: currentUser.id, courseId });
     return newCert;
-  }, [currentUser, courses, lectures, progressList, examAttempts, certificates]);
+  }, [currentUser, courses, lectures, progressList, examAttempts, certificates, notifySyncUpdate]);
 
   // Exam helpers
   const getExamPool = useCallback((courseId) => {
@@ -672,8 +822,9 @@ export function CourseProvider({ children }) {
       }
     }
 
+    notifySyncUpdate({ type: 'EXAM_SUBMITTED', userId, courseId });
     return evaluation;
-  }, [courses, lectures, progressList, enrollments]);
+  }, [courses, lectures, progressList, enrollments, notifySyncUpdate]);
 
   return (
     <CourseContext.Provider
