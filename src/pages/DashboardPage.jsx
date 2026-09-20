@@ -24,36 +24,21 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
   const [activeExamCourse, setActiveExamCourse] = useState(null);
   const [showPaymentInfoModal, setShowPaymentInfoModal] = useState(false);
 
-  // If not logged in, prompt to log in
-  if (!currentUser) {
-    return (
-      <div className="container" style={{ padding: '80px 0', textAlign: 'center', maxWidth: '500px' }}>
-        <div className="card" style={{ padding: '40px 30px' }}>
-          <BookOpen size={48} color="var(--color-sage)" style={{ margin: '0 auto 16px auto' }} />
-          <h2 className="heading-1 font-serif" style={{ fontSize: '24px', marginBottom: '8px' }}>로그인이 필요합니다</h2>
-          <p className="text-body" style={{ color: 'var(--color-text-muted)', marginBottom: '24px' }}>
-            내 강의실을 이용하시려면 먼저 회원 계정으로 로그인해 주세요.
-          </p>
-          <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => onNavigate('login')}>
-            로그인 페이지로 이동
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // Get current user enrollments
   const userEnrollments = useMemo(() => {
+    if (!currentUser) return [];
     return enrollments.filter(e => e.userId === currentUser.id);
-  }, [enrollments, currentUser.id]);
+  }, [enrollments, currentUser?.id]);
 
   // Courses not yet enrolled by current user
   const notEnrolledCourses = useMemo(() => {
+    if (!currentUser) return courses;
     return courses.filter(c => !userEnrollments.some(e => e.courseId === c.id));
-  }, [courses, userEnrollments]);
+  }, [courses, userEnrollments, currentUser]);
 
   // Find most recent played lecture for Sticky "이어서 학습"
   const recentResumeLecture = useMemo(() => {
+    if (!currentUser) return null;
     const userProgress = progressList
       .filter(p => p.userId === currentUser.id && p.lastPlayedSeconds > 0 && !p.completed)
       .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
@@ -78,7 +63,25 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
     }
 
     return null;
-  }, [progressList, lectures, userEnrollments, currentUser.id]);
+  }, [progressList, lectures, userEnrollments, currentUser?.id]);
+
+  // If not logged in, prompt to log in safely after all hooks are declared
+  if (!currentUser) {
+    return (
+      <div className="container" style={{ padding: '80px 0', textAlign: 'center', maxWidth: '500px' }}>
+        <div className="card" style={{ padding: '40px 30px' }}>
+          <BookOpen size={48} color="var(--color-sage)" style={{ margin: '0 auto 16px auto' }} />
+          <h2 className="heading-1 font-serif" style={{ fontSize: '24px', marginBottom: '8px' }}>로그인이 필요합니다</h2>
+          <p className="text-body" style={{ color: 'var(--color-text-muted)', marginBottom: '24px' }}>
+            내 강의실을 이용하시려면 먼저 회원 계정으로 로그인해 주세요.
+          </p>
+          <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => onNavigate('login')}>
+            로그인 페이지로 이동
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Calculate remaining days for an enrollment
   const getRemainingDays = (expireAt) => {

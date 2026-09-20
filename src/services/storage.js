@@ -15,10 +15,17 @@ const STORAGE_KEYS = {
 export function purgeLegacyLocalStorage() {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.clear();
+      const keysToRemove = [];
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i);
+        if (key && (key.startsWith('buddha_') || key.startsWith('buddha_lms_'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(k => window.localStorage.removeItem(k));
     }
   } catch (e) {
-    console.warn('LocalStorage clear error:', e);
+    console.warn('LocalStorage selective purge error:', e);
   }
 }
 

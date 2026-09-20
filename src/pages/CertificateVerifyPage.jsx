@@ -1,22 +1,41 @@
 import React, { useState } from 'react';
-import { Search, Award, CheckCircle2, XCircle, ShieldCheck, ArrowRight, Calendar, User } from 'lucide-react';
-import { verifyCertificate } from '../services/certService';
+import { Search, Award, CheckCircle2, XCircle, ShieldCheck, ArrowRight, Calendar, User, Loader2 } from 'lucide-react';
+import { verifyCertificate, enrichCertificate } from '../services/certService';
 import { useCourse } from '../context/CourseContext';
+import { remoteDb } from '../services/apiClient';
 import SealGraphic from '../components/certificate/SealGraphic';
 
 export default function CertificateVerifyPage({ onNavigate }) {
   const { certificates } = useCourse();
-  const [searchQuery, setSearchQuery] = useState('CERT-2026-00088');
-  const [verifyResult, setVerifyResult] = useState(() => verifyCertificate('CERT-2026-00088', certificates));
-  const [hasSearched, setHasSearched] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [verifyResult, setVerifyResult] = useState(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     if (e) e.preventDefault();
-    if (!searchQuery.trim()) return;
+    const query = searchQuery.trim().toUpperCase();
+    if (!query) return;
 
-    const result = verifyCertificate(searchQuery, certificates);
-    setVerifyResult(result);
-    setHasSearched(true);
+    setIsSearching(true);
+    try {
+      // 1. Single direct lookup from Supabase (instant and privacy preserving)
+      const remoteCert = await remoteDb.getCertificateByNo(query);
+      if (remoteCert) {
+        setVerifyResult(enrichCertificate(remoteCert));
+      } else {
+        // 2. Fallback to local certificates if available
+        const localResult = verifyCertificate(query, certificates);
+        setVerifyResult(localResult);
+      }
+    } catch (err) {
+      console.warn('Certificate single query error:', err);
+      const localResult = verifyCertificate(query, certificates);
+      setVerifyResult(localResult);
+    } finally {
+      setIsSearching(false);
+      setHasSearched(true);
+    }
   };
 
   // Mask student name for privacy: "이보디" -> "이*디", "김도현" -> "김*현"

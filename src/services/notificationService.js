@@ -48,6 +48,11 @@ export function playAlertChime() {
     osc2.start();
     osc1.stop(ctx.currentTime + 1.3);
     osc2.stop(ctx.currentTime + 1.3);
+
+    // Auto-close AudioContext to prevent memory/resource leaks
+    setTimeout(() => {
+      ctx.close().catch(() => {});
+    }, 1500);
   } catch (err) {
     console.warn('Could not play alert chime:', err);
   }
@@ -206,9 +211,11 @@ export function startAdminEnrollmentListener(onNewEnrollment) {
 
   let lastCheckedIds = new Set();
   let isFirstRun = true;
+  let isChecking = false;
 
   const checkNewEnrollments = async () => {
-    if (!isExternalDbConfigured) return;
+    if (!isExternalDbConfigured || isChecking) return;
+    isChecking = true;
     try {
       const enrollments = await remoteDb.getEnrollments();
       if (!Array.isArray(enrollments)) return;
@@ -233,6 +240,8 @@ export function startAdminEnrollmentListener(onNewEnrollment) {
       }
     } catch (e) {
       // Quiet fail on network hiccups
+    } finally {
+      isChecking = false;
     }
   };
 

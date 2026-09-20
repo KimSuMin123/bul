@@ -271,7 +271,8 @@ export function selectRandomQuestions(questionPool, count = 20) {
 export function evaluateExam(questions, userAnswers) {
   let correctCount = 0;
   const totalCount = questions.length;
-  const pointPerQuestion = 5; // 20문제 x 5점 = 100점 만점
+  // 20문제 고정 출제 기준: 문항당 5점 (100점 만점)
+  const pointPerQuestion = totalCount > 0 ? (100 / totalCount) : 5;
 
   const questionResults = questions.map((q, idx) => {
     const chosen = userAnswers[q.id] || userAnswers[q.examIndex] || null;
@@ -291,8 +292,8 @@ export function evaluateExam(questions, userAnswers) {
     };
   });
 
-  const score = correctCount * pointPerQuestion;
-  const passed = score >= 60; // 수료 기준 60점
+  const score = Math.round(correctCount * pointPerQuestion);
+  const passed = score >= 60; // 수료 기준 60점 (20문제 중 12문제 이상 정답)
 
   return {
     score,

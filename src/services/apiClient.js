@@ -79,31 +79,54 @@ async function supabaseFetch(endpoint, options = {}) {
   }
 
   const url = `${SUPABASE_URL}/rest/v1${endpoint}`;
+  
+  // Ensure return=representation is preserved unless caller specifies otherwise
+  let preferHeader = options.prefer || 'return=representation';
+  if (!preferHeader.includes('return=')) {
+    preferHeader += ',return=representation';
+  }
+
   const headers = {
     'apikey': SUPABASE_ANON_KEY,
     'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
     'Content-Type': 'application/json',
-    'Prefer': options.prefer || 'return=representation',
+    'Prefer': preferHeader,
     ...(options.headers || {})
   };
 
-  const res = await fetch(url, {
-    ...options,
-    headers
-  });
+  // 10 second timeout protection
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const signal = options.signal || controller.signal;
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`DB Error (${res.status}): ${errText}`);
-  }
-
-  if (res.status === 204) return null; // No Content
-  const text = await res.text();
-  if (!text || text.trim() === '') return null;
   try {
-    return JSON.parse(text);
-  } catch (e) {
-    return null;
+    const res = await fetch(url, {
+      ...options,
+      headers,
+      signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`DB Error (${res.status}): ${errText}`);
+    }
+
+    if (res.status === 204) return null; // No Content
+    const text = await res.text();
+    if (!text || text.trim() === '') return null;
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      return null;
+    }
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('네트워크 요청 시간이 초과되었습니다. (10초 타임아웃)');
+    }
+    throw err;
   }
 }
 
@@ -144,6 +167,22 @@ export const remoteDb = {
   async authenticateUser(id, inputPassword) {
     if (!isExternalDbConfigured) return null;
     try {
+      // 1. Try secure PostgreSQL RPC login_user first (keeps passwords inside DB)
+      try {
+        const hashedInput = inputPassword.startsWith('sha256:')
+          ? inputPassword
+          : await hashPassword(inputPassword);
+
+        const rpcRes = await supabaseFetch('/rpc/login_user', {
+          method: 'POST',
+          body: JSON.stringify({ p_id: id.trim(), p_password: hashedInput })
+        });
+        if (rpcRes) return rpcRes;
+      } catch (rpcErr) {
+        // Fallback to direct match if RPC is initializing or during transition
+      }
+
+      // 2. Direct single-user query fallback
       const rows = await supabaseFetch(`/users?id=eq.${encodeURIComponent(id.trim())}&select=id,password,name,birth_date,phone,member_no,role,created_at`);
       if (!rows || rows.length === 0) return null;
 
@@ -151,13 +190,12 @@ export const remoteDb = {
       const isMatch = await verifyPassword(inputPassword, userRow.password);
       if (!isMatch) return null;
 
-      // Transparent Migration: If password was plain text, upgrade it to SHA-256 hash immediately
+      // Transparent Migration: Upgrade plain text to SHA-256 hash immediately
       if (!userRow.password.startsWith('sha256:')) {
         const secureHash = await hashPassword(inputPassword);
         this.updateUserPassword(userRow.id, secureHash).catch(e => console.warn('Auto password hash upgrade note:', e));
       }
 
-      // Return sanitized user object WITHOUT password property
       return {
         id: userRow.id,
         name: userRow.name,
@@ -174,12 +212,11 @@ export const remoteDb = {
   },
 
   /**
-   * Insert new user with one-way SHA-256 password hashing
+   * Insert new user with one-way SHA-256 password hashing (Strict creation without overwriting)
    */
   async insertUser(userData) {
     if (!isExternalDbConfigured) return null;
     try {
-      // Hash password before saving to DB if not already hashed
       const securePassword = userData.password.startsWith('sha256:')
         ? userData.password
         : await hashPassword(userData.password);
@@ -195,7 +232,7 @@ export const remoteDb = {
       };
       const res = await supabaseFetch('/users', {
         method: 'POST',
-        prefer: 'resolution=merge-duplicates,return=representation',
+        prefer: 'return=representation',
         body: JSON.stringify(payload)
       });
       const inserted = Array.isArray(res) ? res[0] : res;
@@ -305,7 +342,6 @@ export const remoteDb = {
       };
       const [inserted] = await supabaseFetch('/courses', {
         method: 'POST',
-        prefer: 'resolution=merge-duplicates',
         body: JSON.stringify(payload)
       });
       return inserted;
@@ -395,7 +431,6 @@ export const remoteDb = {
       };
       const [inserted] = await supabaseFetch('/lectures', {
         method: 'POST',
-        prefer: 'resolution=merge-duplicates',
         body: JSON.stringify(payload)
       });
       return inserted;
@@ -441,10 +476,13 @@ export const remoteDb = {
   },
 
   // ================= ENROLLMENTS =================
-  async getEnrollments() {
+  async getEnrollments(userId = null) {
     if (!isExternalDbConfigured) return null;
     try {
-      const rows = await supabaseFetch('/enrollments?select=*');
+      const endpoint = userId 
+        ? `/enrollments?user_id=eq.${encodeURIComponent(userId)}`
+        : '/enrollments?select=*';
+      const rows = await supabaseFetch(endpoint);
       return rows.map(e => ({
         id: e.id,
         userId: e.user_id,
@@ -518,7 +556,6 @@ export const remoteDb = {
       };
       const [inserted] = await supabaseFetch('/payments', {
         method: 'POST',
-        prefer: 'resolution=merge-duplicates',
         body: JSON.stringify(payload)
       });
       return inserted;
@@ -528,11 +565,38 @@ export const remoteDb = {
     }
   },
 
-  // ================= PROGRESS =================
-  async getProgress() {
+  /**
+   * Atomic Transaction for payment recording + enrollment activation
+   */
+  async processCoursePayment({ userId, courseId, amount, manager, methodMemo, paidAt }) {
     if (!isExternalDbConfigured) return null;
     try {
-      const rows = await supabaseFetch('/progress?select=*');
+      const res = await supabaseFetch('/rpc/process_course_payment', {
+        method: 'POST',
+        body: JSON.stringify({
+          p_user_id: userId,
+          p_course_id: courseId,
+          p_amount: Number(amount) || 0,
+          p_manager: (manager || '').trim(),
+          p_method_memo: (methodMemo || '').trim(),
+          p_paid_at: paidAt || new Date().toISOString().split('T')[0]
+        })
+      });
+      return res;
+    } catch (err) {
+      console.warn('Remote processCoursePayment failed, falling back to sequential writes:', err);
+      return null;
+    }
+  },
+
+  // ================= PROGRESS =================
+  async getProgress(userId = null) {
+    if (!isExternalDbConfigured) return null;
+    try {
+      const endpoint = userId
+        ? `/progress?user_id=eq.${encodeURIComponent(userId)}`
+        : '/progress?select=*';
+      const rows = await supabaseFetch(endpoint);
       return rows.map(p => ({
         id: p.id,
         userId: p.user_id,
@@ -577,10 +641,13 @@ export const remoteDb = {
   },
 
   // ================= CERTIFICATES =================
-  async getCertificates() {
+  async getCertificates(userId = null) {
     if (!isExternalDbConfigured) return null;
     try {
-      const rows = await supabaseFetch('/certificates?select=*');
+      const endpoint = userId
+        ? `/certificates?user_id=eq.${encodeURIComponent(userId)}`
+        : '/certificates?select=*';
+      const rows = await supabaseFetch(endpoint);
       return rows.map(c => ({
         certNo: c.cert_no,
         userId: c.user_id,
@@ -616,12 +683,37 @@ export const remoteDb = {
       };
       const [inserted] = await supabaseFetch('/certificates', {
         method: 'POST',
-        prefer: 'resolution=merge-duplicates',
         body: JSON.stringify(payload)
       });
       return inserted;
     } catch (err) {
       console.warn('Remote insertCertificate failed:', err);
+      return null;
+    }
+  },
+
+  async getCertificateByNo(certNo) {
+    if (!isExternalDbConfigured || !certNo) return null;
+    try {
+      const rows = await supabaseFetch(`/certificates?cert_no=eq.${encodeURIComponent(certNo.trim())}&limit=1`);
+      if (Array.isArray(rows) && rows.length > 0) {
+        const c = rows[0];
+        return {
+          certNo: c.cert_no,
+          userId: c.user_id,
+          courseId: c.course_id,
+          memberNo: c.member_no,
+          studentName: c.student_name,
+          birthDate: c.birth_date,
+          courseTitle: c.course_title,
+          period: c.period,
+          issuedAt: c.issued_at,
+          status: c.status || 'valid'
+        };
+      }
+      return null;
+    } catch (err) {
+      console.warn('Remote getCertificateByNo failed:', err);
       return null;
     }
   },
@@ -772,7 +864,6 @@ export const remoteDb = {
       };
       const [inserted] = await supabaseFetch('/exam_attempts', {
         method: 'POST',
-        prefer: 'resolution=merge-duplicates',
         body: JSON.stringify(payload)
       });
       return inserted;

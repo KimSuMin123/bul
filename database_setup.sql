@@ -269,3 +269,111 @@ CREATE POLICY "Public lecture video streaming" ON storage.objects FOR SELECT USI
 CREATE POLICY "Allow video upload to lectures" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'lectures');
 CREATE POLICY "Allow video update in lectures" ON storage.objects FOR UPDATE USING (bucket_id = 'lectures');
 CREATE POLICY "Allow video delete in lectures" ON storage.objects FOR DELETE USING (bucket_id = 'lectures');
+
+-- ==============================================================================
+-- 12. 서버 인증 RPC (비밀번호 클라이언트 노출 차단)
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION login_user(p_id TEXT, p_password TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_user RECORD;
+BEGIN
+    SELECT id, password, name, birth_date, phone, member_no, role, created_at
+    INTO v_user
+    FROM users
+    WHERE id = TRIM(p_id);
+
+    IF NOT FOUND THEN
+        RETURN NULL;
+    END IF;
+
+    -- 비밀번호 일치 검증 (SHA-256 해시 또는 레거시 평문)
+    IF v_user.password = p_password THEN
+        RETURN jsonb_build_object(
+            'id', v_user.id,
+            'name', v_user.name,
+            'birthDate', v_user.birth_date,
+            'phone', v_user.phone,
+            'memberNo', v_user.member_no,
+            'role', COALESCE(v_user.role, 'student'),
+            'createdAt', v_user.created_at
+        );
+    ELSE
+        RETURN NULL;
+    END IF;
+END;
+$$;
+
+-- ==============================================================================
+-- 13. 수납 & 수강권 활성화 원자적 트랜잭션 함수
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION process_course_payment(
+    p_user_id TEXT,
+    p_course_id TEXT,
+    p_amount INT,
+    p_manager TEXT,
+    p_method_memo TEXT,
+    p_paid_at DATE DEFAULT CURRENT_DATE
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_payment_id TEXT;
+    v_enrollment RECORD;
+    v_period_days INT := 90;
+    v_expire_date DATE;
+BEGIN
+    v_payment_id := 'pay_' || floor(extract(epoch from clock_timestamp()) * 1000)::text;
+    
+    -- 1. 결제 기록 원자적 INSERT
+    INSERT INTO payments (id, user_id, course_id, paid_at, manager, amount, method_memo)
+    VALUES (v_payment_id, p_user_id, p_course_id, COALESCE(p_paid_at, CURRENT_DATE), TRIM(p_manager), p_amount, TRIM(p_method_memo));
+
+    -- 2. 강좌 기본 수강기간(일) 조회
+    SELECT COALESCE(default_period_days, 90) INTO v_period_days FROM courses WHERE id = p_course_id;
+    IF v_period_days IS NULL THEN
+        v_period_days := 90;
+    END IF;
+    v_expire_date := CURRENT_DATE + (v_period_days || ' days')::interval;
+
+    -- 3. enrollment 활성화 (기존 신청건 UPDATE 또는 신규 INSERT)
+    SELECT * INTO v_enrollment FROM enrollments WHERE user_id = p_user_id AND course_id = p_course_id;
+    IF FOUND THEN
+        UPDATE enrollments 
+        SET status = 'active', paid_at = COALESCE(p_paid_at, CURRENT_DATE), expire_at = v_expire_date
+        WHERE id = v_enrollment.id;
+    ELSE
+        INSERT INTO enrollments (id, user_id, course_id, status, enrolled_at, paid_at, expire_at)
+        VALUES (
+            'enr_' || floor(extract(epoch from clock_timestamp()) * 1000)::text,
+            p_user_id,
+            p_course_id,
+            'active',
+            CURRENT_DATE,
+            COALESCE(p_paid_at, CURRENT_DATE),
+            v_expire_date
+        );
+    END IF;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'paymentId', v_payment_id,
+        'userId', p_user_id,
+        'courseId', p_course_id,
+        'status', 'active',
+        'expireAt', v_expire_date
+    );
+END;
+$$;
+
+-- ==============================================================================
+-- 14. 비밀번호를 제외한 공개 회원 뷰 (외부 비인가 접근 방지)
+-- ==============================================================================
+CREATE OR REPLACE VIEW users_public_view AS
+SELECT id, name, birth_date, phone, member_no, role, created_at
+FROM users;

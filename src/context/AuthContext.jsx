@@ -32,26 +32,15 @@ export function AuthProvider({ children }) {
     // 1. Purge legacy local database tables (keep only current user session ticket)
     initStorage();
 
-    // 2. Load latest users from Supabase and validate current session
+    // 2. Validate current stored session without blocking non-admin visitors
     async function initAuth() {
       try {
-        const remoteUsers = await refreshUsers();
         const storedUser = getStored(STORAGE_KEYS.CURRENT_USER);
-
         if (storedUser) {
-          if (Array.isArray(remoteUsers) && remoteUsers.length > 0) {
-            const matched = remoteUsers.find(u => u.id === storedUser.id);
-            if (matched) {
-              // Restore session with latest profile from Supabase
-              setCurrentUser({ ...matched, activeSessionToken: storedUser.activeSessionToken });
-            } else {
-              // User confirmed deleted from Supabase (only when remote users successfully loaded)
-              removeStored(STORAGE_KEYS.CURRENT_USER);
-              setCurrentUser(null);
-            }
-          } else {
-            // Remote fetch empty or pending: keep active stored session safely
-            setCurrentUser(storedUser);
+          setCurrentUser(storedUser);
+          // If stored user is admin, fetch user list in background
+          if (storedUser.role === 'admin') {
+            refreshUsers().catch(() => {});
           }
         }
       } catch (err) {

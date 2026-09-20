@@ -89,7 +89,7 @@ export default function CourseExamModal({
       if (!ok) return;
     }
 
-    const evaluation = submitExam(currentUser.id, course.id, examQuestions, userAnswers);
+    const evaluation = await submitExam(currentUser.id, course.id, examQuestions, userAnswers);
     setEvaluationResult(evaluation);
     setViewState('result');
   };

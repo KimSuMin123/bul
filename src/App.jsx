@@ -10,8 +10,10 @@ import WatchPage from './pages/WatchPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CertificateVerifyPage from './pages/CertificateVerifyPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
 import AboutPage from './pages/AboutPage';
+
+// Lazy load heavy admin dashboard to optimize initial bundle size
+const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage'));
 
 import { useAuth } from './context/AuthContext';
 import { useModalAlert } from './context/ModalAlertContext';
@@ -77,7 +79,10 @@ export default function App() {
   useEffect(() => {
     const parseHash = () => {
       const hash = window.location.hash.replace(/^#/, '');
-      if (!hash) return;
+      if (!hash) {
+        setCurrentView('home');
+        return;
+      }
 
       const [route, queryString] = hash.split('?');
       const params = new URLSearchParams(queryString || '');
@@ -236,7 +241,20 @@ export default function App() {
           )}
 
           {currentView === 'admin' && (
-            <AdminDashboardPage />
+            <React.Suspense fallback={
+              <div style={{ padding: '120px 20px', textAlign: 'center', minHeight: '60vh' }}>
+                <Loader2 className="animate-spin" size={36} color="var(--color-sage)" style={{ margin: '0 auto 16px auto' }} />
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '14.5px' }}>관리자 대시보드를 불러오는 중입니다...</p>
+              </div>
+            }>
+              {isAdmin || (currentUser?.role === 'admin') ? (
+                <AdminDashboardPage />
+              ) : (
+                <div style={{ padding: '80px 20px', textAlign: 'center' }}>
+                  <p>관리자 권한이 필요합니다.</p>
+                </div>
+              )}
+            </React.Suspense>
           )}
         </main>
 

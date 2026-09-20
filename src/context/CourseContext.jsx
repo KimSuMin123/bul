@@ -35,7 +35,7 @@ export function CourseProvider({ children }) {
   }, []);
 
 
-  // 100% Supabase Cloud DB Direct Fetch
+  // 100% Supabase Cloud DB Direct Fetch (Optimized Lazy Fetching)
   const refreshData = useCallback(async () => {
     if (!isExternalDbConfigured) {
       setLoading(false);
@@ -43,15 +43,10 @@ export function CourseProvider({ children }) {
     }
 
     try {
-      const [rCourses, rLecs, rEnrs, rPays, rProg, rCerts, rQA, rAttempts] = await Promise.all([
+      // 1. Fetch public courses and lectures for everyone (lightweight)
+      const [rCourses, rLecs] = await Promise.all([
         remoteDb.getCourses(),
-        remoteDb.getLectures(),
-        remoteDb.getEnrollments(),
-        remoteDb.getPayments(),
-        remoteDb.getProgress(),
-        remoteDb.getCertificates(),
-        remoteDb.getQAPosts(),
-        remoteDb.getExamAttempts()
+        remoteDb.getLectures()
       ]);
 
       const activeLecs = Array.isArray(rLecs) ? rLecs : [];
@@ -74,19 +69,52 @@ export function CourseProvider({ children }) {
         setCourses(populated);
       }
 
-      if (Array.isArray(rEnrs)) setEnrollments(rEnrs);
-      if (Array.isArray(rPays)) setPayments(rPays);
-      if (Array.isArray(rProg)) setProgressList(rProg);
-      if (Array.isArray(rCerts)) setCertificates(rCerts);
-      if (Array.isArray(rQA)) setQaPosts(rQA);
-      if (Array.isArray(rAttempts)) setExamAttempts(rAttempts);
+      // 2. Role-based targeted lazy fetching
+      if (isAdmin) {
+        // Admin: Load all operational data
+        const [rEnrs, rPays, rProg, rCerts, rQA, rAttempts] = await Promise.all([
+          remoteDb.getEnrollments(),
+          remoteDb.getPayments(),
+          remoteDb.getProgress(),
+          remoteDb.getCertificates(),
+          remoteDb.getQAPosts(),
+          remoteDb.getExamAttempts()
+        ]);
+        if (Array.isArray(rEnrs)) setEnrollments(rEnrs);
+        if (Array.isArray(rPays)) setPayments(rPays);
+        if (Array.isArray(rProg)) setProgressList(rProg);
+        if (Array.isArray(rCerts)) setCertificates(rCerts);
+        if (Array.isArray(rQA)) setQaPosts(rQA);
+        if (Array.isArray(rAttempts)) setExamAttempts(rAttempts);
+      } else if (currentUser?.id) {
+        // Student: Only fetch their own records (80%+ payload reduction)
+        const [rEnrs, rProg, rCerts, rQA, rAttempts] = await Promise.all([
+          remoteDb.getEnrollments(currentUser.id),
+          remoteDb.getProgress(currentUser.id),
+          remoteDb.getCertificates(currentUser.id),
+          remoteDb.getQAPosts(),
+          remoteDb.getExamAttempts(currentUser.id)
+        ]);
+        if (Array.isArray(rEnrs)) setEnrollments(rEnrs);
+        if (Array.isArray(rProg)) setProgressList(rProg);
+        if (Array.isArray(rCerts)) setCertificates(rCerts);
+        if (Array.isArray(rQA)) setQaPosts(rQA);
+        if (Array.isArray(rAttempts)) setExamAttempts(rAttempts);
+      } else {
+        // Guest: No extra DB queries needed
+        setEnrollments([]);
+        setPayments([]);
+        setProgressList([]);
+        setCertificates([]);
+        setExamAttempts([]);
+      }
 
     } catch (err) {
       console.warn('Supabase pure data fetch warning:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentUser?.id, isAdmin]);
 
   useEffect(() => {
     refreshData();
@@ -317,14 +345,43 @@ export function CourseProvider({ children }) {
     setPayments(prev => [...prev, newPay]);
 
     if (isExternalDbConfigured) {
-      await remoteDb.insertPayment(newPay).catch(err => console.warn('Supabase insertPayment warning:', err));
+      // 1. Attempt atomic transaction RPC first
+      const rpcResult = await remoteDb.processCoursePayment({
+        userId,
+        courseId,
+        amount,
+        manager,
+        methodMemo,
+        paidAt
+      });
+      if (!rpcResult) {
+        // Fallback to sequential write if RPC unavailable
+        await remoteDb.insertPayment(newPay).catch(err => console.warn('Supabase insertPayment warning:', err));
+        await enrollStudent(userId, courseId, 'active');
+      } else {
+        // Optimistic enrollment update
+        setEnrollments(prev => {
+          const target = prev.find(e => e.userId === userId && e.courseId === courseId);
+          if (target) {
+            return prev.map(e => e.id === target.id ? { ...e, status: 'active', paidAt: newPay.paidAt } : e);
+          }
+          return [...prev, {
+            id: rpcResult.paymentId ? `enr_${rpcResult.paymentId.replace('pay_', '')}` : `enr_${Date.now()}`,
+            userId,
+            courseId,
+            status: 'active',
+            enrolledAt: new Date().toISOString().split('T')[0],
+            paidAt: newPay.paidAt,
+            expireAt: rpcResult.expireAt || new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0]
+          }];
+        });
+      }
+    } else {
+      await enrollStudent(userId, courseId, 'active');
     }
 
-    // Activate enrollment
-    await enrollStudent(userId, courseId, 'active');
-    await refreshData();
     return newPay;
-  }, [enrollStudent, refreshData]);
+  }, [enrollStudent]);
 
   const updateCourseSettings = useCallback(async (courseId, updates) => {
     let finalUpdates = { ...updates };

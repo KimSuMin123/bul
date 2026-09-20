@@ -33,11 +33,13 @@ export default function VideoPlayer({
   const [resumeNotice, setResumeNotice] = useState(null);
   const [justCompleted, setJustCompleted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
-
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [controlsTimeout, setControlsTimeout] = useState(null);
   const controlsTimeoutRef = useRef(null);
   const dismissedResumeRef = useRef({});
   const lastSavedSecRef = useRef(0);
+  const lastTimeRef = useRef(0);
+  const cumulativeWatchedRef = useRef(0);
 
   // Sync fullscreen change events (native & webkit)
   useEffect(() => {
@@ -380,18 +382,56 @@ export default function VideoPlayer({
         className="player-video"
         src={lecture.videoUrl}
         poster={lecture.thumbnail || undefined}
+        preload="metadata"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}
         onClick={togglePlay}
+        onWaiting={() => setIsBuffering(true)}
+        onPlaying={() => setIsBuffering(false)}
+        onCanPlay={() => setIsBuffering(false)}
+        onSeeking={() => setIsBuffering(true)}
+        onSeeked={() => setIsBuffering(false)}
         onPlay={() => {
           setIsPlaying(true);
+          setIsBuffering(false);
           setResumeNotice(null);
           if (lecture?.id) dismissedResumeRef.current[lecture.id] = true;
         }}
         onPause={() => setIsPlaying(false)}
         playsInline
       />
+
+      {/* Buffering Indicator Overlay */}
+      {isBuffering && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 15,
+          pointerEvents: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '8px',
+          backgroundColor: 'rgba(0, 0, 0, 0.65)',
+          padding: '14px 22px',
+          borderRadius: '12px',
+          backdropFilter: 'blur(6px)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
+        }}>
+          <div style={{
+            width: '28px',
+            height: '28px',
+            border: '3px solid rgba(255, 255, 255, 0.2)',
+            borderTopColor: 'var(--color-amber)',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite'
+          }}></div>
+          <span style={{ color: '#FFFFFF', fontSize: '12.5px', fontWeight: 500, letterSpacing: '-0.2px' }}>영상 로딩 중...</span>
+        </div>
+      )}
 
       {/* Floating Exit Button when in Fullscreen */}
       {(isPseudoFullscreen || isFullscreen) && (

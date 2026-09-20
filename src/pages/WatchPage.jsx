@@ -31,21 +31,31 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
 
   // Find lecture and course
   useEffect(() => {
-    const lec = lectures.find(l => l.id === lectureId) || lectures[0];
+    if (lectures.length === 0) return;
+    const lec = lectures.find(l => l.id === lectureId) || null;
     if (lec) {
       setCurrentLecture(lec);
       const c = courses.find(item => item.id === lec.courseId);
       setCourse(c);
 
+      // Verify expiration
+      const userEnr = enrollments.find(e => e.userId === currentUser?.id && e.courseId === lec.courseId);
+      const isExpired = userEnr?.expireAt && new Date(userEnr.expireAt) < new Date(new Date().toDateString());
+
       // Verify Access Permission (RBAC)
-      if (!hasLectureAccess(currentUser?.id, lec.id)) {
+      if (isExpired) {
+        setUnauthorizedCourseTitle(`${c ? c.title : '해당 강좌'} (수강 기간이 만료되었습니다)`);
+        setShowDeniedModal(true);
+      } else if (!hasLectureAccess(currentUser?.id, lec.id)) {
         setUnauthorizedCourseTitle(c ? c.title : '해당 강좌');
         setShowDeniedModal(true);
       } else {
         setShowDeniedModal(false);
       }
+    } else {
+      setCurrentLecture(null);
     }
-  }, [lectureId, lectures, courses, currentUser?.id, hasLectureAccess]);
+  }, [lectureId, lectures, courses, enrollments, currentUser?.id, hasLectureAccess]);
 
   // Course playlist
   const courseLectures = useMemo(() => {
@@ -154,6 +164,24 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
       }, 500);
     }
   };
+
+  if (!currentLecture) {
+    return (
+      <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
+        <div className="card" style={{ padding: '40px 20px', maxWidth: '480px', margin: '0 auto' }}>
+          <h2 className="heading-1 font-serif" style={{ fontSize: '22px', marginBottom: '12px' }}>
+            강의를 찾을 수 없습니다
+          </h2>
+          <p className="text-body" style={{ color: 'var(--color-text-muted)', marginBottom: '24px' }}>
+            요청하신 강의 차시가 존재하지 않거나 삭제되었습니다.
+          </p>
+          <button className="btn btn-primary" onClick={() => onNavigate('dashboard')}>
+            내 강의실로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const hasAccess = hasLectureAccess(currentUser?.id, currentLecture.id);
   const isLocked = isLectureLocked(currentUser?.id, currentLecture.id);

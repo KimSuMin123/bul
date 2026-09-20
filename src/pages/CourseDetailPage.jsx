@@ -15,10 +15,11 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
   const { currentUser } = useAuth();
   const { showConfirm, showAlert } = useModalAlert();
 
-  const course = courses.find(c => c.id === courseId) || courses[0];
+  const course = courses.find(c => c.id === courseId) || null;
   const courseLectures = useMemo(() => {
+    if (!course) return [];
     return lectures
-      .filter(l => l.courseId === course?.id)
+      .filter(l => l.courseId === course.id)
       .sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
   }, [lectures, course?.id]);
 
@@ -63,7 +64,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
       }
     }
     setOpenGroupIds(new Set([targetPartId]));
-  }, [courseLectures.length, currentUser?.id]);
+  }, [courseLectures, currentUser?.id]);
 
   const toggleGroup = (groupId) => {
     setOpenGroupIds(prev => {
@@ -98,13 +99,33 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
       return;
     }
 
-    enrollStudent(currentUser.id, course.id, 'pending');
+    if (!course) return;
+
+    await enrollStudent(currentUser.id, course.id, 'pending');
     await showAlert(`[${course.title}] 수강 신청이 완료되었습니다!\n\n• 현재 [대기상태 (대면 수납 대기)]로 접수되었습니다.\n• 교학처(02-2260-8888)에 방문하시어 수납을 완료하시면 [수강 중]으로 즉시 전환됩니다.\n• [내 강의실]에서 신청 내역을 언제든 확인하실 수 있습니다.`, {
       title: '수강 신청 완료',
       type: 'success'
     });
     onNavigate('dashboard');
   };
+
+  if (!course && courses.length > 0) {
+    return (
+      <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
+        <div className="card" style={{ padding: '40px 20px', maxWidth: '480px', margin: '0 auto' }}>
+          <h2 className="heading-1 font-serif" style={{ fontSize: '22px', marginBottom: '12px' }}>
+            강좌를 찾을 수 없습니다
+          </h2>
+          <p className="text-body" style={{ color: 'var(--color-text-muted)', marginBottom: '24px' }}>
+            요청하신 강좌 정보가 존재하지 않거나 삭제되었습니다.
+          </p>
+          <button className="btn btn-primary" onClick={() => onNavigate('home')}>
+            강좌 목록으로 이동
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleLectureClick = (lec) => {
     if (!isEnrolled) {

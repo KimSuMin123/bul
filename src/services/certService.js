@@ -232,26 +232,17 @@ const DEMO_CERTIFICATES = [
 ];
 
 /**
- * Public Verification function: supports certNo, certRegNo, memberNo, or student name
+ * Public Verification function: exact match on certNo or memberNo
  */
 export function verifyCertificate(query, certificatesList = []) {
-  if (!query) return null;
+  if (!query || !query.trim()) return null;
   const certificates = Array.isArray(certificatesList) ? certificatesList : [];
-  const allPool = [...certificates, ...DEMO_CERTIFICATES];
   const clean = query.trim().toUpperCase().replace(/\s+/g, '');
 
-  const found = allPool.find(c => {
-    const enriched = enrichCertificate(c);
-    const certNoClean = (enriched.certNo || '').toUpperCase().replace(/\s+/g, '');
-    const certRegNoClean = (enriched.certRegNo || '').toUpperCase().replace(/\s+/g, '');
-    const memberNoClean = (enriched.memberNo || '').toUpperCase().replace(/\s+/g, '');
-    return (
-      certNoClean === clean ||
-      certRegNoClean === clean ||
-      certRegNoClean.includes(clean) ||
-      clean.includes(certNoClean) ||
-      memberNoClean === clean
-    );
+  const found = certificates.find(c => {
+    const certNoClean = (c.certNo || c.cert_no || '').toUpperCase().replace(/\s+/g, '');
+    const memberNoClean = (c.memberNo || c.member_no || '').toUpperCase().replace(/\s+/g, '');
+    return certNoClean === clean || memberNoClean === clean;
   });
 
   return found ? enrichCertificate(found) : null;
