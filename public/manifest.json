@@ -1,7 +1,7 @@
 {
-  "name": "사단법인 세화붓다아카데미 관리자 CMS",
+  "name": "[사]세화붓다아카데미 관리자 CMS",
   "short_name": "세화아카데미",
-  "description": "사단법인 세화붓다아카데미 이러닝 플랫폼 및 실시간 학사 관리 시스템",
+  "description": "[사]세화붓다아카데미 이러닝 플랫폼 및 실시간 학사 관리 시스템",
   "start_url": "/#admin",
   "scope": "/",
   "display": "standalone",

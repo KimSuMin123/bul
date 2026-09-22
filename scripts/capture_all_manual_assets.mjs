@@ -203,7 +203,7 @@ async function captureAllModals(browser) {
     // 1. Success Modal Alert
     console.log('1. Modal: Success Alert...');
     await page.evaluate(() => {
-      window.__showModalAlert?.('수강 신청이 정상 접수되었습니다!\n\n현재 [대기상태 (대면 수납 대기)]로 등록되었습니다.\n교학처(02-2260-8888)에 방문하시어 수납을 완료하시면 [수강 중]으로 전환됩니다.', {
+      window.__showModalAlert?.('수강 신청이 정상 접수되었습니다!\n\n현재 [대기상태 (대면 수납 대기)]로 등록되었습니다.\n교학처(010-4702-0283)에 방문하시어 수납을 완료하시면 [수강 중]으로 전환됩니다.', {
         title: '수강 신청 접수 완료',
         type: 'success'
       });

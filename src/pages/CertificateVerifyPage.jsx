@@ -256,7 +256,7 @@ export default function CertificateVerifyPage({ onNavigate }) {
                   발급번호의 영문 대소문자 및 숫자를 다시 확인해 주세요.
                 </p>
                 <div style={{ fontSize: '12.5px', color: 'var(--color-text-muted)' }}>
-                  관련 문의: 학과 교학처 02-2260-8888
+                  관련 문의: 학과 교학처 010-4702-0283
                 </div>
               </div>
             )}

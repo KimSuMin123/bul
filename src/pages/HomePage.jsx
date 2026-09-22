@@ -157,8 +157,8 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
                 <Award size={22} color="var(--color-sage)" />
               </div>
               <div>
-                <div style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>100% 완강 시 </div>
-                <div style={{ fontWeight: 700, fontSize: '15px' }}>수료증 자동 발급</div>
+                <div style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>100% 완강 후 시험 합격시</div>
+                <div style={{ fontWeight: 700, fontSize: '15px' }}>자격증 자동 발급</div>
               </div>
             </div>
           </div>

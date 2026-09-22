@@ -102,7 +102,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
     if (!course) return;
 
     await enrollStudent(currentUser.id, course.id, 'pending');
-    await showAlert(`[${course.title}] 수강 신청이 완료되었습니다!\n\n• 현재 [대기상태 (대면 수납 대기)]로 접수되었습니다.\n• 교학처(02-2260-8888)에 방문하시어 수납을 완료하시면 [수강 중]으로 즉시 전환됩니다.\n• [내 강의실]에서 신청 내역을 언제든 확인하실 수 있습니다.`, {
+    await showAlert(`[${course.title}] 수강 신청이 완료되었습니다!\n\n• 현재 [대기상태 (대면 수납 대기)]로 접수되었습니다.\n• 교학처(010-4702-0283)에 방문하시어 수납을 완료하시면 [수강 중]으로 즉시 전환됩니다.\n• [내 강의실]에서 신청 내역을 언제든 확인하실 수 있습니다.`, {
       title: '수강 신청 완료',
       type: 'success'
     });
@@ -243,7 +243,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                     교학처 수납 대기 중
                   </span>
                   <span style={{ fontSize: '13px', color: '#64748B' }}>
-                    교학처(02-2260-8888)에 방문하시어 수납을 완료하시면 승인됩니다.
+                    교학처(010-4702-0283)에 방문하시어 수납을 완료하시면 승인됩니다.
                   </span>
                 </div>
               ) : (

@@ -109,7 +109,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
   // Direct Apply from Dashboard
   const handleApplyCourseFromDashboard = async (courseId) => {
     await enrollStudent(currentUser.id, courseId, 'pending');
-    showAlert(`수강 신청이 정상 접수되었습니다!\n\n현재 [대기상태 (대면 수납 대기)]로 등록되었습니다.\n교학처(02-2260-8888)에 방문하시어 수납을 완료하시면 [수강 중]으로 전환됩니다.`, { type: 'success', title: '수강 신청 접수 완료' });
+    showAlert(`수강 신청이 정상 접수되었습니다!\n\n현재 [대기상태 (대면 수납 대기)]로 등록되었습니다.\n교학처(010-4702-0283)에 방문하시어 수납을 완료하시면 [수강 중]으로 전환됩니다.`, { type: 'success', title: '수강 신청 접수 완료' });
     refreshData();
   };
 
@@ -301,7 +301,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                             <span>교학처 대면 수납 승인 대기 중</span>
                           </div>
                           <p style={{ margin: 0, fontSize: '12.5px', color: '#B45309', lineHeight: '1.5' }}>
-                            수강 신청이 접수되었습니다. 교학처(02-2260-8888)에 방문하시어 수강료를 납부하시면 즉시 [수강 중]으로 전환되어 강의 시청이 가능합니다.
+                            수강 신청이 접수되었습니다. 교학처(010-4702-0283)에 방문하시어 수강료를 납부하시면 즉시 [수강 중]으로 전환되어 강의 시청이 가능합니다.
                           </p>
                         </div>
                       )}
