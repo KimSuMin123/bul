@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Clock, BookOpen, User, CheckCircle, ArrowLeft, 
   Lock, PlayCircle, ShieldCheck, ChevronRight, ChevronDown, ChevronUp, Layers
@@ -14,6 +14,8 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
   } = useCourse();
   const { currentUser } = useAuth();
   const { showConfirm, showAlert } = useModalAlert();
+  const [applying, setApplying] = useState(false);
+  const applyingRef = useRef(false);
 
   const course = courses.find(c => c.id === courseId) || null;
   const courseLectures = useMemo(() => {
@@ -87,26 +89,38 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
   };
 
   const handleApplyCourse = async () => {
-    if (!currentUser) {
-      const ok = await showConfirm('수강 신청을 위해 로그인이 필요합니다. 로그인 페이지로 이동하시겠습니까?', {
-        title: '로그인 필요 안내',
-        type: 'info',
-        confirmText: '로그인하기'
-      });
-      if (ok) {
-        onNavigate('login');
+    if (applyingRef.current) return;
+    applyingRef.current = true;
+    setApplying(true);
+    try {
+      if (!currentUser) {
+        const ok = await showConfirm('수강 신청을 위해 로그인이 필요합니다. 로그인 페이지로 이동하시겠습니까?', {
+          title: '로그인 필요 안내',
+          type: 'info',
+          confirmText: '로그인하기'
+        });
+        if (ok) {
+          onNavigate('login');
+        }
+        return;
       }
-      return;
+
+      if (!course) return;
+
+      await enrollStudent(currentUser.id, course.id, 'pending');
+      await showAlert(`[${course.title}] 수강 신청이 완료되었습니다!\n\n• 현재 [대기상태 (대면 수납 대기)]로 접수되었습니다.\n• 교학처(010-4702-0283)에 방문하시어 수납을 완료하시면 [수강 중]으로 즉시 전환됩니다.\n• [내 강의실]에서 신청 내역을 언제든 확인하실 수 있습니다.`, {
+        title: '수강 신청 완료',
+        type: 'success'
+      });
+      onNavigate('dashboard');
+    } catch (error) {
+      await showAlert(error.message || '수강 신청을 저장하지 못했습니다. 다시 시도해 주세요.', {
+        type: 'error', title: '수강 신청 실패'
+      });
+    } finally {
+      applyingRef.current = false;
+      setApplying(false);
     }
-
-    if (!course) return;
-
-    await enrollStudent(currentUser.id, course.id, 'pending');
-    await showAlert(`[${course.title}] 수강 신청이 완료되었습니다!\n\n• 현재 [대기상태 (대면 수납 대기)]로 접수되었습니다.\n• 교학처(010-4702-0283)에 방문하시어 수납을 완료하시면 [수강 중]으로 즉시 전환됩니다.\n• [내 강의실]에서 신청 내역을 언제든 확인하실 수 있습니다.`, {
-      title: '수강 신청 완료',
-      type: 'success'
-    });
-    onNavigate('dashboard');
   };
 
   if (!course) {
@@ -250,8 +264,10 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                 <button 
                   className="btn btn-amber btn-lg"
                   onClick={handleApplyCourse}
+                  disabled={applying}
+                  aria-busy={applying}
                 >
-                  <span>수강 신청 접수하기</span>
+                  <span>{applying ? '수강 신청 처리 중...' : '수강 신청 접수하기'}</span>
                 </button>
               )}
             </div>

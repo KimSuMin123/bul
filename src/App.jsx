@@ -19,7 +19,6 @@ import { useAuth } from './context/AuthContext';
 import { useCourse } from './context/CourseContext';
 import { useModalAlert } from './context/ModalAlertContext';
 import { updatePageSEO } from './services/seoService';
-import { getStored, STORAGE_KEYS } from './services/storage';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
 // Global Error Boundary to prevent White Screen on any runtime error
@@ -67,9 +66,9 @@ class ErrorBoundary extends React.Component {
 }
 
 export default function App() {
-  const { currentUser, isAdmin, loading } = useAuth();
+  const { currentUser, isAdmin, loading, error: authError } = useAuth();
   const { showAlert } = useModalAlert();
-  const { refreshData } = useCourse();
+  const { refreshData, error: courseError } = useCourse();
 
   // Navigation state: 'home' | 'about' | 'dashboard' | 'courseDetail' | 'watch' | 'login' | 'register' | 'verify' | 'admin'
   const [currentView, setCurrentView] = useState('home');
@@ -109,8 +108,8 @@ export default function App() {
         setCurrentView('about');
       } else if (['home', 'dashboard', 'login', 'register', 'verify', 'admin'].includes(route)) {
         if (route === 'admin') {
-          const activeUser = currentUser || getStored(STORAGE_KEYS.CURRENT_USER);
-          const userIsAdmin = activeUser?.role === 'admin' || activeUser?.id === 'admin' || isAdmin;
+          if (loading) return;
+          const userIsAdmin = isAdmin;
           if (!userIsAdmin) {
             showAlert('관리자 계정(admin)만 접근할 수 있는 페이지입니다.', { type: 'warning', title: '접근 권한 제한' });
             setCurrentView('login');
@@ -125,7 +124,7 @@ export default function App() {
     parseHash();
     window.addEventListener('hashchange', parseHash);
     return () => window.removeEventListener('hashchange', parseHash);
-  }, [currentUser, isAdmin]);
+  }, [currentUser, isAdmin, loading]);
 
   // Scroll to top & update SEO meta tags on view change & reactive data sync
   useEffect(() => {
@@ -137,13 +136,7 @@ export default function App() {
   }, [currentView, aboutTab, selectedLectureId, selectedCourseId, refreshData]);
 
   const handleNavigate = (view, subParam) => {
-    const activeUser = currentUser || getStored(STORAGE_KEYS.CURRENT_USER);
-    const userIsAdmin = activeUser?.role === 'admin' || activeUser?.id === 'admin' || isAdmin;
-
-    if (view === 'admin' && !userIsAdmin) {
-      showAlert('관리자 계정(admin)만 접근할 수 있는 페이지입니다.', { type: 'warning', title: '접근 권한 제한' });
-      return;
-    }
+    // Route validation and the render guard use the latest authenticated state.
 
     if (view === 'about') {
       const tab = subParam || 'intro';
@@ -196,6 +189,13 @@ export default function App() {
         <Navbar currentView={currentView} onNavigate={handleNavigate} />
 
         <main className="main-content">
+          {authError && <div role="alert" style={{ margin: '16px', padding: '16px', background: '#fff7ed', borderRadius: '8px' }}>{authError}</div>}
+          {courseError && (
+            <div role="alert" style={{ margin: '16px', padding: '16px', background: '#fff7ed', borderRadius: '8px' }}>
+              <p>{courseError}</p>
+              <button className="btn btn-secondary btn-sm" onClick={() => refreshData()}>다시 불러오기</button>
+            </div>
+          )}
           {currentView === 'about' && (
             <AboutPage 
               initialTab={aboutTab} 

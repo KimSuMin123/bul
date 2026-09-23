@@ -1,59 +1,37 @@
-import React, { useState } from 'react';
-import { LogIn, KeyRound, ArrowRight, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useModalAlert } from '../context/ModalAlertContext';
 
 export default function LoginPage({ onNavigate }) {
-  const { login, resetPassword } = useAuth();
+  const { login, currentUser } = useAuth();
+  const { showAlert } = useModalAlert();
 
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginTargetUserId, setLoginTargetUserId] = useState(null);
 
-  // Forgot password modal state
-  const [showForgotModal, setShowForgotModal] = useState(false);
-  const [forgotId, setForgotId] = useState('');
-  const [forgotName, setForgotName] = useState('');
-  const [forgotPhone, setForgotPhone] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [forgotMsg, setForgotMsg] = useState({ text: '', isError: false });
+  // Route only after the verified identity has reached the rendered auth state.
+  useEffect(() => {
+    if (!loginTargetUserId || currentUser?.id !== loginTargetUserId) return;
+    setLoginTargetUserId(null);
+    onNavigate(currentUser.role === 'admin' ? 'admin' : 'dashboard');
+  }, [currentUser?.id, currentUser?.role, loginTargetUserId, onNavigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoginTargetUserId(null);
     setIsSubmitting(true);
     try {
       const user = await login(id, password);
-      if (user && user.role === 'admin') {
-        onNavigate('admin');
-      } else {
-        onNavigate('dashboard');
-      }
+      if (user?.id) setLoginTargetUserId(user.id);
     } catch (err) {
       setError(err.message || '아이디 또는 비밀번호가 일치하지 않습니다.');
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleResetPassword = async (e) => {
-    e.preventDefault();
-    setForgotMsg({ text: '', isError: false });
-    try {
-      await resetPassword({
-        id: forgotId,
-        name: forgotName,
-        phone: forgotPhone,
-        newPassword
-      });
-      setForgotMsg({ text: '비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해 주세요.', isError: false });
-      setTimeout(() => {
-        setShowForgotModal(false);
-        setPassword(newPassword);
-        setId(forgotId);
-      }, 1500);
-    } catch (err) {
-      setForgotMsg({ text: err.message, isError: true });
     }
   };
 
@@ -115,7 +93,7 @@ export default function LoginPage({ onNavigate }) {
                   type="button" 
                   className="btn-ghost" 
                   style={{ fontSize: '12px', color: 'var(--color-sage)', padding: 0 }}
-                  onClick={() => setShowForgotModal(true)}
+                  onClick={() => showAlert('비밀번호를 잊으셨다면 교학처(010-4702-0283)로 문의해 주세요.\n\n교학처에서 본인 확인을 마친 뒤 관리자가 비밀번호를 초기화해 드립니다.', { type: 'info', title: '비밀번호 재설정 안내' })}
                 >
                   비밀번호 찾기
                 </button>
@@ -155,94 +133,6 @@ export default function LoginPage({ onNavigate }) {
 
       </div>
 
-      {/* Forgot Password Modal */}
-      {showForgotModal && (
-        <div className="modal-backdrop" onClick={() => setShowForgotModal(false)}>
-          <div className="modal-card" style={{ padding: '28px' }} onClick={(e) => e.stopPropagation()}>
-            <h3 className="heading-2 font-serif" style={{ marginBottom: '6px' }}>비밀번호 찾기 및 재설정</h3>
-            <p className="text-caption" style={{ marginBottom: '20px' }}>
-              가입 시 등록하신 아이디, 성명, 휴대전화 번호를 입력하시면 새 비밀번호를 설정하실 수 있습니다.
-            </p>
-
-            {forgotMsg.text && (
-              <div 
-                style={{ 
-                  backgroundColor: forgotMsg.isError ? 'var(--color-coral-subtle)' : 'var(--color-sage-subtle)', 
-                  color: forgotMsg.isError ? 'var(--color-coral)' : 'var(--color-sage)', 
-                  padding: '10px 14px', 
-                  borderRadius: 'var(--radius-sm)', 
-                  fontSize: '13px', 
-                  marginBottom: '16px' 
-                }}
-              >
-                {forgotMsg.text}
-              </div>
-            )}
-
-            <form onSubmit={handleResetPassword}>
-              <div className="form-group">
-                <label className="form-label">아이디</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={forgotId} 
-                  onChange={(e) => setForgotId(e.target.value)} 
-                  required 
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">이름</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={forgotName} 
-                  onChange={(e) => setForgotName(e.target.value)} 
-                  required 
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">휴대전화 번호</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  placeholder="예: 010-1234-5678"
-                  value={forgotPhone} 
-                  onChange={(e) => setForgotPhone(e.target.value)} 
-                  required 
-                />
-              </div>
-
-              <div className="form-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
-                  <label className="form-label" style={{ margin: 0 }}>새 비밀번호</label>
-                  <span style={{ fontSize: '11.5px', color: 'var(--color-sage)', fontWeight: 600 }}>
-                    영문, 숫자, 기호 모두 포함 (8자 이상)
-                  </span>
-                </div>
-                <input 
-                  type="password" 
-                  className="form-input" 
-                  placeholder="영문, 숫자, 기호를 모두 포함하여 8자 이상 입력"
-                  value={newPassword} 
-                  onChange={(e) => setNewPassword(e.target.value)} 
-                  required 
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowForgotModal(false)}>
-                  취소
-                </button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                  비밀번호 변경
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

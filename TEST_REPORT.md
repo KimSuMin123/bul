@@ -1,5 +1,7 @@
 # 📋 종합 테스트 및 결함 개선 보고서 (buddha-lecture-platform)
 
+> 과거 보고서(2026-09-20)입니다. 2026-09-23 변경 범위와 현재 검증 방법은 [LMS 안정화 작업](docs/reliability-work.md)을 참조하세요.
+
 - **작업 일시:** 2026-09-20 13:48:00 (KST)
 - **수행 환경:** Node.js v22.17.0, React 18.3.1, Vite 6.4.3, Puppeteer Core 25.10.0, Chromium 140.0.x
 - **최종 결과:** [ ✅ 100% SUCCESS (단위/통합 11/11 통과, E2E 풀플로우 12/12 단계 완벽 통과) ]

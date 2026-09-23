@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   MessageSquare, Clock, CheckCircle2, Lock, Unlock, 
   Send, Trash2, Edit3, PlayCircle, PlusCircle, AlertCircle, 
@@ -19,6 +19,23 @@ export default function LectureQABoard({
   const { currentUser, isAdmin } = useAuth();
   const { qaPosts, addQAPost, addQAAnswer, deleteQAPost } = useCourse();
   const { showAlert, showConfirm } = useModalAlert();
+  const [qaBusy, setQaBusy] = useState(false);
+  const qaBusyRef = useRef(false);
+  const runQAAction = async (action) => {
+    if (qaBusyRef.current) return;
+    qaBusyRef.current = true;
+    setQaBusy(true);
+    try {
+      return await action();
+    } catch (error) {
+      await showAlert(error.message || '질의응답을 저장하지 못했습니다. 다시 시도해 주세요.', {
+        type: 'error', title: '질의응답 처리 실패'
+      });
+    } finally {
+      qaBusyRef.current = false;
+      setQaBusy(false);
+    }
+  };
 
   const currentLecId = lecture?.id || lectureId || '';
   const currentCrsId = course?.id || courseId || '';
@@ -101,39 +118,41 @@ export default function LectureQABoard({
   // Submit New Question
   const handleSubmitQuestion = async (e) => {
     e.preventDefault();
-    setFormError('');
+    return runQAAction(async () => {
+      setFormError('');
 
-    if (!newTitle.trim()) {
-      setFormError('질문 제목을 입력해 주세요.');
-      return;
-    }
-    if (!newContent.trim()) {
-      setFormError('질문 내용을 입력해 주세요.');
-      return;
-    }
+      if (!newTitle.trim()) {
+        setFormError('질문 제목을 입력해 주세요.');
+        return;
+      }
+      if (!newContent.trim()) {
+        setFormError('질문 내용을 입력해 주세요.');
+        return;
+      }
 
-    setSubmitting(true);
-    try {
-      await addQAPost({
-        courseId: currentCrsId,
-        lectureId: currentLecId,
-        title: newTitle,
-        content: newContent,
-        timestampSeconds: attachTimestamp ? timestampSecs : null,
-        isPrivate
-      });
+      setSubmitting(true);
+      try {
+        await addQAPost({
+          courseId: currentCrsId,
+          lectureId: currentLecId,
+          title: newTitle,
+          content: newContent,
+          timestampSeconds: attachTimestamp ? timestampSecs : null,
+          isPrivate
+        });
 
-      // Reset form
-      setNewTitle('');
-      setNewContent('');
-      setAttachTimestamp(false);
-      setIsPrivate(false);
-      setShowWriteForm(false);
-    } catch (err) {
-      setFormError(err.message || '질문 등록 중 오류가 발생했습니다.');
-    } finally {
-      setSubmitting(false);
-    }
+        // Reset form
+        setNewTitle('');
+        setNewContent('');
+        setAttachTimestamp(false);
+        setIsPrivate(false);
+        setShowWriteForm(false);
+      } catch (err) {
+        setFormError(err.message || '질문 등록 중 오류가 발생했습니다.');
+      } finally {
+        setSubmitting(false);
+      }
+    });
   };
 
   // Toggle Admin Answer Form for a post
@@ -155,43 +174,47 @@ export default function LectureQABoard({
 
   // Submit Monk Answer (Admin)
   const handleSubmitAnswer = async (postId) => {
-    const formData = answerForms[postId];
-    if (!formData || !formData.content?.trim()) {
-      showAlert('답변 내용을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
-      return;
-    }
+    return runQAAction(async () => {
+      const formData = answerForms[postId];
+      if (!formData || !formData.content?.trim()) {
+        showAlert('답변 내용을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
+        return;
+      }
 
-    try {
-      await addQAAnswer(postId, {
-        content: formData.content,
-        authorName: formData.monkName || '지산 스님',
-        badgeTitle: formData.badgeTitle || '담당 지도교수'
-      });
+      try {
+        await addQAAnswer(postId, {
+          content: formData.content,
+          authorName: formData.monkName || '지산 스님',
+          badgeTitle: formData.badgeTitle || '담당 지도교수'
+        });
 
-      setAnswerForms(prev => ({
-        ...prev,
-        [postId]: { ...prev[postId], showForm: false }
-      }));
-      showAlert('스님 명의의 법문 답변이 성공적으로 등록되었습니다.', { type: 'success', title: '답변 등록 완료' });
-    } catch (err) {
-      showAlert(err.message, { type: 'error', title: '답변 등록 오류' });
-    }
+        setAnswerForms(prev => ({
+          ...prev,
+          [postId]: { ...prev[postId], showForm: false }
+        }));
+        showAlert('스님 명의의 법문 답변이 성공적으로 등록되었습니다.', { type: 'success', title: '답변 등록 완료' });
+      } catch (err) {
+        showAlert(err.message, { type: 'error', title: '답변 등록 오류' });
+      }
+    });
   };
 
   // Handle Delete
   const handleDelete = async (postId) => {
-    const ok = await showConfirm('정말로 이 질문을 삭제하시겠습니까?\n작성된 답변 내용도 함께 삭제됩니다.', {
-      title: '질문 삭제 확인',
-      type: 'warning',
-      confirmText: '삭제'
-    });
-    if (ok) {
-      try {
-        await deleteQAPost(postId);
-      } catch (err) {
-        showAlert(err.message, { type: 'error', title: '삭제 오류' });
+    return runQAAction(async () => {
+      const ok = await showConfirm('정말로 이 질문을 삭제하시겠습니까?\n작성된 답변 내용도 함께 삭제됩니다.', {
+        title: '질문 삭제 확인',
+        type: 'warning',
+        confirmText: '삭제'
+      });
+      if (ok) {
+        try {
+          await deleteQAPost(postId);
+        } catch (err) {
+          showAlert(err.message, { type: 'error', title: '삭제 오류' });
+        }
       }
-    }
+    });
   };
 
   return (
@@ -427,7 +450,7 @@ export default function LectureQABoard({
                 <button 
                   type="submit" 
                   className="btn btn-primary btn-sm"
-                  disabled={submitting}
+                  disabled={submitting || qaBusy}
                 >
                   <Send size={14} />
                   <span>질문 등록하기</span>
@@ -543,6 +566,7 @@ export default function LectureQABoard({
                         className="btn btn-ghost btn-sm" 
                         style={{ padding: '4px 6px', color: '#94A3B8' }}
                         onClick={() => handleDelete(post.id)}
+                        disabled={qaBusy}
                         title="질문 삭제"
                       >
                         <Trash2 size={14} />
@@ -727,6 +751,7 @@ export default function LectureQABoard({
                             type="button" 
                             className="btn btn-amber btn-sm"
                             onClick={() => handleSubmitAnswer(post.id)}
+                            disabled={qaBusy}
                           >
                             <CheckCircle2 size={14} />
                             <span>답변 등록 완료</span>

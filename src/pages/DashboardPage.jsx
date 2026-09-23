@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   PlayCircle, Clock, Award, CheckCircle2, AlertCircle, 
   Calendar, BookOpen, ExternalLink, HelpCircle, ArrowRight,
@@ -23,6 +23,8 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
   const [activeCert, setActiveCert] = useState(null);
   const [activeExamCourse, setActiveExamCourse] = useState(null);
   const [showPaymentInfoModal, setShowPaymentInfoModal] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const applyingRef = useRef(false);
 
   // Get current user enrollments
   const userEnrollments = useMemo(() => {
@@ -108,9 +110,20 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
 
   // Direct Apply from Dashboard
   const handleApplyCourseFromDashboard = async (courseId) => {
-    await enrollStudent(currentUser.id, courseId, 'pending');
-    showAlert(`수강 신청이 정상 접수되었습니다!\n\n현재 [대기상태 (대면 수납 대기)]로 등록되었습니다.\n교학처(010-4702-0283)에 방문하시어 수납을 완료하시면 [수강 중]으로 전환됩니다.`, { type: 'success', title: '수강 신청 접수 완료' });
-    refreshData();
+    if (applyingRef.current) return;
+    applyingRef.current = true;
+    setApplying(true);
+    try {
+      await enrollStudent(currentUser.id, courseId, 'pending');
+      showAlert(`수강 신청이 정상 접수되었습니다!\n\n현재 [대기상태 (대면 수납 대기)]로 등록되었습니다.\n교학처(010-4702-0283)에 방문하시어 수납을 완료하시면 [수강 중]으로 전환됩니다.`, { type: 'success', title: '수강 신청 접수 완료' });
+    } catch (error) {
+      await showAlert(error.message || '수강 신청을 저장하지 못했습니다. 다시 시도해 주세요.', {
+        type: 'error', title: '수강 신청 실패'
+      });
+    } finally {
+      applyingRef.current = false;
+      setApplying(false);
+    }
   };
 
   return (
@@ -495,6 +508,8 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                       className="btn btn-secondary btn-sm" 
                       style={{ width: '100%', fontWeight: 600 }}
                       onClick={() => handleApplyCourseFromDashboard(c.id)}
+                      disabled={applying}
+                      aria-busy={applying}
                     >
                       <span>+ 수강 신청 접수 (대기상태로 담기)</span>
                     </button>

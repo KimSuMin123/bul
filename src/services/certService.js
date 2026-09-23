@@ -117,7 +117,7 @@ export function checkLecturesCompleted(userId, courseId, courses = [], lectures 
 
   return targetLectureIds.every(lecId => {
     const p = progressList.find(prog => prog.userId === userId && prog.lectureId === lecId);
-    return p && (p.completed || p.progressRate >= 99);
+    return p && (p.completed || p.progressRate >= 100);
   });
 }
 

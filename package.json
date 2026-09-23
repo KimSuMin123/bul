@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node scripts/test_unit_and_integration.mjs",
+    "test": "node scripts/test_unit_and_integration.mjs && node scripts/test_api_failure_contract.mjs && node scripts/test_auth_session.mjs && node scripts/test_frontend_save_and_modal.mjs && node scripts/test_media_storage.mjs && node scripts/test_media_metadata.mjs && npm run test:security",
     "test:unit": "node scripts/test_unit_and_integration.mjs",
-    "test:e2e": "node scripts/run_e2e_flow.mjs"
+    "test:browser": "node scripts/test_course_state.mjs",
+    "test:e2e": "node scripts/run_e2e_flow.mjs",
+    "test:security": "node scripts/test_security_auth.mjs && node scripts/test_security_sql.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",
@@ -18,6 +20,8 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@playwright/test": "^1.63.0",
     "@vitejs/plugin-react": "^4.3.4",
     "vite": "^6.0.7"
   }

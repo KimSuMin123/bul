@@ -1,103 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { checkCourseCompletion, issueCertificate, enrichCertificate, checkLecturesCompleted } from '../services/certService.js';
-import { 
-  parseExamText, 
-  selectRandomQuestions, 
-  evaluateExam, 
-  saveExamAttempt, 
-  getLatestExamAttempt, 
-  hasPassedCourseExam, 
-  getCourseExamPool,
-  PRESET_EXAM_QUESTIONS
-} from '../services/examService.js';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { enrichCertificate, checkLecturesCompleted } from '../services/certService.js';
+import { parseExamText, formatExamText, getLatestExamAttempt, hasPassedCourseExam } from '../services/examService.js';
 import { remoteDb, isExternalDbConfigured, deleteLectureVideo } from '../services/apiClient.js';
 import { notifyAdminCourseApplication } from '../services/notificationService.js';
 import { aggregateDonationReceipt, normalizePhone, findReceiptByPhoneOrUser } from '../services/donationService.js';
 import { useAuth } from './AuthContext.jsx';
-
-export const DEFAULT_COURSES = [
-  {
-    id: 'course-ritual-8-11',
-    title: '불교의례법사 과정 I (8강~11강)',
-    subtitle: '하단시식 및 칠칠재 영혼식 등 핵심 불교의례 집전과 해설',
-    category: '불교의례법사',
-    thumbnail: 'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?auto=format&fit=crop&w=800&q=80',
-    defaultPeriodDays: 90,
-    sequentialUnlock: true,
-    price: 50000,
-    instructor: '불교의례 전문 법사',
-    certType: '불교의례해설사',
-    certGrade: '2급',
-    certTypeFull: '불교의례해설사 2급',
-    certRegNo: '민간자격 등록번호 제 2026- 00183호',
-    certRegOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
-    rawExamText: ''
-  },
-  {
-    id: 'course-ritual-12-15',
-    title: '불교의례법사 과정 II (12강~15강)',
-    subtitle: '심화 불교의례 및 영산수륙예수 작법 실습',
-    category: '불교의례법사',
-    thumbnail: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=800&q=80',
-    defaultPeriodDays: 90,
-    sequentialUnlock: true,
-    price: 50000,
-    instructor: '불교의례 전문 법사',
-    certType: '불교의례해설사',
-    certGrade: '1급',
-    certTypeFull: '불교의례해설사 1급',
-    certRegNo: '민간자격 등록번호 제 2026- 00183호',
-    certRegOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
-    rawExamText: ''
-  }
-];
-
-export const DEFAULT_LECTURES = [
-  {
-    id: 'lec-ritual-08-1',
-    courseId: 'course-ritual-8-11',
-    orderIndex: 8,
-    title: '제8강 불교 영가천도의 의미와 하단시식 개요',
-    description: '불교 영가천도의 근본 종지와 하단시식의 의식 구조 및 봉송 절차를 체계적으로 학습합니다.',
-    durationSeconds: 2400,
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    attachmentName: '제8강_불교영가천도_교안.pdf',
-    attachments: [{ name: '제8강_불교영가천도_교안.pdf', size: '2.5 MB' }]
-  },
-  {
-    id: 'lec-ritual-09-1',
-    courseId: 'course-ritual-8-11',
-    orderIndex: 9,
-    title: '제9강 칠칠재 영혼식의 구성과 의궤 해설',
-    description: '초재부터 칠재까지 49재 영혼식의 각 단별 독송 진언과 집전 순서를 상세히 익힙니다.',
-    durationSeconds: 2400,
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    attachmentName: '제9강_칠칠재_영혼식_의궤.pdf',
-    attachments: [{ name: '제9강_칠칠재_영혼식_의궤.pdf', size: '3.1 MB' }]
-  },
-  {
-    id: 'lec-ritual-10-1',
-    courseId: 'course-ritual-8-11',
-    orderIndex: 10,
-    title: '제10강 각 칠재의례 및 영반 실수 실습',
-    description: '사찰 영반 집전 시 바라 및 요령 타법과 영가 이양의식을 실무 중심으로 학습합니다.',
-    durationSeconds: 2400,
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    attachmentName: '제10강_영반실수_해설.pdf',
-    attachments: [{ name: '제10강_영반실수_해설.pdf', size: '2.8 MB' }]
-  },
-  {
-    id: 'lec-ritual-11-1',
-    courseId: 'course-ritual-8-11',
-    orderIndex: 11,
-    title: '제11강 하단 퇴공 및 봉송 회향의식',
-    description: '시식 회향 및 영가 봉송 의식의 핵심 게송과 회향발원을 정리합니다.',
-    durationSeconds: 2400,
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    attachmentName: '제11강_봉송회향_교안.pdf',
-    attachments: [{ name: '제11강_봉송회향_교안.pdf', size: '1.9 MB' }]
-  }
-];
 
 const CourseContext = createContext(null);
 
@@ -113,6 +20,14 @@ export function CourseProvider({ children }) {
   const [examAttempts, setExamAttempts] = useState([]);
   const [donationReceipts, setDonationReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const requestVersion = useRef(0);
+  const progressReadVersion = useRef(0);
+  const pendingPayments = useRef({});
+  const syncSource = useRef(`course_${Math.random().toString(36).slice(2)}`);
+  const scope = `${currentUser?.id || ''}:${isAdmin}:${currentUser?.activeSessionToken || ''}`;
+  const activeScope = useRef(scope);
+  activeScope.current = scope;
   // Admin bypass mode for sequential lock testing (default false: enforce lock even for admin)
   const [adminBypassLock, setAdminBypassLock] = useState(false);
 
@@ -120,134 +35,107 @@ export function CourseProvider({ children }) {
     setAdminBypassLock(prev => !prev);
   }, []);
 
-  // 100% Supabase Cloud DB Direct Fetch (Optimized Lazy Fetching + Seamless Fallback)
+  // A successful empty response replaces old data; a failed request preserves it.
   const refreshData = useCallback(async () => {
-    try {
-      let activeCourses = DEFAULT_COURSES;
-      let activeLecs = DEFAULT_LECTURES;
-
-      if (isExternalDbConfigured) {
-        // 1. Fetch public courses and lectures for everyone
-        const [rCourses, rLecs] = await Promise.all([
-          remoteDb.getCourses().catch(() => null),
-          remoteDb.getLectures().catch(() => null)
-        ]);
-
-        if (Array.isArray(rLecs) && rLecs.length > 0) {
-          activeLecs = rLecs;
-        }
-        if (Array.isArray(rCourses) && rCourses.length > 0) {
-          activeCourses = rCourses;
-        }
-      }
-
-      setLectures(activeLecs);
-
-      const populated = activeCourses.map(c => {
-        let parsedExam = [];
-        if (c.rawExamText && c.rawExamText.trim()) {
-          parsedExam = parseExamText(c.rawExamText);
-        } else {
-          parsedExam = PRESET_EXAM_QUESTIONS;
-        }
-        return {
-          ...c,
-          examQuestions: parsedExam,
-          lectureIds: activeLecs.filter(l => l.courseId === c.id).map(l => l.id)
-        };
-      });
-      setCourses(populated);
-
-      // 2. Role-based targeted lazy fetching & seamless state preservation
-      const localEnrs = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('buddha_lms_enrollments') || '[]') : [];
-
-      if (isAdmin) {
-        if (isExternalDbConfigured) {
-          const [rEnrs, rPays, rProg, rCerts, rQA, rAttempts, rDonations] = await Promise.all([
-            remoteDb.getEnrollments().catch(() => []),
-            remoteDb.getPayments().catch(() => []),
-            remoteDb.getProgress().catch(() => []),
-            remoteDb.getCertificates().catch(() => []),
-            remoteDb.getQAPosts().catch(() => []),
-            remoteDb.getExamAttempts().catch(() => []),
-            remoteDb.getDonationReceipts().catch(() => [])
-          ]);
-          setEnrollments(prev => {
-            const combined = [...(Array.isArray(rEnrs) ? rEnrs : [])];
-            [...localEnrs, ...prev].forEach(p => {
-              if (!combined.some(c => c.id === p.id || (c.userId === p.userId && c.courseId === p.courseId))) {
-                combined.push(p);
-              }
-            });
-            return combined;
-          });
-          if (Array.isArray(rPays) && rPays.length > 0) setPayments(rPays);
-          if (Array.isArray(rProg) && rProg.length > 0) setProgressList(rProg);
-          if (Array.isArray(rCerts) && rCerts.length > 0) setCertificates(rCerts);
-          if (Array.isArray(rQA)) setQaPosts(rQA);
-          if (Array.isArray(rAttempts) && rAttempts.length > 0) setExamAttempts(rAttempts);
-          if (Array.isArray(rDonations) && rDonations.length > 0) setDonationReceipts(rDonations);
-        } else {
-          setEnrollments(localEnrs);
-        }
-      } else if (currentUser?.id) {
-        if (isExternalDbConfigured) {
-          const [rEnrs, rProg, rCerts, rQA, rAttempts] = await Promise.all([
-            remoteDb.getEnrollments(currentUser.id).catch(() => []),
-            remoteDb.getProgress(currentUser.id).catch(() => []),
-            remoteDb.getCertificates(currentUser.id).catch(() => []),
-            remoteDb.getQAPosts().catch(() => []),
-            remoteDb.getExamAttempts(currentUser.id).catch(() => [])
-          ]);
-          setEnrollments(prev => {
-            const combined = [...(Array.isArray(rEnrs) ? rEnrs : [])];
-            [...localEnrs, ...prev].forEach(p => {
-              if (p.userId === currentUser.id && !combined.some(c => c.id === p.id || (c.userId === p.userId && c.courseId === p.courseId))) {
-                combined.push(p);
-              }
-            });
-            return combined;
-          });
-          if (Array.isArray(rProg) && rProg.length > 0) setProgressList(rProg);
-          if (Array.isArray(rCerts) && rCerts.length > 0) setCertificates(rCerts);
-          if (Array.isArray(rQA)) setQaPosts(rQA);
-          if (Array.isArray(rAttempts) && rAttempts.length > 0) setExamAttempts(rAttempts);
-        } else {
-          setEnrollments(localEnrs.filter(e => e.userId === currentUser.id));
-        }
-      }
-    } catch (err) {
-      console.warn('CourseContext refreshData error:', err);
-    } finally {
+    const version = ++requestVersion.current;
+    const progressVersion = ++progressReadVersion.current;
+    if (!isExternalDbConfigured) {
+      setError('서버 연결 설정을 확인할 수 없습니다. 관리자에게 문의해 주세요.');
       setLoading(false);
+      return false;
     }
-  }, [currentUser?.id, isAdmin]);
+    const userId = isAdmin ? null : currentUser?.id;
+    const requests = [
+      [remoteDb.getCourses().then(async rows => isAdmin ? Promise.all(rows.map(async course => {
+        const bank = await remoteDb.getCourseExam(course.id);
+        return { ...course, rawExamText: bank?.rawExamText || formatExamText(bank?.questions || []) };
+      })) : rows), setCourses],
+      [remoteDb.getLectures(), setLectures]
+    ];
+    if (currentUser?.id) {
+      requests.push(
+        [remoteDb.getEnrollments(userId), setEnrollments],
+        [remoteDb.getProgress(userId), setProgressList],
+        [remoteDb.getCertificates(userId), setCertificates],
+        [remoteDb.getQAPosts(), setQaPosts],
+        [remoteDb.getExamAttempts(userId), setExamAttempts]
+      );
+      if (isAdmin) requests.push(
+        [remoteDb.getPayments(), setPayments],
+        [remoteDb.getDonationReceipts().then(rows => {
+          if (!Array.isArray(rows)) throw new Error('기부금 영수증을 불러오지 못했습니다.');
+          return rows;
+        }), setDonationReceipts]
+      );
+    }
+    const results = await Promise.allSettled(requests.map(([promise]) => promise));
+    if (version !== requestVersion.current || activeScope.current !== scope) return false;
+    results.forEach((result, index) => {
+      // Commit the public catalog as a pair; progress has its own newer reads.
+      if (index < 2 || (index === 3 && progressVersion !== progressReadVersion.current)) return;
+      if (result.status === 'fulfilled') requests[index][1](result.value);
+    });
+    // These two resources define one catalog; only derive IDs when both succeeded.
+    if (results[0].status === 'fulfilled' && results[1].status === 'fulfilled') {
+      setLectures(results[1].value);
+      setCourses(results[0].value.map(course => ({
+        ...course,
+        examQuestions: course.rawExamText?.trim() ? parseExamText(course.rawExamText) : [],
+        lectureIds: results[1].value.filter(lecture => lecture.courseId === course.id).map(lecture => lecture.id)
+      })));
+    }
+    const failed = results.some(result => result.status === 'rejected');
+    setError(failed ? '일부 정보를 불러오지 못했습니다. 연결을 확인하고 다시 시도해 주세요.' : null);
+    setLoading(false);
+    return !failed;
+  }, [currentUser?.id, isAdmin, scope]);
 
   // Real-time synchronization helper (Cross-tab & Same-tab without page reload)
   const notifySyncUpdate = useCallback((detail = {}) => {
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const ch = new BroadcastChannel('buddha_course_sync_channel');
-        ch.postMessage({ type: 'COURSE_SYNC_REFRESH', ...detail });
+        ch.postMessage({ ...detail, type: 'COURSE_SYNC_REFRESH', reason: detail.type, source: syncSource.current });
         ch.close();
       }
     } catch (e) {}
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('buddha_sync_update', { detail }));
-    }
+    // The originating tab has already applied the confirmed mutation locally.
   }, []);
 
   // Listen for real-time synchronization updates without manual refresh
   useEffect(() => {
+    // Administrator-only answer banks must disappear immediately on identity change.
+    setCourses([]);
+    setLectures([]);
+    setEnrollments([]);
+    setPayments([]);
+    setDonationReceipts([]);
+    setProgressList([]);
+    setCertificates([]);
+    setQaPosts([]);
+    setExamAttempts([]);
+    setAdminBypassLock(false);
+    setLoading(true);
     refreshData();
 
     let syncChannel = null;
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         syncChannel = new BroadcastChannel('buddha_course_sync_channel');
-        syncChannel.onmessage = (e) => {
-          if (e.data && e.data.type === 'COURSE_SYNC_REFRESH') {
-            refreshData();
+        syncChannel.onmessage = async (e) => {
+          if (e.data && e.data.type === 'COURSE_SYNC_REFRESH' && e.data.source !== syncSource.current) {
+            if (e.data.reason === 'PROGRESS_UPDATED') {
+              if (!currentUser?.id || (!isAdmin && e.data.userId !== currentUser.id)) return;
+              const version = ++progressReadVersion.current;
+              try {
+                const progress = await remoteDb.getProgress(isAdmin ? null : currentUser.id);
+                if (activeScope.current === scope && version === progressReadVersion.current) setProgressList(progress);
+              } catch {
+                if (activeScope.current === scope && version === progressReadVersion.current) setError('학습 진도를 불러오지 못했습니다. 다시 시도해 주세요.');
+              }
+            } else {
+              refreshData();
+            }
           }
         };
       }
@@ -263,12 +151,14 @@ export function CourseProvider({ children }) {
     }
 
     return () => {
+      requestVersion.current++;
+      progressReadVersion.current++;
       if (syncChannel) syncChannel.close();
       if (typeof window !== 'undefined') {
         window.removeEventListener('buddha_sync_update', handleLocalSync);
       }
     };
-  }, [refreshData]);
+  }, [refreshData, scope, currentUser?.id, isAdmin]);
 
   // =========================================================================
   // RBAC & Access Control Logic
@@ -278,12 +168,13 @@ export function CourseProvider({ children }) {
     if (!userId) return false;
     if (isAdmin) return true; // Admins have full preview access
 
-    const userEnrs = enrollments.filter(e => e.userId === userId && (e.status === 'active' || e.status === 'completed'));
+    const today = new Date().toISOString().slice(0, 10);
+    const userEnrs = enrollments.filter(e => e.userId === userId && (e.status === 'active' || e.status === 'completed') && e.expireAt && e.expireAt.slice(0, 10) >= today);
     const directMatch = userEnrs.find(e => e.courseId === courseId);
     if (directMatch) return true;
 
     const hasBundle = userEnrs.some(e => e.courseId === 'bundle-all');
-    if (hasBundle && (courseId === 'course-1' || courseId === 'course-2' || courseId === 'course-ritual-8-11' || courseId === 'course-ritual-12-15')) {
+    if (hasBundle) {
       return true;
     }
 
@@ -330,11 +221,9 @@ export function CourseProvider({ children }) {
     const prevLec = courseLecs[currentIndex - 1];
     const prevProg = progressList.find(p => String(p.userId) === String(targetUserId) && p.lectureId === prevLec.id);
     
-    // Completed if marked completed OR progressRate >= 95
-    const isCompleted = Boolean(prevProg && (prevProg.completed === true || (Number(prevProg.progressRate) || 0) >= 95));
+    const isCompleted = Boolean(prevProg && (prevProg.completed === true || (Number(prevProg.progressRate) || 0) >= 100));
     return !isCompleted;
   }, [lectures, courses, progressList, isAdmin, adminBypassLock, currentUser?.id]);
-
 
   // =========================================================================
   // Video Progress Tracking (100% Supabase Direct)
@@ -350,67 +239,17 @@ export function CourseProvider({ children }) {
     };
   }, [progressList]);
 
-  const updateProgress = useCallback(async (userId, lectureId, currentSeconds, totalDuration) => {
-    if (!userId || !lectureId) return;
-
-    const existingIndex = progressList.findIndex(p => p.userId === userId && p.lectureId === lectureId);
-    const existing = existingIndex !== -1 ? progressList[existingIndex] : null;
-
-    const lastPlayed = Math.round(currentSeconds);
-    const maxDuration = totalDuration || 1;
-    const calcRate = Math.min(100, Math.round((lastPlayed / maxDuration) * 100));
-    const highestRate = existing ? Math.max(existing.progressRate || 0, calcRate) : calcRate;
-    const isCompleted = highestRate >= 99 || (existing && existing.completed);
-
-    const targetLec = lectures.find(l => l.id === lectureId);
-    const courseId = targetLec?.courseId || existing?.courseId || null;
-
-    const updatedItem = {
-      id: existing ? existing.id : `prog_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      userId,
-      courseId,
-      lectureId,
-      lastPlayedSeconds: lastPlayed,
-      watchedSeconds: existing ? Math.max(existing.watchedSeconds || 0, lastPlayed) : lastPlayed,
-      progressRate: highestRate,
-      completed: isCompleted,
-      updatedAt: new Date().toISOString()
-    };
-
-    // Update memory state immediately
-    setProgressList(prev => {
-      const idx = prev.findIndex(p => p.userId === userId && p.lectureId === lectureId);
-      if (idx !== -1) {
-        const next = [...prev];
-        next[idx] = updatedItem;
-        return next;
-      }
-      return [...prev, updatedItem];
-    });
-
-    // Save directly to Supabase Cloud DB
-    if (isExternalDbConfigured) {
-      await remoteDb.upsertProgress(updatedItem).catch(err => console.warn('Supabase upsertProgress warning:', err));
-    }
-
-    // If lecture reached completion, check if full course is completed
-    if (isCompleted) {
-      const lec = lectures.find(l => l.id === lectureId);
-      if (lec) {
-        const nextProgress = progressList.map(p => (p.userId === userId && p.lectureId === lectureId ? updatedItem : p));
-        const allDone = checkCourseCompletion(userId, lec.courseId, courses, lectures, nextProgress, examAttempts);
-        if (allDone) {
-          const enr = enrollments.find(e => e.userId === userId && e.courseId === lec.courseId);
-          if (enr && enr.status !== 'completed') {
-            const updatedEnr = { ...enr, status: 'completed' };
-            setEnrollments(prev => prev.map(e => e.id === enr.id ? updatedEnr : e));
-            remoteDb.upsertEnrollment(updatedEnr).catch(() => {});
-          }
-        }
-      }
-    }
-    notifySyncUpdate({ type: 'PROGRESS_UPDATED', userId, lectureId });
-  }, [progressList, lectures, courses, enrollments, examAttempts, notifySyncUpdate]);
+  const updateProgress = useCallback(async (userId, lectureId, currentSeconds) => {
+    if (!userId || !lectureId) return null;
+    const updatedItem = await remoteDb.upsertProgress({ lectureId, lastPlayedSeconds: currentSeconds });
+    if (activeScope.current !== scope) return updatedItem;
+    requestVersion.current++;
+    progressReadVersion.current++;
+    setLoading(false);
+    setProgressList(prev => [...prev.filter(p => !(p.userId === updatedItem.userId && p.lectureId === updatedItem.lectureId)), updatedItem]);
+    notifySyncUpdate({type:'PROGRESS_UPDATED',userId,lectureId});
+    return updatedItem;
+  }, [scope, notifySyncUpdate]);
 
   const getCourseProgress = useCallback((userId, courseId) => {
     if (!userId) return 0;
@@ -455,6 +294,10 @@ export function CourseProvider({ children }) {
       expireAt: expireDate.toISOString().split('T')[0]
     };
 
+    await remoteDb.upsertEnrollment(item);
+    if (activeScope.current !== scope) return item;
+    requestVersion.current++;
+    setLoading(false);
     setEnrollments(prev => {
       const idx = prev.findIndex(e => e.userId === userId && e.courseId === courseId);
       if (idx !== -1) {
@@ -464,10 +307,6 @@ export function CourseProvider({ children }) {
       }
       return [...prev, item];
     });
-
-    if (isExternalDbConfigured) {
-      await remoteDb.upsertEnrollment(item).catch(err => console.warn('Supabase upsertEnrollment warning:', err));
-    }
 
     // Dispatch real-time Push Notification to Admin devices
     if (status === 'pending' || status === 'applied') {
@@ -481,7 +320,7 @@ export function CourseProvider({ children }) {
 
     notifySyncUpdate({ type: 'ENROLLMENT_UPDATED', userId, courseId, status });
     return item;
-  }, [courses, enrollments, currentUser, notifySyncUpdate]);
+  }, [courses, enrollments, currentUser, notifySyncUpdate, scope]);
 
   // 1전화번호당 1행 엄격 누적 가산 기부금 영수증 발행 함수
   const issueDonationReceipt = useCallback(async ({
@@ -547,9 +386,31 @@ export function CourseProvider({ children }) {
       donationReceiptIssued: Boolean(withDonationReceipt)
     };
 
-    setPayments(prev => [...prev, newPay]);
+    // Retain the same key across a timeout/reload; clear only after confirmed success.
+    const requestKey = JSON.stringify([currentUser?.id, userId, courseId, Number(amount), manager.trim(), methodMemo.trim(), newPay.paidAt]);
+    let pending = pendingPayments.current;
+    try {
+      const stored = JSON.parse(sessionStorage.getItem('buddha_pending_payments') || '{}');
+      if (stored && typeof stored === 'object' && !Array.isArray(stored)) Object.assign(pending, stored);
+    } catch { /* Retain in-memory retry keys when browser storage is unavailable. */ }
+    const requestId = pending[requestKey] || crypto.randomUUID();
+    pending[requestKey] = requestId;
+    try { sessionStorage.setItem('buddha_pending_payments', JSON.stringify(pending)); } catch { /* browser storage unavailable */ }
 
-    // 기부 영수증 동시 발행 옵션이 활성화된 경우 1전번 1행 누적 가산 대장에 자동 등재
+    // A lost RPC response is not safe to repeat as separate writes.
+    const rpcResult = await remoteDb.processCoursePayment({
+        userId,
+        courseId,
+        amount,
+        manager,
+        methodMemo,
+        paidAt,
+        requestId
+    });
+    delete pending[requestKey];
+    try { sessionStorage.setItem('buddha_pending_payments', JSON.stringify(pending)); } catch { /* private mode */ }
+    newPay.id = rpcResult.paymentId;
+    if (activeScope.current !== scope) return newPay;
     if (withDonationReceipt && (studentPhone || userId)) {
       await issueDonationReceipt({
         userId,
@@ -561,61 +422,41 @@ export function CourseProvider({ children }) {
         paidAt: newPay.paidAt
       });
     }
-
-    if (isExternalDbConfigured) {
-      // 1. Attempt atomic transaction RPC first
-      const rpcResult = await remoteDb.processCoursePayment({
-        userId,
-        courseId,
-        amount,
-        manager,
-        methodMemo,
-        paidAt
-      });
-      if (!rpcResult) {
-        // Fallback to sequential write if RPC unavailable
-        await remoteDb.insertPayment(newPay).catch(err => console.warn('Supabase insertPayment warning:', err));
-        await enrollStudent(userId, courseId, 'active');
-      } else {
-        // Optimistic enrollment update
-        setEnrollments(prev => {
-          const target = prev.find(e => e.userId === userId && e.courseId === courseId);
-          if (target) {
-            return prev.map(e => e.id === target.id ? { ...e, status: 'active', paidAt: newPay.paidAt } : e);
-          }
-          return [...prev, {
-            id: rpcResult.paymentId ? `enr_${rpcResult.paymentId.replace('pay_', '')}` : `enr_${Date.now()}`,
-            userId,
-            courseId,
-            status: 'active',
-            enrolledAt: new Date().toISOString().split('T')[0],
-            paidAt: newPay.paidAt,
-            expireAt: rpcResult.expireAt || new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0]
-          }];
-        });
+    if (activeScope.current !== scope) return newPay;
+    const version = ++requestVersion.current;
+    setLoading(false);
+    setPayments(prev => [...prev.filter(payment => payment.id !== newPay.id), newPay]);
+    try {
+      const updated = await remoteDb.getEnrollments(userId);
+      if (activeScope.current === scope && version === requestVersion.current) {
+        setEnrollments(prev => [...prev.filter(enrollment => enrollment.userId !== userId), ...updated]);
       }
-    } else {
-      await enrollStudent(userId, courseId, 'active');
+    } catch {
+      // The transaction succeeded: do not prompt a second payment submission.
+      if (activeScope.current === scope && version === requestVersion.current) setError('수납은 완료되었지만 수강 목록을 불러오지 못했습니다. 재수납하지 말고 새로고침해 주세요.');
     }
 
     notifySyncUpdate({ type: 'PAYMENT_RECORDED', userId, courseId });
     return newPay;
-  }, [enrollStudent, issueDonationReceipt, notifySyncUpdate]);
+  }, [notifySyncUpdate, scope, currentUser?.id, issueDonationReceipt]);
 
   const updateCourseSettings = useCallback(async (courseId, updates) => {
     let finalUpdates = { ...updates };
     if (updates.rawExamText !== undefined) {
       finalUpdates.examQuestions = updates.rawExamText.trim() 
         ? parseExamText(updates.rawExamText) 
-        : PRESET_EXAM_QUESTIONS;
+        : [];
+      if (!finalUpdates.examQuestions.length || finalUpdates.examQuestions.some(question => !question.correctAnswer)) {
+        throw new Error('시험 문제와 각 문항의 정답을 입력해 주세요.');
+      }
     }
 
+    await remoteDb.updateCourse(courseId, finalUpdates);
+    if (activeScope.current !== scope) return null;
+    requestVersion.current++;
     setCourses(prev => prev.map(c => c.id === courseId ? { ...c, ...finalUpdates } : c));
 
-    if (isExternalDbConfigured) {
-      await remoteDb.updateCourse(courseId, finalUpdates).catch(err => console.warn('Supabase updateCourse warning:', err));
-    }
-  }, []);
+  }, [scope]);
 
   const addCourse = useCallback(async (courseData) => {
     const certType = courseData.certType?.trim() || '불교의례해설사';
@@ -628,7 +469,7 @@ export function CourseProvider({ children }) {
     if (courseData.rawExamText && courseData.rawExamText.trim()) {
       parsedExamQuestions = parseExamText(courseData.rawExamText);
     } else {
-      parsedExamQuestions = PRESET_EXAM_QUESTIONS;
+      parsedExamQuestions = [];
     }
 
     const newCourse = {
@@ -651,25 +492,23 @@ export function CourseProvider({ children }) {
       lectureIds: []
     };
 
+    await remoteDb.insertCourse(newCourse);
+    if (activeScope.current !== scope) return null;
+    requestVersion.current++;
     setCourses(prev => [...prev, newCourse]);
 
-    if (isExternalDbConfigured) {
-      await remoteDb.insertCourse(newCourse).catch(err => console.warn('Supabase insertCourse warning:', err));
-    }
-
     return newCourse;
-  }, []);
+  }, [scope]);
 
   const deleteCourse = useCallback(async (courseId) => {
+    await remoteDb.deleteCourse(courseId);
+    if (activeScope.current !== scope) return null;
+    requestVersion.current++;
     setCourses(prev => prev.filter(c => c.id !== courseId));
     setLectures(prev => prev.filter(l => l.courseId !== courseId));
 
-    if (isExternalDbConfigured) {
-      await remoteDb.deleteCourse(courseId).catch(err => console.warn('Supabase deleteCourse warning:', err));
-    }
-
     return true;
-  }, []);
+  }, [scope]);
 
   const addLecture = useCallback(async (lectureData) => {
     const newLec = {
@@ -677,6 +516,9 @@ export function CourseProvider({ children }) {
       id: lectureData.id || `lec_${Date.now()}`
     };
 
+    await remoteDb.insertLecture(newLec);
+    if (activeScope.current !== scope) return null;
+    requestVersion.current++;
     setLectures(prev => [...prev, newLec]);
     setCourses(prev => prev.map(c => {
       if (c.id === newLec.courseId) {
@@ -687,23 +529,22 @@ export function CourseProvider({ children }) {
       return c;
     }));
 
-    if (isExternalDbConfigured) {
-      await remoteDb.insertLecture(newLec).catch(err => console.warn('Supabase insertLecture warning:', err));
-    }
-
     return newLec;
-  }, []);
+  }, [scope]);
 
   const updateLecture = useCallback(async (lectureId, updates) => {
+    await remoteDb.updateLecture(lectureId, updates);
+    if (activeScope.current !== scope) return null;
+    requestVersion.current++;
     setLectures(prev => prev.map(l => l.id === lectureId ? { ...l, ...updates } : l));
 
-    if (isExternalDbConfigured) {
-      await remoteDb.updateLecture(lectureId, updates).catch(err => console.warn('Supabase updateLecture warning:', err));
-    }
-  }, []);
+  }, [scope]);
 
   const deleteLecture = useCallback(async (lectureId) => {
     const targetLec = lectures.find(l => l.id === lectureId);
+    await remoteDb.deleteLecture(lectureId);
+    if (activeScope.current !== scope) return null;
+    requestVersion.current++;
     setLectures(prev => prev.filter(l => l.id !== lectureId));
 
     if (targetLec) {
@@ -715,22 +556,16 @@ export function CourseProvider({ children }) {
       }));
     }
 
-    if (isExternalDbConfigured) {
-      await remoteDb.deleteLecture(lectureId).catch(err => console.warn('Supabase deleteLecture warning:', err));
-    }
-
-    if (targetLec && targetLec.videoUrl && targetLec.videoUrl.includes('/storage/v1/object/public/lectures/')) {
+    if (targetLec?.videoUrl && !lectures.some(lecture => lecture.id !== lectureId && lecture.videoUrl === targetLec.videoUrl)) {
       try {
-        const parts = targetLec.videoUrl.split('/lectures/');
-        if (parts[1]) {
-          const fileName = decodeURIComponent(parts[1].split('?')[0]);
-          deleteLectureVideo(fileName).catch(() => {});
-        }
-      } catch (e) {}
+        await deleteLectureVideo(targetLec.videoUrl);
+      } catch {
+        if (activeScope.current === scope) setError('차시는 삭제되었지만 영상 파일 정리에 실패했습니다. 관리자에게 문의해 주세요.');
+      }
     }
 
     return true;
-  }, [lectures]);
+  }, [lectures, scope]);
 
   // =========================================================================
   // Q&A Community Operations (100% Supabase Direct)
@@ -756,14 +591,13 @@ export function CourseProvider({ children }) {
       answers: []
     };
 
+    await remoteDb.insertQAPost(newPost);
+    if (activeScope.current !== scope) return null;
+    requestVersion.current++;
     setQaPosts(prev => [newPost, ...prev]);
 
-    if (isExternalDbConfigured) {
-      await remoteDb.insertQAPost(newPost).catch(err => console.log('Supabase post error:', err));
-    }
-
     return newPost;
-  }, [currentUser]);
+  }, [currentUser, scope]);
 
   const addQAAnswer = useCallback(async (postId, { content, authorName = '지산 스님', badgeTitle = '담당 지도교수' }) => {
     if (!currentUser) throw new Error('답변을 작성하려면 로그인이 필요합니다.');
@@ -780,6 +614,9 @@ export function CourseProvider({ children }) {
       createdAt: dateStr
     };
 
+    await remoteDb.insertQAAnswer(postId, newAnswer);
+    if (activeScope.current !== scope) return null;
+    requestVersion.current++;
     setQaPosts(prev => prev.map(p => {
       if (p.id === postId) {
         return { ...p, answers: [...(p.answers || []), newAnswer] };
@@ -787,12 +624,8 @@ export function CourseProvider({ children }) {
       return p;
     }));
 
-    if (isExternalDbConfigured) {
-      await remoteDb.insertQAAnswer(postId, newAnswer).catch(err => console.log('Supabase answer error:', err));
-    }
-
     return newAnswer;
-  }, [currentUser]);
+  }, [currentUser, scope]);
 
   const deleteQAPost = useCallback(async (postId) => {
     const post = qaPosts.find(p => p.id === postId);
@@ -802,12 +635,12 @@ export function CourseProvider({ children }) {
       throw new Error('질문 삭제 권한이 없습니다.');
     }
 
+    await remoteDb.deleteQAPost(postId);
+    if (activeScope.current !== scope) return null;
+    requestVersion.current++;
     setQaPosts(prev => prev.filter(p => p.id !== postId));
 
-    if (isExternalDbConfigured) {
-      await remoteDb.deleteQAPost(postId).catch(err => console.log('Supabase delete error:', err));
-    }
-  }, [currentUser, isAdmin, qaPosts]);
+  }, [currentUser, isAdmin, qaPosts, scope]);
 
   const getLectureQAPosts = useCallback((lectureId) => {
     return qaPosts.filter(p => p.lectureId === lectureId);
@@ -842,21 +675,18 @@ export function CourseProvider({ children }) {
       throw new Error('자격 평가 시험(수료 기준 60점 이상)에 합격하셔야 정식 수료증이 발급됩니다.');
     }
 
-    const newCert = issueCertificate(currentUser, course, certificates, certificates.length);
-    setCertificates(prev => [...prev, newCert]);
-
-    if (isExternalDbConfigured) {
-      await remoteDb.insertCertificate(newCert).catch(err => console.warn('Supabase insertCertificate warning:', err));
-    }
+    const newCert = await remoteDb.insertCertificate({ courseId });
+    if (activeScope.current !== scope) return newCert;
+    requestVersion.current++;
+    setLoading(false);
+    setCertificates(prev => [...prev.filter(cert => cert.certNo !== newCert.certNo), newCert]);
 
     notifySyncUpdate({ type: 'CERTIFICATE_CLAIMED', userId: currentUser.id, courseId });
     return newCert;
-  }, [currentUser, courses, lectures, progressList, examAttempts, certificates, notifySyncUpdate]);
+  }, [currentUser, courses, lectures, progressList, examAttempts, certificates, notifySyncUpdate, scope]);
 
   // Exam helpers
-  const getExamPool = useCallback((courseId) => {
-    return getCourseExamPool(courseId, courses);
-  }, [courses]);
+  const beginExam = useCallback(courseId => remoteDb.startCourseExam(courseId), []);
 
   const getExamResult = useCallback((arg1, arg2) => {
     const isFirstCourse = typeof arg1 === 'string' && arg1.startsWith('course-');
@@ -872,29 +702,16 @@ export function CourseProvider({ children }) {
     return hasPassedCourseExam(userId, courseId, examAttempts);
   }, [examAttempts]);
 
-  const submitExam = useCallback(async (userId, courseId, questions, answers) => {
-    const evaluation = evaluateExam(questions, answers);
-    
-    // Save to Supabase and update memory state
-    const savedAttempt = await saveExamAttempt(userId, courseId, evaluation);
-    setExamAttempts(prev => [savedAttempt, ...prev]);
-
-    // If both lectures completed and exam passed, update enrollment to completed!
-    const lecturesDone = checkLecturesCompleted(userId, courseId, courses, lectures, progressList);
-    if (evaluation.passed && lecturesDone) {
-      const enr = enrollments.find(e => e.userId === userId && e.courseId === courseId);
-      if (enr && enr.status !== 'completed') {
-        const updatedEnr = { ...enr, status: 'completed' };
-        setEnrollments(prev => prev.map(e => e.id === enr.id ? updatedEnr : e));
-        if (isExternalDbConfigured) {
-          remoteDb.upsertEnrollment(updatedEnr).catch(() => {});
-        }
-      }
-    }
-
-    notifySyncUpdate({ type: 'EXAM_SUBMITTED', userId, courseId });
+  const submitExam = useCallback(async (userId, courseId, attemptId, answers) => {
+    const evaluation = await remoteDb.submitCourseExam(attemptId, answers);
+    if (activeScope.current !== scope) return evaluation;
+    requestVersion.current++;
+    setLoading(false);
+    setExamAttempts(prev => [evaluation, ...prev.filter(attempt => attempt.id !== evaluation.id)]);
+    await refreshData();
+    notifySyncUpdate({type:'EXAM_SUBMITTED',userId,courseId});
     return evaluation;
-  }, [courses, lectures, progressList, enrollments, notifySyncUpdate]);
+  }, [scope, refreshData, notifySyncUpdate]);
 
   return (
     <CourseContext.Provider
@@ -908,6 +725,7 @@ export function CourseProvider({ children }) {
         qaPosts,
         examAttempts,
         loading,
+        error,
         refreshData,
         hasCourseAccess,
         hasLectureAccess,
@@ -931,11 +749,10 @@ export function CourseProvider({ children }) {
         getCertificate,
         claimCertificate,
         checkLecturesCompleted: checkCourseAllLecturesDone,
-        getExamPool,
+        beginExam,
         getExamResult,
         isExamPassed,
         submitExam,
-        selectRandomQuestions,
         parseExamText,
         addQAPost,
         addQAAnswer,

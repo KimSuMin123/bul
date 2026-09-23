@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Users, CreditCard, BookOpen, Search, Plus, Check,
   CheckCircle, Clock, Shield, Award, Edit3, Trash2, ArrowRight,
@@ -10,9 +10,9 @@ import {
 } from 'lucide-react';
 import { useCourse } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
-import { uploadLectureVideo, extractVideoMetadata, isStorageConfigured, uploadThumbnailImage } from '../services/apiClient';
+import { uploadLectureVideo, extractVideoMetadata, isStorageConfigured, uploadThumbnailImage, getLectureVideoUrl } from '../services/apiClient';
 import { generateMemberNumber } from '../services/certService';
-import { parseExamText, DEFAULT_RAW_EXAM_TEXT } from '../services/examService';
+import { parseExamText } from '../services/examService';
 import CertificateModal from '../components/certificate/CertificateModal';
 import { useModalAlert } from '../context/ModalAlertContext';
 import {
@@ -25,6 +25,25 @@ import { exportToExcelCSV, findReceiptByPhoneOrUser, normalizePhone } from '../s
 
 export default function AdminDashboardPage() {
   const { showAlert, showConfirm } = useModalAlert();
+  const [savingEnrollment, setSavingEnrollment] = useState(false);
+  const enrollmentSaveRef = useRef(false);
+  const [cmsSaving, setCmsSaving] = useState(false);
+  const cmsSavingRef = useRef(false);
+  const runCmsAction = async (action) => {
+    if (cmsSavingRef.current) return;
+    cmsSavingRef.current = true;
+    setCmsSaving(true);
+    try {
+      return await action();
+    } catch (error) {
+      await showAlert(error.message || '저장하지 못했습니다. 입력 내용을 확인하고 다시 시도해 주세요.', {
+        type: 'error', title: '처리 실패'
+      });
+    } finally {
+      cmsSavingRef.current = false;
+      setCmsSaving(false);
+    }
+  };
   const {
     courses, lectures, enrollments, payments,
     enrollStudent, recordPayment, donationReceipts, issueDonationReceipt, updateCourseSettings,
@@ -241,41 +260,45 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleSaveAdminAnswer = (e) => {
+  const handleSaveAdminAnswer = async (e) => {
     e.preventDefault();
-    if (!replyModalPost || !replyContent.trim()) {
-      showAlert('답변 내용을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
-      return;
-    }
+    return runCmsAction(async () => {
+      if (!replyModalPost || !replyContent.trim()) {
+        showAlert('답변 내용을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
+        return;
+      }
 
-    try {
-      addQAAnswer(replyModalPost.id, {
-        content: replyContent,
-        authorName: replyMonkName,
-        badgeTitle: replyBadgeTitle
-      });
-      showAlert('스님 명의의 답변이 성공적으로 등록되었습니다.', { type: 'success', title: '답변 등록 완료' });
-      setReplyModalPost(null);
-      refreshData();
-    } catch (err) {
-      showAlert(err.message, { type: 'error', title: '답변 등록 오류' });
-    }
+      try {
+        await addQAAnswer(replyModalPost.id, {
+          content: replyContent,
+          authorName: replyMonkName,
+          badgeTitle: replyBadgeTitle
+        });
+        showAlert('스님 명의의 답변이 성공적으로 등록되었습니다.', { type: 'success', title: '답변 등록 완료' });
+        setReplyModalPost(null);
+
+      } catch (err) {
+        showAlert(err.message, { type: 'error', title: '답변 등록 오류' });
+      }
+    });
   };
 
   const handleDeleteQA = async (postId) => {
-    const ok = await showConfirm('해당 학인의 질문을 삭제하시겠습니까?\n스님의 답변도 함께 삭제됩니다.', {
-      title: '질문 삭제 확인',
-      type: 'warning',
-      confirmText: '질문 삭제'
-    });
-    if (ok) {
-      try {
-        deleteQAPost(postId);
-        refreshData();
-      } catch (err) {
-        showAlert(err.message, { type: 'error', title: '삭제 오류' });
+    return runCmsAction(async () => {
+      const ok = await showConfirm('해당 학인의 질문을 삭제하시겠습니까?\n스님의 답변도 함께 삭제됩니다.', {
+        title: '질문 삭제 확인',
+        type: 'warning',
+        confirmText: '질문 삭제'
+      });
+      if (ok) {
+        try {
+          await deleteQAPost(postId);
+
+        } catch (err) {
+          showAlert(err.message, { type: 'error', title: '삭제 오류' });
+        }
       }
-    }
+    });
   };
 
   // Manual grant modal state
@@ -316,7 +339,7 @@ export default function AdminDashboardPage() {
     certTypeFull: '불교의례해설사 2급',
     certRegNo: '민간자격 등록번호 제 2026- 00183호',
     certRegOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
-    rawExamText: DEFAULT_RAW_EXAM_TEXT
+    rawExamText: ''
   });
 
   // CMS: Course Certificate Settings Modal state for existing courses
@@ -348,93 +371,101 @@ export default function AdminDashboardPage() {
       certTypeFull: course.certTypeFull || `${course.certType || '불교의례해설사'} ${course.certGrade || '2급'}`.trim(),
       certRegNo: course.certRegNo || '민간자격 등록번호 제 2026- 00183호',
       certRegOffice: course.certRegOffice || '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
-      rawExamText: course.rawExamText || DEFAULT_RAW_EXAM_TEXT
+      rawExamText: course.rawExamText || ''
     });
   };
 
-  const handleSaveCertEdit = (e) => {
+  const handleSaveCertEdit = async (e) => {
     e.preventDefault();
-    if (!certEditCourse) return;
-    const parsed = parseExamText(certEditForm.rawExamText || '');
-    updateCourseSettings(certEditCourse.id, {
-      certType: certEditForm.certType.trim(),
-      certGrade: certEditForm.certGrade.trim(),
-      certTypeFull: certEditForm.certTypeFull.trim() || `${certEditForm.certType.trim()} ${certEditForm.certGrade.trim()}`.trim(),
-      certRegNo: certEditForm.certRegNo.trim(),
-      certRegOffice: certEditForm.certRegOffice.trim(),
-      rawExamText: certEditForm.rawExamText || ''
-    });
-    showAlert(`[${certEditCourse.title}] 코스의 자격증 및 온라인 시험 설정이 성공적으로 저장되었습니다!\n\n• 자격증 종목: ${certEditForm.certTypeFull}\n• 자격증 번호 양식: ${certEditForm.certRegNo}\n• 등록된 시험 문항: 총 ${parsed.length}개 문제 (응시 시 20문항 무작위 출제)`, { type: 'success', title: '자격증/시험 설정 저장 완료' });
-    setCertEditCourse(null);
-    refreshData();
-  };
-
-  const handleCreateCourse = (e) => {
-    e.preventDefault();
-    if (!courseForm.title.trim()) {
-      showAlert('코스 제목을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
-      return;
-    }
-    try {
-      const parsed = parseExamText(courseForm.rawExamText || '');
-      const created = addCourse(courseForm);
-      showAlert(`[${created.title}] 코스가 성공적으로 개설되었습니다!\n\n• 연동 자격증: ${courseForm.certTypeFull}\n• 자격증 번호: ${courseForm.certRegNo}\n• 등록된 시험 문항: 총 ${parsed.length}개 문제`, { type: 'success', title: '코스 개설 완료' });
-      setShowNewCourseModal(false);
-      setCourseForm({
-        id: '',
-        title: '',
-        subtitle: '',
-        category: '불교의례법사',
-        thumbnail: 'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?auto=format&fit=crop&w=800&q=80',
-        defaultPeriodDays: 90,
-        sequentialUnlock: true,
-        price: 50000,
-        instructor: '불교의례 전문 법사',
-        certType: '불교의례해설사',
-        certGrade: '2급',
-        certTypeFull: '불교의례해설사 2급',
-        certRegNo: '민간자격 등록번호 제 2026- 00183호',
-        certRegOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
-        rawExamText: DEFAULT_RAW_EXAM_TEXT
+    return runCmsAction(async () => {
+      if (!certEditCourse) return;
+      const parsed = parseExamText(certEditForm.rawExamText || '');
+      await updateCourseSettings(certEditCourse.id, {
+        certType: certEditForm.certType.trim(),
+        certGrade: certEditForm.certGrade.trim(),
+        certTypeFull: certEditForm.certTypeFull.trim() || `${certEditForm.certType.trim()} ${certEditForm.certGrade.trim()}`.trim(),
+        certRegNo: certEditForm.certRegNo.trim(),
+        certRegOffice: certEditForm.certRegOffice.trim(),
+        rawExamText: certEditForm.rawExamText || ''
       });
-      refreshData();
-    } catch (err) {
-      showAlert(`코스 생성 실패: ${err.message}`, { type: 'error', title: '코스 생성 오류' });
-    }
+      showAlert(`[${certEditCourse.title}] 코스의 자격증 및 온라인 시험 설정이 성공적으로 저장되었습니다!\n\n• 자격증 종목: ${certEditForm.certTypeFull}\n• 자격증 번호 양식: ${certEditForm.certRegNo}\n• 등록된 시험 문항: 총 ${parsed.length}개 문제 (응시 시 20문항 무작위 출제)`, { type: 'success', title: '자격증/시험 설정 저장 완료' });
+      setCertEditCourse(null);
+
+    });
+  };
+
+  const handleCreateCourse = async (e) => {
+    e.preventDefault();
+    return runCmsAction(async () => {
+      if (!courseForm.title.trim()) {
+        showAlert('코스 제목을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
+        return;
+      }
+      try {
+        const parsed = parseExamText(courseForm.rawExamText || '');
+        const created = await addCourse(courseForm);
+        showAlert(`[${created.title}] 코스가 성공적으로 개설되었습니다!\n\n• 연동 자격증: ${courseForm.certTypeFull}\n• 자격증 번호: ${courseForm.certRegNo}\n• 등록된 시험 문항: 총 ${parsed.length}개 문제`, { type: 'success', title: '코스 개설 완료' });
+        setShowNewCourseModal(false);
+        setCourseForm({
+          id: '',
+          title: '',
+          subtitle: '',
+          category: '불교의례법사',
+          thumbnail: 'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?auto=format&fit=crop&w=800&q=80',
+          defaultPeriodDays: 90,
+          sequentialUnlock: true,
+          price: 50000,
+          instructor: '불교의례 전문 법사',
+          certType: '불교의례해설사',
+          certGrade: '2급',
+          certTypeFull: '불교의례해설사 2급',
+          certRegNo: '민간자격 등록번호 제 2026- 00183호',
+          certRegOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
+          rawExamText: ''
+        });
+
+      } catch (err) {
+        showAlert(`코스 생성 실패: ${err.message}`, { type: 'error', title: '코스 생성 오류' });
+      }
+    });
   };
 
   const handleDeleteCourse = async (courseId, courseTitle) => {
-    const ok = await showConfirm(`[${courseTitle}] 코스를 정말 삭제하시겠습니까?\n해당 코스에 소속된 모든 강의 차시도 함께 삭제됩니다.`, {
-      title: '코스 영구 삭제',
-      type: 'error',
-      confirmText: '코스 삭제'
-    });
-    if (ok) {
-      try {
-        deleteCourse(courseId);
-        refreshData();
-        showAlert(`[${courseTitle}] 코스가 성공적으로 삭제되었습니다.`, { type: 'success', title: '코스 삭제 완료' });
-      } catch (err) {
-        showAlert(`삭제 실패: ${err.message}`, { type: 'error', title: '코스 삭제 오류' });
+    return runCmsAction(async () => {
+      const ok = await showConfirm(`[${courseTitle}] 코스를 정말 삭제하시겠습니까?\n해당 코스에 소속된 모든 강의 차시도 함께 삭제됩니다.`, {
+        title: '코스 영구 삭제',
+        type: 'error',
+        confirmText: '코스 삭제'
+      });
+      if (ok) {
+        try {
+          await deleteCourse(courseId);
+
+          showAlert(`[${courseTitle}] 코스가 성공적으로 삭제되었습니다.`, { type: 'success', title: '코스 삭제 완료' });
+        } catch (err) {
+          showAlert(`삭제 실패: ${err.message}`, { type: 'error', title: '코스 삭제 오류' });
+        }
       }
-    }
+    });
   };
 
   const handleDeleteLecture = async (lecId, lecTitle) => {
-    const ok = await showConfirm(`[${lecTitle}] 차시를 정말 삭제하시겠습니까?\n잘못 등록된 차시 정보와 스트리밍 연결이 즉시 제거됩니다.`, {
-      title: '차시 삭제 확인',
-      type: 'error',
-      confirmText: '차시 삭제'
-    });
-    if (ok) {
-      try {
-        deleteLecture(lecId);
-        refreshData();
-        showAlert(`[${lecTitle}] 차시가 성공적으로 삭제되었습니다.`, { type: 'success', title: '차시 삭제 완료' });
-      } catch (err) {
-        showAlert(`삭제 실패: ${err.message}`, { type: 'error', title: '차시 삭제 오류' });
+    return runCmsAction(async () => {
+      const ok = await showConfirm(`[${lecTitle}] 차시를 정말 삭제하시겠습니까?\n잘못 등록된 차시 정보와 스트리밍 연결이 즉시 제거됩니다.`, {
+        title: '차시 삭제 확인',
+        type: 'error',
+        confirmText: '차시 삭제'
+      });
+      if (ok) {
+        try {
+          await deleteLecture(lecId);
+
+          showAlert(`[${lecTitle}] 차시가 성공적으로 삭제되었습니다.`, { type: 'success', title: '차시 삭제 완료' });
+        } catch (err) {
+          showAlert(`삭제 실패: ${err.message}`, { type: 'error', title: '차시 삭제 오류' });
+        }
       }
-    }
+    });
   };
 
   // CMS: New Lecture form & Video Upload state
@@ -447,6 +478,37 @@ export default function AdminDashboardPage() {
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState('');
   const [uploadErrorMsg, setUploadErrorMsg] = useState('');
   const newFileInputRef = useRef(null);
+  const [isReadingMetadata, setIsReadingMetadata] = useState(false);
+  const metadataBusyRef = useRef(false);
+  const metadataVersionRef = useRef(0);
+  const metadataAbortRef = useRef(null);
+
+  const clearNewVideoSelection = () => {
+    metadataVersionRef.current++;
+    metadataAbortRef.current?.abort();
+    metadataAbortRef.current = null;
+    metadataBusyRef.current = false;
+    setIsReadingMetadata(false);
+    setNewVideoFile(null);
+    setNewVideoPreviewUrl('');
+    setUploadProgress(null);
+    setUploadErrorMsg('');
+    setUploadSuccessMsg('');
+    setLecForm(prev => ({ ...prev, durationSeconds: 0, videoUrl: '' }));
+    if (newFileInputRef.current) newFileInputRef.current.value = '';
+  };
+
+  useEffect(() => {
+    if (!showNewLecModal) clearNewVideoSelection();
+    return () => {
+      metadataVersionRef.current++;
+      metadataAbortRef.current?.abort();
+    };
+  }, [showNewLecModal]);
+
+  useEffect(() => {
+    return () => { if (newVideoPreviewUrl) URL.revokeObjectURL(newVideoPreviewUrl); };
+  }, [newVideoPreviewUrl]);
 
   const [lecForm, setLecForm] = useState({
     courseId: 'course-ritual-8-11',
@@ -470,6 +532,23 @@ export default function AdminDashboardPage() {
 
   // Video Live Preview Modal state
   const [previewModalLec, setPreviewModalLec] = useState(null);
+  const [previewMedia, setPreviewMedia] = useState({ scope: null, url: '', error: '' });
+  const [previewRetry, setPreviewRetry] = useState(0);
+  const previewRequestRef = useRef(0);
+  const previewScope = previewModalLec ? `${currentUser?.id || ''}:${previewModalLec.id}:${previewModalLec.videoUrl || ''}` : null;
+
+  useEffect(() => {
+    const requestId = ++previewRequestRef.current;
+    setPreviewMedia({ scope: previewScope, requestId, url: '', error: '' });
+    if (!previewModalLec) return;
+    Promise.resolve().then(() => getLectureVideoUrl(previewModalLec.videoUrl)).then(url => {
+      if (!url) throw new Error('등록된 영상 주소가 없습니다.');
+      if (requestId === previewRequestRef.current) setPreviewMedia({ scope: previewScope, requestId, url, error: '' });
+    }).catch(error => {
+      if (requestId === previewRequestRef.current) setPreviewMedia({ scope: previewScope, requestId, url: '', error: error.message || '영상 주소를 불러오지 못했습니다.' });
+    });
+    return () => { previewRequestRef.current++; };
+  }, [previewScope, previewRetry]);
 
   // Course Thumbnail Edit Modal state
   const [thumbModalCourse, setThumbModalCourse] = useState(null);
@@ -500,44 +579,48 @@ export default function AdminDashboardPage() {
   };
 
   const handleCourseThumbFileSelect = async (file) => {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      showAlert('이미지 파일(JPG, PNG, WebP 등)만 업로드할 수 있습니다.', { type: 'warning', title: '파일 형식 안내' });
-      return;
-    }
-    try {
-      setIsUploadingThumb(true);
-      setThumbErrorMsg('');
-      setThumbSuccessMsg('');
-      const res = await uploadThumbnailImage(file);
-      setThumbPreviewUrl(res.publicUrl);
-      setThumbUrlInput(res.publicUrl);
-      setThumbSuccessMsg('썸네일 이미지가 성공적으로 최적화되었습니다.');
-    } catch (err) {
-      setThumbErrorMsg(`이미지 처리 실패: ${err.message}`);
-    } finally {
-      setIsUploadingThumb(false);
-    }
+    return runCmsAction(async () => {
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showAlert('이미지 파일(JPG, PNG, WebP 등)만 업로드할 수 있습니다.', { type: 'warning', title: '파일 형식 안내' });
+        return;
+      }
+      try {
+        setIsUploadingThumb(true);
+        setThumbErrorMsg('');
+        setThumbSuccessMsg('');
+        const res = await uploadThumbnailImage(file);
+        setThumbPreviewUrl(res.publicUrl);
+        setThumbUrlInput(res.publicUrl);
+        setThumbSuccessMsg('썸네일 이미지가 성공적으로 최적화되었습니다.');
+      } catch (err) {
+        setThumbErrorMsg(`이미지 처리 실패: ${err.message}`);
+      } finally {
+        setIsUploadingThumb(false);
+      }
+    });
   };
 
-  const handleSaveCourseThumbnail = (e) => {
+  const handleSaveCourseThumbnail = async (e) => {
     if (e) e.preventDefault();
-    if (!thumbModalCourse) return;
-    const finalUrl = thumbPreviewUrl?.trim() || thumbUrlInput?.trim();
-    if (!finalUrl) {
-      showAlert('썸네일 이미지 URL을 입력하거나 이미지 파일을 선택해 주세요.', { type: 'warning', title: '입력 확인' });
-      return;
-    }
-    try {
-      updateCourseSettings(thumbModalCourse.id, { thumbnail: finalUrl });
-      setThumbSuccessMsg('강의 썸네일이 성공적으로 변경되었습니다!');
-      refreshData();
-      setTimeout(() => {
-        setThumbModalCourse(null);
-      }, 1000);
-    } catch (err) {
-      showAlert(`썸네일 저장 실패: ${err.message}`, { type: 'error', title: '저장 오류' });
-    }
+    return runCmsAction(async () => {
+      if (!thumbModalCourse) return;
+      const finalUrl = thumbPreviewUrl?.trim() || thumbUrlInput?.trim();
+      if (!finalUrl) {
+        showAlert('썸네일 이미지 URL을 입력하거나 이미지 파일을 선택해 주세요.', { type: 'warning', title: '입력 확인' });
+        return;
+      }
+      try {
+        await updateCourseSettings(thumbModalCourse.id, { thumbnail: finalUrl });
+        setThumbSuccessMsg('강의 썸네일이 성공적으로 변경되었습니다!');
+
+        setTimeout(() => {
+          setThumbModalCourse(null);
+        }, 1000);
+      } catch (err) {
+        showAlert(`썸네일 저장 실패: ${err.message}`, { type: 'error', title: '저장 오류' });
+      }
+    });
   };
 
   // Lecture Thumbnail Handlers
@@ -552,49 +635,56 @@ export default function AdminDashboardPage() {
   };
 
   const handleLecThumbFileSelect = async (file) => {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      showAlert('이미지 파일(JPG, PNG, WebP 등)만 업로드할 수 있습니다.', { type: 'warning', title: '파일 형식 안내' });
-      return;
-    }
-    try {
-      setIsUploadingLecThumb(true);
-      setThumbLecErrorMsg('');
-      setThumbLecSuccessMsg('');
-      const res = await uploadThumbnailImage(file);
-      setThumbLecPreviewUrl(res.publicUrl);
-      setThumbLecUrlInput(res.publicUrl);
-      setThumbLecSuccessMsg('차시 썸네일 이미지가 최적화되었습니다.');
-    } catch (err) {
-      setThumbLecErrorMsg(`이미지 처리 실패: ${err.message}`);
-    } finally {
-      setIsUploadingLecThumb(false);
-    }
+    return runCmsAction(async () => {
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showAlert('이미지 파일(JPG, PNG, WebP 등)만 업로드할 수 있습니다.', { type: 'warning', title: '파일 형식 안내' });
+        return;
+      }
+      try {
+        setIsUploadingLecThumb(true);
+        setThumbLecErrorMsg('');
+        setThumbLecSuccessMsg('');
+        const res = await uploadThumbnailImage(file);
+        setThumbLecPreviewUrl(res.publicUrl);
+        setThumbLecUrlInput(res.publicUrl);
+        setThumbLecSuccessMsg('차시 썸네일 이미지가 최적화되었습니다.');
+      } catch (err) {
+        setThumbLecErrorMsg(`이미지 처리 실패: ${err.message}`);
+      } finally {
+        setIsUploadingLecThumb(false);
+      }
+    });
   };
 
-  const handleSaveLecThumbnail = (e) => {
+  const handleSaveLecThumbnail = async (e) => {
     if (e) e.preventDefault();
-    if (!thumbModalLec) return;
-    const finalUrl = thumbLecPreviewUrl?.trim() || thumbLecUrlInput?.trim();
-    if (!finalUrl) {
-      showAlert('차시 썸네일 이미지 URL을 입력하거나 이미지 파일을 선택해 주세요.', { type: 'warning', title: '입력 확인' });
-      return;
-    }
-    try {
-      updateLecture(thumbModalLec.id, { thumbnail: finalUrl });
-      setThumbLecSuccessMsg('차시 썸네일이 성공적으로 저장되었습니다!');
-      refreshData();
-      setTimeout(() => {
-        setThumbModalLec(null);
-      }, 1000);
-    } catch (err) {
-      showAlert(`차시 썸네일 저장 실패: ${err.message}`, { type: 'error', title: '저장 오류' });
-    }
+    return runCmsAction(async () => {
+      if (!thumbModalLec) return;
+      const finalUrl = thumbLecPreviewUrl?.trim() || thumbLecUrlInput?.trim();
+      if (!finalUrl) {
+        showAlert('차시 썸네일 이미지 URL을 입력하거나 이미지 파일을 선택해 주세요.', { type: 'warning', title: '입력 확인' });
+        return;
+      }
+      try {
+        await updateLecture(thumbModalLec.id, { thumbnail: finalUrl });
+        setThumbLecSuccessMsg('차시 썸네일이 성공적으로 저장되었습니다!');
+
+        setTimeout(() => {
+          setThumbModalLec(null);
+        }, 1000);
+      } catch (err) {
+        showAlert(`차시 썸네일 저장 실패: ${err.message}`, { type: 'error', title: '저장 오류' });
+      }
+    });
   };
 
   // Handle New Lecture Video File Selection & Duration auto-detection
   const handleNewVideoFileSelect = async (file) => {
     if (!file) return;
+    if (cmsSavingRef.current) return;
+    clearNewVideoSelection();
+    const version = metadataVersionRef.current;
     if (!file.type.startsWith('video/') && !file.name.match(/\.(mp4|mov|webm|mkv|avi)$/i)) {
       showAlert('동영상 파일(.mp4, .mov, .webm, .mkv 등)만 업로드할 수 있습니다.', { type: 'warning', title: '파일 형식 안내' });
       return;
@@ -604,13 +694,17 @@ export default function AdminDashboardPage() {
     setUploadErrorMsg('');
     setUploadSuccessMsg('');
     setUploadProgress(null);
-
-    const preview = URL.createObjectURL(file);
-    setNewVideoPreviewUrl(preview);
+    setLecForm(prev => ({ ...prev, durationSeconds: 0, videoUrl: '' }));
+    const controller = new AbortController();
+    metadataAbortRef.current = controller;
+    metadataBusyRef.current = true;
+    setIsReadingMetadata(true);
 
     try {
-      const meta = await extractVideoMetadata(file);
+      const meta = await extractVideoMetadata(file, { signal: controller.signal });
+      if (version !== metadataVersionRef.current) return;
       if (meta && meta.duration) {
+        setNewVideoPreviewUrl(URL.createObjectURL(file));
         setLecForm(prev => ({
           ...prev,
           durationSeconds: meta.duration,
@@ -618,7 +712,16 @@ export default function AdminDashboardPage() {
         }));
       }
     } catch (e) {
-      console.warn('Metadata extract note:', e);
+      if (version !== metadataVersionRef.current) return;
+      setNewVideoFile(null);
+      setNewVideoPreviewUrl('');
+      setUploadErrorMsg(e.message || '영상 정보를 읽지 못했습니다. 다른 파일을 선택해 주세요.');
+    } finally {
+      if (version === metadataVersionRef.current) {
+        metadataBusyRef.current = false;
+        metadataAbortRef.current = null;
+        setIsReadingMetadata(false);
+      }
     }
   };
 
@@ -642,42 +745,44 @@ export default function AdminDashboardPage() {
   // Handle Replace Video Submit
   const handleReplaceVideoSubmit = async (e) => {
     e.preventDefault();
-    if (!replaceModalLec || !replaceVideoFile) {
-      showAlert('교체할 동영상 파일을 선택해 주세요.', { type: 'warning', title: '파일 선택' });
-      return;
-    }
+    return runCmsAction(async () => {
+      if (!replaceModalLec || !replaceVideoFile) {
+        showAlert('교체할 동영상 파일을 선택해 주세요.', { type: 'warning', title: '파일 선택' });
+        return;
+      }
 
-    try {
-      setIsReplacing(true);
-      setReplaceErrorMsg('');
-      setReplaceSuccessMsg('');
+      try {
+        setIsReplacing(true);
+        setReplaceErrorMsg('');
+        setReplaceSuccessMsg('');
 
-      const meta = await extractVideoMetadata(replaceVideoFile);
-      const result = await uploadLectureVideo(replaceVideoFile, (prog) => {
-        setReplaceProgress(prog);
-      });
+        const meta = await extractVideoMetadata(replaceVideoFile);
+        const result = await uploadLectureVideo(replaceVideoFile, (prog) => {
+          setReplaceProgress(prog);
+        });
 
-      updateLecture(replaceModalLec.id, {
-        videoUrl: result.publicUrl,
-        durationSeconds: meta.duration || replaceModalLec.durationSeconds
-      });
+        await updateLecture(replaceModalLec.id, {
+          videoUrl: result.publicUrl,
+          durationSeconds: meta.duration || replaceModalLec.durationSeconds
+        });
 
-      const compText = result.compressedMb ? ` (${result.originalMb}MB ➔ ${result.compressedMb}MB 압축)` : '';
-      setReplaceSuccessMsg(`동영상 파일이 1080p 고화질로 자동 최적화되어 서버 스토리지로 교체되었습니다!${compText}`);
-      refreshData();
+        const compText = result.compressedMb ? ` (${result.originalMb}MB ➔ ${result.compressedMb}MB 압축)` : '';
+        setReplaceSuccessMsg(`동영상 업로드와 차시 영상 교체가 완료되었습니다.${compText}`);
 
-      setTimeout(() => {
-        setReplaceModalLec(null);
-        setReplaceVideoFile(null);
-        setReplaceVideoPreviewUrl('');
-        setReplaceProgress(null);
+
+        setTimeout(() => {
+          setReplaceModalLec(null);
+          setReplaceVideoFile(null);
+          setReplaceVideoPreviewUrl('');
+          setReplaceProgress(null);
+          setIsReplacing(false);
+        }, 1400);
+      } catch (err) {
         setIsReplacing(false);
-      }, 1400);
-    } catch (err) {
-      setIsReplacing(false);
-      setReplaceErrorMsg(`업로드 실패: ${err.message}`);
-      showAlert(`동영상 업로드 실패: ${err.message}`, { type: 'error', title: '업로드 오류' });
-    }
+        setReplaceErrorMsg(`업로드 실패: ${err.message}`);
+        showAlert(`동영상 업로드 실패: ${err.message}`, { type: 'error', title: '업로드 오류' });
+      }
+    });
   };
 
   // Version tracker to trigger instant reactive re-renders when users are added/modified
@@ -702,6 +807,7 @@ export default function AdminDashboardPage() {
   });
   const [showNewUserPw, setShowNewUserPw] = useState(false);
   const [isSubmittingUser, setIsSubmittingUser] = useState(false);
+  const registeringUserRef = useRef(false);
   const [userModalError, setUserModalError] = useState('');
 
   // User Register Success Summary Modal State
@@ -753,6 +859,7 @@ export default function AdminDashboardPage() {
 
   const handleCreateUserSubmit = async (e) => {
     e.preventDefault();
+    if (registeringUserRef.current) return;
     setUserModalError('');
 
     if (!newUserForm.name.trim()) {
@@ -776,11 +883,13 @@ export default function AdminDashboardPage() {
       return;
     }
 
+    let registered = null;
+    registeringUserRef.current = true;
     try {
       setIsSubmittingUser(true);
 
       // 1. Register User via AuthContext
-      const registered = adminRegisterUser({
+      registered = await adminRegisterUser({
         id: newUserForm.id.trim(),
         password: newUserForm.password.trim(),
         name: newUserForm.name.trim(),
@@ -794,7 +903,6 @@ export default function AdminDashboardPage() {
       let assignedCourseTitle = '';
       let assignedStatusText = '';
       if (newUserForm.assignCourse && newUserForm.courseId) {
-        enrollStudent(registered.id, newUserForm.courseId, newUserForm.status);
         const c = courses.find(item => item.id === newUserForm.courseId);
         assignedCourseTitle = c?.title || newUserForm.courseId;
         assignedStatusText = newUserForm.status === 'active' ? '수강중 (결제완료)' :
@@ -802,7 +910,7 @@ export default function AdminDashboardPage() {
 
         // 3. Record Payment in ledger if selected
         if (newUserForm.recordPayment && newUserForm.status === 'active') {
-          recordPayment({
+          await recordPayment({
             userId: registered.id,
             courseId: newUserForm.courseId,
             manager: currentUser?.name || '세화 교학처 담당자',
@@ -810,6 +918,8 @@ export default function AdminDashboardPage() {
             methodMemo: newUserForm.paymentMethodMemo || '대면 접수 / 현장 결제',
             paidAt: new Date().toISOString().split('T')[0]
           });
+        } else {
+          await enrollStudent(registered.id, newUserForm.courseId, newUserForm.status);
         }
       }
 
@@ -827,8 +937,18 @@ export default function AdminDashboardPage() {
       setCopiedInfo(false);
 
     } catch (err) {
-      setUserModalError(err.message || '회원 등록 중 오류가 발생했습니다.');
+      if (registered) {
+        setUsersVersion(v => v + 1);
+        setShowNewUserModal(false);
+        setSelectedUser(registered);
+        await showAlert(`회원 계정(${registered.id})은 등록되었습니다. 수강 권한 또는 수납 등록은 완료하지 못했습니다.\n\n${err.message || '저장 오류가 발생했습니다.'}\n\n회원 관리에서 해당 계정의 수강·수납 내역을 확인해 주세요. 회원을 다시 등록할 필요는 없습니다.`, {
+          type: 'warning', title: '회원 등록 완료, 후속 등록 실패'
+        });
+      } else {
+        setUserModalError(err.message || '회원 등록 중 오류가 발생했습니다.');
+      }
     } finally {
+      registeringUserRef.current = false;
       setIsSubmittingUser(false);
     }
   };
@@ -850,52 +970,56 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
   };
 
   const handleDeleteUser = async (user) => {
-    if (user.id === 'admin') {
-      showAlert('최고관리자(admin) 계정은 시스템 보호를 위해 삭제할 수 없습니다.', { type: 'warning', title: '계정 보호' });
-      return;
-    }
-    if (currentUser && currentUser.id === user.id) {
-      showAlert('현재 로그인 중인 본인 계정은 삭제할 수 없습니다.', { type: 'warning', title: '계정 삭제 불가' });
-      return;
-    }
-
-    const confirmMsg = `[${user.name} (${user.id})] 회원을 정말 삭제하시겠습니까?\n\n※ 해당 회원의 수강 이력 및 대면 결제 장부 기록도 함께 정리됩니다.`;
-    const ok = await showConfirm(confirmMsg, {
-      title: '회원 계정 삭제 확인',
-      type: 'error',
-      confirmText: '회원 삭제'
-    });
-    if (ok) {
-      try {
-        await adminDeleteUser(user.id);
-        setUsersVersion(v => v + 1);
-        refreshData();
-        showAlert(`[${user.name}] 회원 계정이 정상적으로 삭제되었습니다.`, { type: 'success', title: '회원 삭제 완료' });
-      } catch (err) {
-        showAlert(`삭제 실패: ${err.message}`, { type: 'error', title: '삭제 오류' });
+    return runCmsAction(async () => {
+      if (user.id === 'admin') {
+        showAlert('최고관리자(admin) 계정은 시스템 보호를 위해 삭제할 수 없습니다.', { type: 'warning', title: '계정 보호' });
+        return;
       }
-    }
+      if (currentUser && currentUser.id === user.id) {
+        showAlert('현재 로그인 중인 본인 계정은 삭제할 수 없습니다.', { type: 'warning', title: '계정 삭제 불가' });
+        return;
+      }
+
+      const confirmMsg = `[${user.name} (${user.id})] 회원을 정말 삭제하시겠습니까?\n\n※ 해당 회원의 수강 이력 및 대면 결제 장부 기록도 함께 정리됩니다.`;
+      const ok = await showConfirm(confirmMsg, {
+        title: '회원 계정 삭제 확인',
+        type: 'error',
+        confirmText: '회원 삭제'
+      });
+      if (ok) {
+        try {
+          await adminDeleteUser(user.id);
+          setUsersVersion(v => v + 1);
+          refreshData();
+          showAlert(`[${user.name}] 회원 계정이 정상적으로 삭제되었습니다.`, { type: 'success', title: '회원 삭제 완료' });
+        } catch (err) {
+          showAlert(`삭제 실패: ${err.message}`, { type: 'error', title: '삭제 오류' });
+        }
+      }
+    });
   };
 
   const handleExecuteResetPassword = async (e) => {
     e.preventDefault();
-    if (!resetPwUser) return;
-    if (!newTempPassword || newTempPassword.trim().length < 4) {
-      showAlert('새 비밀번호는 최소 4자 이상이어야 합니다.', { type: 'warning', title: '입력 확인' });
-      return;
-    }
+    return runCmsAction(async () => {
+      if (!resetPwUser) return;
+      if (!newTempPassword || newTempPassword.trim().length < 4) {
+        showAlert('새 비밀번호는 최소 4자 이상이어야 합니다.', { type: 'warning', title: '입력 확인' });
+        return;
+      }
 
-    try {
-      setIsResettingPw(true);
-      await adminResetPassword(resetPwUser.id, newTempPassword.trim());
-      setUsersVersion(v => v + 1);
-      showAlert(`[${resetPwUser.name}] 님의 비밀번호가 '${newTempPassword.trim()}'(으)로 성공적으로 초기화되었습니다.\n학인에게 변경된 비밀번호를 안내해 주시기 바랍니다.`, { type: 'success', title: '비밀번호 초기화 완료' });
-      setResetPwUser(null);
-    } catch (err) {
-      showAlert(`비밀번호 초기화 실패: ${err.message}`, { type: 'error', title: '초기화 오류' });
-    } finally {
-      setIsResettingPw(false);
-    }
+      try {
+        setIsResettingPw(true);
+        await adminResetPassword(resetPwUser.id, newTempPassword.trim());
+        setUsersVersion(v => v + 1);
+        showAlert(`[${resetPwUser.name}] 님의 비밀번호가 '${newTempPassword.trim()}'(으)로 성공적으로 초기화되었습니다.\n학인에게 변경된 비밀번호를 안내해 주시기 바랍니다.`, { type: 'success', title: '비밀번호 초기화 완료' });
+        setResetPwUser(null);
+      } catch (err) {
+        showAlert(`비밀번호 초기화 실패: ${err.message}`, { type: 'error', title: '초기화 오류' });
+      } finally {
+        setIsResettingPw(false);
+      }
+    });
   };
 
   // Filtered users by search keyword (name or phone)
@@ -911,61 +1035,82 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
   }, [allUsers, searchKeyword]);
 
   // Handle Manual Enrollment Grant
-  const handleGrantEnrollment = (e) => {
+  const handleGrantEnrollment = async (e) => {
     e.preventDefault();
     if (!selectedUser) return;
-    const targetCourse = courses.find(c => c.id === grantCourseId) || courses[0];
-    const courseTitle = targetCourse ? targetCourse.title : '선택 강좌';
-    const statusLabels = {
-      active: '수강 중',
-      pending: '결제 대기',
-      applied: '접수 대기'
-    };
-    const statusLabel = statusLabels[grantStatus] || grantStatus;
+    if (enrollmentSaveRef.current) return;
+    enrollmentSaveRef.current = true;
+    setSavingEnrollment(true);
+    try {
+      const targetCourse = courses.find(c => c.id === grantCourseId) || courses[0];
+      const courseTitle = targetCourse ? targetCourse.title : '선택 강좌';
+      const statusLabels = {
+        active: '수강 중',
+        pending: '결제 대기',
+        applied: '접수 대기'
+      };
+      const statusLabel = statusLabels[grantStatus] || grantStatus;
 
-    enrollStudent(selectedUser.id, targetCourse ? targetCourse.id : grantCourseId, grantStatus);
-    showAlert(`${selectedUser.name} 님에게 [${courseTitle}] 수강 권한이 [${statusLabel}] 상태로 정상 반영되었습니다.`, {
-      type: 'success',
-      title: '수강 권한 처리 완료'
-    });
-    setShowGrantModal(false);
-    refreshData();
+      await enrollStudent(selectedUser.id, targetCourse ? targetCourse.id : grantCourseId, grantStatus);
+      showAlert(`${selectedUser.name} 님에게 [${courseTitle}] 수강 권한이 [${statusLabel}] 상태로 정상 반영되었습니다.`, {
+        type: 'success',
+        title: '수강 권한 처리 완료'
+      });
+      setShowGrantModal(false);
+    } catch (error) {
+      await showAlert(error.message || '수강 권한을 저장하지 못했습니다. 다시 시도해 주세요.', {
+        type: 'error', title: '수강 권한 처리 실패'
+      });
+    } finally {
+      enrollmentSaveRef.current = false;
+      setSavingEnrollment(false);
+    }
   };
 
 
   // Handle In-Person Payment Record
   const handleRecordPayment = async (e) => {
     e.preventDefault();
+    if (enrollmentSaveRef.current) return;
     if (!payUserId) {
       showAlert('회원을 선택해 주세요.', { type: 'warning', title: '입력 확인' });
       return;
     }
 
-    const student = allUsers.find(u => u.id === payUserId);
-    const course = courses.find(c => c.id === payCourseId);
+    enrollmentSaveRef.current = true;
+    setSavingEnrollment(true);
+    try {
+      const student = allUsers.find(u => u.id === payUserId);
+      const course = courses.find(c => c.id === payCourseId);
+      await recordPayment({
+        userId: payUserId,
+        courseId: payCourseId,
+        manager: payManager,
+        amount: parseInt(payAmount, 10),
+        methodMemo: payMethodMemo,
+        paidAt: payDate,
+        withDonationReceipt: payWithDonationReceipt,
+        studentName: student ? student.name : payUserId,
+        studentPhone: student ? student.phone : '',
+        courseTitle: course ? course.title : payCourseId
+      });
 
-    await recordPayment({
-      userId: payUserId,
-      courseId: payCourseId,
-      manager: payManager,
-      amount: parseInt(payAmount, 10),
-      methodMemo: payMethodMemo,
-      paidAt: payDate,
-      withDonationReceipt: payWithDonationReceipt,
-      studentName: student ? student.name : payUserId,
-      studentPhone: student ? student.phone : '',
-      courseTitle: course ? course.title : payCourseId
-    });
-
-    showAlert(
-      payWithDonationReceipt
-        ? '대면 수납 내역 및 기부금 영수증이 장부에 기록되었으며, 해당 회원의 수강 상태가 [수강중(결제완료)]으로 전환되었습니다.'
-        : '대면 수납 내역이 장부에 기록되었으며, 해당 회원의 수강 상태가 [수강중(결제완료)]으로 전환되었습니다.',
-      { type: 'success', title: '수납 처리 완료' }
-    );
-    setShowPaymentModal(false);
-    setPayWithDonationReceipt(false);
-    await refreshData();
+      showAlert(
+        payWithDonationReceipt
+          ? '대면 수납 내역 및 기부금 영수증이 장부에 기록되었으며, 해당 회원의 수강 상태가 [수강중(결제완료)]으로 전환되었습니다.'
+          : '대면 수납 내역이 장부에 기록되었으며, 해당 회원의 수강 상태가 [수강중(결제완료)]으로 전환되었습니다.',
+        { type: 'success', title: '수납 처리 완료' }
+      );
+      setShowPaymentModal(false);
+      setPayWithDonationReceipt(false);
+    } catch (error) {
+      await showAlert(error.message || '수납 내역을 저장하지 못했습니다. 처리 내역을 확인해 주세요.', {
+        type: 'error', title: '수납 처리 실패'
+      });
+    } finally {
+      enrollmentSaveRef.current = false;
+      setSavingEnrollment(false);
+    }
   };
 
   // Pending Enrollments (waiting for in-person payment)
@@ -996,44 +1141,54 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
     return records.sort((a, b) => new Date(b.paidAt || 0) - new Date(a.paidAt || 0));
   }, [payments, enrollments, courses, currentUser]);
 
-  // 1-Click Approve Pending Payment (supports withReceipt = true/false)
+  // 1-Click Approve Pending Payment
   const handleApprovePendingPayment = async (enr, withReceipt = false) => {
-    const student = allUsers.find(u => u.id === enr.userId);
-    const course = courses.find(c => c.id === enr.courseId);
-    const studentName = student ? student.name : enr.userId;
-    const studentPhone = student ? student.phone : '';
-    const courseTitle = course ? course.title : enr.courseId;
-    const amount = course ? course.price : 50000;
+    if (enrollmentSaveRef.current) return;
+    enrollmentSaveRef.current = true;
+    setSavingEnrollment(true);
+    try {
+      const student = allUsers.find(u => u.id === enr.userId);
+      const course = courses.find(c => c.id === enr.courseId);
+      const studentName = student ? student.name : enr.userId;
+      const studentPhone = student ? student.phone : '';
+      const courseTitle = course ? course.title : enr.courseId;
+      const amount = course ? course.price : 50000;
 
-    const confirmMsg = withReceipt
-      ? `[${studentName}] 학인의 [${courseTitle}] 대면 수납 승인 및 기부금 영수증을 동시 발행하시겠습니까?\n\n• 수납 금액: ${amount.toLocaleString()}원\n• 연락처: ${studentPhone || '미등록'}\n• 조치 사항:\n  1) 학인의 수강 상태가 [수강 중]으로 즉시 활성화됩니다.\n  2) 기부금 영수증 대장에 1인 1행(동일 번호는 금액 누적 가산)으로 자동 등록됩니다.`
-      : `[${studentName}] 학인의 [${courseTitle}] 대면 수납을 승인하시겠습니까?\n\n• 수납 금액: ${amount.toLocaleString()}원\n• 승인 즉시 장부에 등재되며, 학인의 '내 강의실' 상태가 [수강 중]으로 전환되어 모든 강의를 시청할 수 있습니다.`;
-
-    const ok = await showConfirm(confirmMsg, {
-      title: withReceipt ? '대면 수납 승인 + 기부영수증 발행' : '대면 수납 승인 확인',
-      type: 'info',
-      confirmText: withReceipt ? '수납 승인 + 기부영수증 발행' : '수납 승인'
-    });
-    if (ok) {
-      await recordPayment({
-        userId: enr.userId,
-        courseId: enr.courseId,
-        manager: currentUser?.name || '교학처 관리자',
-        amount: amount,
-        methodMemo: withReceipt ? '교학처 방문 대면 수납 승인 (기부금 영수증 동시 발행)' : '교학처 방문 대면 수납 승인',
-        paidAt: new Date().toISOString().split('T')[0],
-        withDonationReceipt: withReceipt,
-        studentName,
-        studentPhone,
-        courseTitle
+      const confirmMsg = withReceipt
+        ? `[${studentName}] 학인의 [${courseTitle}] 대면 수납 승인 및 기부금 영수증을 동시 발행하시겠습니까?\n\n• 수납 금액: ${amount.toLocaleString()}원\n• 연락처: ${studentPhone || '미등록'}\n• 기부금 영수증 대장에 동일 전화번호의 금액을 누적 가산합니다.`
+        : `[${studentName}] 학인의 [${courseTitle}] 대면 수납을 승인하시겠습니까?\n\n• 수납 금액: ${amount.toLocaleString()}원\n• 승인 즉시 장부에 등재되며, 학인의 '내 강의실' 상태가 [수강 중]으로 전환되어 모든 강의를 시청할 수 있습니다.`;
+      const ok = await showConfirm(confirmMsg, {
+        title: withReceipt ? '대면 수납 승인 + 기부영수증 발행' : '대면 수납 승인 확인',
+        type: 'info',
+        confirmText: withReceipt ? '수납 승인 + 기부영수증 발행' : '수납 승인'
       });
-      showAlert(
-        withReceipt
-          ? `[${studentName}] 학인의 대면 수납 승인 및 기부금 영수증 발행이 완료되었습니다!\n장부와 기부 영수증 대장(1전번 1행 누적)에 안전하게 등재되었습니다.`
-          : `[${studentName}] 학인의 대면 수납 승인이 완료되었습니다!\n장부에 정상 등재되었으며, 이제 수강이 시작됩니다.`,
-        { type: 'success', title: withReceipt ? '수납 및 기부영수증 발행 완료' : '수납 승인 완료' }
-      );
-      await refreshData();
+      if (ok) {
+        await recordPayment({
+          userId: enr.userId,
+          courseId: enr.courseId,
+          manager: currentUser?.name || '교학처 관리자',
+          amount: amount,
+          methodMemo: withReceipt ? '교학처 방문 대면 수납 승인 (기부금 영수증 동시 발행)' : '교학처 방문 대면 수납 승인',
+          paidAt: new Date().toISOString().split('T')[0],
+          withDonationReceipt: withReceipt,
+          studentName,
+          studentPhone,
+          courseTitle
+        });
+        showAlert(
+          withReceipt
+            ? `[${studentName}] 학인의 대면 수납 승인 및 기부금 영수증 발행이 완료되었습니다!`
+            : `[${studentName}] 학인의 대면 수납 승인이 완료되었습니다!\n장부에 정상 등재되었으며, 이제 수강이 시작됩니다.`,
+          { type: 'success', title: withReceipt ? '수납 및 기부영수증 발행 완료' : '수납 승인 완료' }
+        );
+      }
+    } catch (error) {
+      await showAlert(error.message || '수납 승인을 저장하지 못했습니다. 처리 내역을 확인해 주세요.', {
+        type: 'error', title: '수납 승인 실패'
+      });
+    } finally {
+      enrollmentSaveRef.current = false;
+      setSavingEnrollment(false);
     }
   };
 
@@ -1334,74 +1489,90 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
   };
 
   // Handle Sequential Lock Toggle
-  const handleToggleSequential = (courseId, currentVal) => {
-    updateCourseSettings(courseId, { sequentialUnlock: !currentVal });
-    refreshData();
+  const handleToggleSequential = async (courseId, currentVal) => {
+    return runCmsAction(async () => {
+      await updateCourseSettings(courseId, { sequentialUnlock: !currentVal });
+
+    });
   };
 
   // Handle Create Lecture (with site-direct video upload)
   const handleCreateLecture = async (e) => {
     e.preventDefault();
-    if (!lecForm.title.trim()) {
-      showAlert('강의 제목을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
+    if (metadataBusyRef.current) {
+      showAlert('영상 길이를 확인하고 있습니다. 확인이 끝난 뒤 등록해 주세요.', { type: 'info', title: '영상 정보 확인 중' });
       return;
     }
-
-    let finalVideoUrl = lecForm.videoUrl;
-
-    // Direct Video Upload to Server Storage
-    if (uploadMode === 'file') {
-      if (!newVideoFile && !finalVideoUrl) {
-        showAlert('동영상 파일을 먼저 선택해 주세요.', { type: 'warning', title: '파일 선택' });
+    return runCmsAction(async () => {
+      if (!lecForm.title.trim()) {
+        showAlert('강의 제목을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
         return;
       }
 
-      if (newVideoFile) {
-        try {
-          setIsUploading(true);
-          setUploadErrorMsg('');
-          setUploadSuccessMsg('');
+      let finalVideoUrl = lecForm.videoUrl;
 
-          const result = await uploadLectureVideo(newVideoFile, (prog) => {
-            setUploadProgress(prog);
-          });
-          finalVideoUrl = result.publicUrl;
-          const compText = result.compressedMb ? ` (${result.originalMb}MB ➔ ${result.compressedMb}MB 압축 완료)` : '';
-          setUploadSuccessMsg(`서버 스토리지로 영상 업로드 및 1080p 고화질 최적화가 완료되었습니다!${compText}`);
-        } catch (err) {
-          setIsUploading(false);
-          setUploadErrorMsg(`업로드 오류: ${err.message}`);
-          showAlert(`서버 업로드 오류: ${err.message}`, { type: 'error', title: '업로드 오류' });
+      // Direct Video Upload to Server Storage
+      if (uploadMode === 'file') {
+        if (!newVideoFile && !finalVideoUrl) {
+          showAlert('동영상 파일을 먼저 선택해 주세요.', { type: 'warning', title: '파일 선택' });
           return;
-        } finally {
-          setIsUploading(false);
+        }
+
+        if (newVideoFile) {
+          try {
+            setIsUploading(true);
+            setUploadErrorMsg('');
+            setUploadSuccessMsg('');
+
+            const result = await uploadLectureVideo(newVideoFile, (prog) => {
+              setUploadProgress(prog);
+            });
+            finalVideoUrl = result.publicUrl;
+            setLecForm(prev => ({ ...prev, videoUrl: result.publicUrl }));
+            setNewVideoFile(null);
+            const compText = result.compressedMb ? ` (${result.originalMb}MB ➔ ${result.compressedMb}MB 압축 완료)` : '';
+            setUploadSuccessMsg(`영상 업로드가 완료되었습니다. 차시 정보를 저장하고 있습니다.${compText}`);
+          } catch (err) {
+            setIsUploading(false);
+            setUploadErrorMsg(`업로드 오류: ${err.message}`);
+            showAlert(`서버 업로드 오류: ${err.message}`, { type: 'error', title: '업로드 오류' });
+            return;
+          } finally {
+            setIsUploading(false);
+          }
+        }
+      } else {
+        if (!finalVideoUrl.trim()) {
+          showAlert('동영상 소스 URL을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
+          return;
         }
       }
-    } else {
-      if (!finalVideoUrl.trim()) {
-        showAlert('동영상 소스 URL을 입력해 주세요.', { type: 'warning', title: '입력 확인' });
-        return;
+
+      try {
+        await addLecture({
+          courseId: lecForm.courseId,
+          orderIndex: Number(lecForm.orderIndex),
+          title: lecForm.title,
+          description: lecForm.description,
+          durationSeconds: Number(lecForm.durationSeconds),
+          videoUrl: finalVideoUrl,
+          attachments: lecForm.attachmentName ? [{ name: lecForm.attachmentName, size: '2.5 MB' }] : []
+        });
+      } catch (error) {
+        setUploadSuccessMsg('');
+        setUploadErrorMsg(`차시 정보 저장 실패: ${error.message}`);
+        throw error;
       }
-    }
 
-    addLecture({
-      courseId: lecForm.courseId,
-      orderIndex: Number(lecForm.orderIndex),
-      title: lecForm.title,
-      description: lecForm.description,
-      durationSeconds: Number(lecForm.durationSeconds),
-      videoUrl: finalVideoUrl,
-      attachments: lecForm.attachmentName ? [{ name: lecForm.attachmentName, size: '2.5 MB' }] : []
+      showAlert(`[${lecForm.title}] 차시가 성공적으로 등록되었습니다!\n영상은 프라이빗 서버에서 즉시 고화질 스트리밍됩니다.`, { type: 'success', title: '차시 등록 완료' });
+      setShowNewLecModal(false);
+      setNewVideoFile(null);
+      setNewVideoPreviewUrl('');
+      setUploadProgress(null);
+      setUploadSuccessMsg('');
+      setUploadErrorMsg('');
+
     });
-
-    showAlert(`[${lecForm.title}] 차시가 성공적으로 등록되었습니다!\n영상은 프라이빗 서버에서 즉시 고화질 스트리밍됩니다.`, { type: 'success', title: '차시 등록 완료' });
-    setShowNewLecModal(false);
-    setNewVideoFile(null);
-    setNewVideoPreviewUrl('');
-    setUploadProgress(null);
-    setUploadSuccessMsg('');
-    setUploadErrorMsg('');
-    refreshData();
   };
 
   return (
@@ -1847,6 +2018,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                 title="회원 계정 영구 삭제"
                                 style={{ color: '#DC2626', border: '1px solid rgba(220, 38, 38, 0.2)', padding: '5px 8px' }}
                                 onClick={() => handleDeleteUser(user)}
+                                disabled={cmsSaving}
                               >
                                 <Trash2 size={13} />
                                 <span>삭제</span>
@@ -2196,6 +2368,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                   className="btn btn-amber btn-sm"
                                   style={{ backgroundColor: '#D49B4B', borderColor: '#B8860B', color: '#FFFFFF', fontWeight: 600 }}
                                   onClick={() => handleApprovePendingPayment(enr, false)}
+                                  disabled={savingEnrollment}
+                                  aria-busy={savingEnrollment}
                                   title="일반 수납 승인만 진행합니다."
                                 >
                                   <CreditCard size={13} />
@@ -2206,6 +2380,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                   className="btn btn-sm"
                                   style={{ backgroundColor: '#059669', borderColor: '#047857', color: '#FFFFFF', fontWeight: 700 }}
                                   onClick={() => handleApprovePendingPayment(enr, true)}
+                                  disabled={savingEnrollment}
+                                  aria-busy={savingEnrollment}
                                   title="수납 승인과 동시에 기부금 영수증 대장에 1전번 1행 누적 가산 등록합니다."
                                 >
                                   <FileText size={13} />
@@ -3077,6 +3253,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             }}
                             title="코스 삭제"
                             onClick={() => handleDeleteCourse(course.id, course.title)}
+                            disabled={cmsSaving}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -3140,6 +3317,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                               type="button"
                               className={`btn btn-sm ${course.sequentialUnlock ? 'btn-primary' : 'btn-secondary'}`}
                               onClick={() => handleToggleSequential(course.id, course.sequentialUnlock)}
+                              disabled={cmsSaving}
                             >
                               {course.sequentialUnlock ? '적용 중 (ON)' : '해제됨 (OFF)'}
                             </button>
@@ -3337,6 +3515,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                   style={{ padding: '4px 8px', fontSize: '12px', color: '#DC2626', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                                   title="강의 차시 삭제 (잘못 올린 경우 즉시 제거)"
                                   onClick={() => handleDeleteLecture(lec.id, lec.title)}
+                                  disabled={cmsSaving}
                                 >
                                   <Trash2 size={13} />
                                   <span>차시 삭제</span>
@@ -3482,6 +3661,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             className="btn btn-ghost btn-sm"
                             style={{ padding: '4px 6px', color: '#94A3B8' }}
                             onClick={() => handleDeleteQA(post.id)}
+                            disabled={cmsSaving}
                             title="질문 삭제"
                           >
                             <Trash2 size={14} />
@@ -4048,7 +4228,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   type="submit"
                   className="btn btn-amber"
                   style={{ flex: 1.2 }}
-                  disabled={isResettingPw}
+                  disabled={cmsSaving || (isResettingPw)}
                 >
                   {isResettingPw ? '초기화 중...' : '비밀번호 즉시 변경'}
                 </button>
@@ -4167,8 +4347,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowGrantModal(false)}>
                   취소
                 </button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1, fontWeight: 700 }}>
-                  권한 승인 저장
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, fontWeight: 700 }} disabled={savingEnrollment} aria-busy={savingEnrollment}>
+                  {savingEnrollment ? '저장 중...' : '권한 승인 저장'}
                 </button>
               </div>
             </form>
@@ -4279,8 +4459,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowPaymentModal(false)}>
                   취소
                 </button>
-                <button type="submit" className="btn btn-amber" style={{ flex: 1 }}>
-                  수납 완료 및 수강 승인
+                <button type="submit" className="btn btn-amber" style={{ flex: 1 }} disabled={savingEnrollment} aria-busy={savingEnrollment}>
+                  {savingEnrollment ? '수납 처리 중...' : '수납 완료 및 수강 승인'}
                 </button>
               </div>
             </form>
@@ -4516,7 +4696,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     <div style={{ padding: '10px 14px', backgroundColor: 'rgba(59, 90, 68, 0.08)', borderRadius: '6px', marginBottom: '12px', fontSize: '12px', color: 'var(--color-sage)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <CheckCircle size={15} style={{ flexShrink: 0 }} />
                       <span>
-                        <strong>웹 원클릭 자동 압축 탑재:</strong> 대용량 원본 영상(100MB~300MB)을 바로 선택하셔도, 웹에서 <strong>1080p 고화질을 유지하며 자동으로 최적화 압축</strong>하여 서버에 등록됩니다.
+                        <strong>동영상 직접 업로드:</strong> 선택한 파일을 저장소로 업로드합니다. 원본 화질과 용량이 유지되므로 재생에 적합한 MP4 파일을 준비해 주세요.
                       </span>
                     </div>
 
@@ -4526,8 +4706,12 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       accept="video/mp4,video/webm,video/ogg,video/quicktime,.mkv,.avi"
                       style={{ display: 'none' }}
                       onChange={(e) => handleNewVideoFileSelect(e.target.files[0])}
+                      disabled={cmsSaving}
                     />
 
+                    {!newVideoFile && uploadErrorMsg && (
+                      <p role="alert" style={{ color: '#DC2626', margin: '10px 0' }}>{uploadErrorMsg}</p>
+                    )}
                     {!newVideoFile ? (
                       <div
                         style={{
@@ -4556,7 +4740,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                           이곳을 클릭하거나 동영상 파일을 끌어다 놓으세요
                         </div>
                         <div style={{ fontSize: '12.5px', color: 'var(--color-text-muted)' }}>
-                          MP4, MOV, WEBM, MKV 지원 (선택 시 1080p 고화질 자동 압축 및 서버 CDN 업로드)
+                          MP4 권장 · 업로드 전 파일 형식과 용량을 확인해 주세요.
                         </div>
                       </div>
                     ) : (
@@ -4567,7 +4751,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             <div>
                               <div style={{ fontWeight: 600, fontSize: '13.5px' }}>{newVideoFile.name}</div>
                               <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)' }}>
-                                용량: {(newVideoFile.size / (1024 * 1024)).toFixed(1)} MB | 감지된 길이: 약 {Math.round(lecForm.durationSeconds / 60)}분 ({lecForm.durationSeconds}초)
+                                용량: {(newVideoFile.size / (1024 * 1024)).toFixed(1)} MB | {isReadingMetadata ? '영상 길이를 확인하는 중...' : `감지된 길이: 약 ${Math.round(lecForm.durationSeconds / 60)}분 (${lecForm.durationSeconds}초)`}
                               </div>
                             </div>
                           </div>
@@ -4576,8 +4760,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             className="btn btn-ghost btn-sm"
                             style={{ padding: '4px 8px', fontSize: '12px' }}
                             onClick={() => {
-                              setNewVideoFile(null);
-                              setNewVideoPreviewUrl('');
+                              clearNewVideoSelection();
                               setUploadProgress(null);
                               setUploadSuccessMsg('');
                               setUploadErrorMsg('');
@@ -4606,7 +4789,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                               <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <Loader2 size={15} className="spin" style={{ color: 'var(--color-sage)' }} />
                                 {uploadProgress.step === 'processing'
-                                  ? '1080p 고화질 자동 최적화 압축 진행 중...'
+                                  ? '동영상 처리 중...'
                                   : '서버로 영상 원본 파일 전송 중...'}
                               </span>
                               <span style={{ fontWeight: 700, color: 'var(--color-sage)', fontSize: '12px' }}>
@@ -4629,7 +4812,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
                               <span>
                                 {uploadProgress.step === 'processing'
-                                  ? '💡 슬라이드 글자 가독성을 100% 보존하며 용량을 ~85% 감축 중입니다'
+                                  ? '동영상 처리를 마친 뒤 업로드합니다'
                                   : '클라우드 저장소 업로드를 준비하고 있습니다'}
                               </span>
                               <span>
@@ -4715,14 +4898,14 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   type="submit"
                   className="btn btn-primary"
                   style={{ flex: 1.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-                  disabled={isUploading}
+                  disabled={cmsSaving || isUploading || isReadingMetadata}
                 >
                   {isUploading ? (
                     <>
                       <Loader2 size={16} className="spin" />
                       <span>
                         {uploadProgress?.step === 'processing'
-                          ? `1080p 최적화 압축 중 (${uploadProgress?.compressSec || 0}초 경과)...`
+                          ? `동영상 처리 중 (${uploadProgress?.compressSec || 0}초 경과)...`
                           : `서버로 업로드 등록 중... (${uploadProgress?.percent || 0}%)`}
                       </span>
                     </>
@@ -4776,7 +4959,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               <div style={{ padding: '10px 14px', backgroundColor: 'rgba(59, 90, 68, 0.08)', borderRadius: '6px', marginBottom: '14px', fontSize: '12px', color: 'var(--color-sage)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CheckCircle size={15} style={{ flexShrink: 0 }} />
                 <span>
-                  <strong>웹 원클릭 자동 압축 탑재:</strong> 대용량 원본 파일도 선택 즉시 1080p 고화질을 보존하며 자동으로 최적화 압축되어 교체됩니다.
+                  <strong>동영상 직접 업로드:</strong> 선택한 파일을 저장소에 올린 뒤 차시의 영상을 교체합니다. 업로드 전에 재생 가능한 파일인지 확인해 주세요.
                 </span>
               </div>
 
@@ -4860,7 +5043,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Loader2 size={15} className="spin" style={{ color: 'var(--color-sage)' }} />
                           {replaceProgress.step === 'processing'
-                            ? '1080p 고화질 자동 최적화 압축 진행 중...'
+                            ? '동영상 처리 중...'
                             : '서버로 영상 원본 파일 전송 중...'}
                         </span>
                         <span style={{ fontWeight: 700, color: 'var(--color-sage)', fontSize: '12px' }}>
@@ -4883,7 +5066,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
                         <span>
                           {replaceProgress.step === 'processing'
-                            ? '💡 슬라이드 글자 가독성을 100% 보존하며 용량을 ~85% 감축 중입니다'
+                            ? '동영상 처리를 마친 뒤 업로드합니다'
                             : '클라우드 저장소 업로드를 준비하고 있습니다'}
                         </span>
                         <span>
@@ -4925,14 +5108,14 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   type="submit"
                   className="btn btn-primary"
                   style={{ flex: 1.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
-                  disabled={isReplacing || !replaceVideoFile}
+                  disabled={cmsSaving || (isReplacing || !replaceVideoFile)}
                 >
                   {isReplacing ? (
                     <>
                       <Loader2 size={15} className="spin" />
                       <span>
                         {replaceProgress?.step === 'processing'
-                          ? `1080p 최적화 압축 중 (${replaceProgress?.compressSec || 0}초 경과)...`
+                          ? `동영상 처리 중 (${replaceProgress?.compressSec || 0}초 경과)...`
                           : `서버로 업로드 중 (${replaceProgress?.percent || 0}%)...`}
                       </span>
                     </>
@@ -5068,15 +5251,14 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                           type="file"
                           accept="image/*"
                           style={{ display: 'none' }}
+                          disabled={cmsSaving}
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              try {
+                              await runCmsAction(async () => {
                                 const res = await uploadThumbnailImage(file);
                                 setCourseForm(prev => ({ ...prev, thumbnail: res.publicUrl }));
-                              } catch (err) {
-                                showAlert(`이미지 처리 오류: ${err.message}`, { type: 'error', title: '이미지 오류' });
-                              }
+                              });
                             }
                           }}
                         />
@@ -5233,9 +5415,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             type="button"
                             className="btn btn-ghost btn-sm"
                             style={{ fontSize: '11.5px', padding: '4px 8px', color: 'var(--color-sage)' }}
-                            onClick={() => setCourseForm(prev => ({ ...prev, rawExamText: DEFAULT_RAW_EXAM_TEXT }))}
+                            onClick={() => setCourseForm(prev => ({ ...prev, rawExamText: '' }))}
                           >
-                            기본 20문항 채우기
+                            입력 초기화
                           </button>
                           {courseForm.rawExamText && (
                             <button
@@ -5301,7 +5483,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   취소
                 </button>
                 <button
-                  type="submit"
+                  type="submit" disabled={cmsSaving} aria-busy={cmsSaving}
                   className="btn btn-primary"
                   style={{ flex: 1.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
                 >
@@ -5440,9 +5622,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                           type="button"
                           className="btn btn-ghost btn-sm"
                           style={{ fontSize: '11.5px', padding: '4px 8px', color: 'var(--color-sage)' }}
-                          onClick={() => setCertEditForm(prev => ({ ...prev, rawExamText: DEFAULT_RAW_EXAM_TEXT }))}
+                          onClick={() => setCertEditForm(prev => ({ ...prev, rawExamText: certEditCourse?.rawExamText || '' }))}
                         >
-                          기본 20문항 채우기
+                          저장된 문제로 되돌리기
                         </button>
                         {certEditForm.rawExamText && (
                           <button
@@ -5507,7 +5689,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   취소
                 </button>
                 <button
-                  type="submit"
+                  type="submit" disabled={cmsSaving} aria-busy={cmsSaving}
                   className="btn btn-amber"
                   style={{ flex: 1.5, fontWeight: 700 }}
                 >
@@ -5543,12 +5725,29 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             </div>
 
             <div style={{ borderRadius: '8px', overflow: 'hidden', backgroundColor: '#000', marginBottom: '14px' }}>
-              <video
-                src={previewModalLec.videoUrl}
-                controls
-                autoPlay
-                style={{ width: '100%', maxHeight: '380px', display: 'block' }}
-              />
+              {previewMedia.scope !== previewScope || (!previewMedia.url && !previewMedia.error) ? (
+                <div role="status" style={{ padding: '48px 20px', textAlign: 'center', color: '#FFFFFF' }}>
+                  영상 접근 권한을 확인하고 있습니다...
+                </div>
+              ) : previewMedia.error ? (
+                <div role="alert" style={{ padding: '32px 20px', textAlign: 'center', color: '#FFFFFF' }}>
+                  <p style={{ marginBottom: '16px' }}>{previewMedia.error}</p>
+                  <button type="button" className="btn btn-secondary" onClick={() => setPreviewRetry(value => value + 1)}>
+                    <RefreshCw size={16} /> 다시 시도
+                  </button>
+                </div>
+              ) : (
+                <video
+                  key={previewMedia.requestId}
+                  src={previewMedia.url}
+                  controls
+                  autoPlay
+                  onError={() => setPreviewMedia(previous => previous.requestId === previewMedia.requestId ? {
+                    ...previous, url: '', error: '영상을 재생하지 못했습니다. 접근 권한과 파일 상태를 확인한 뒤 다시 시도해 주세요.'
+                  } : previous)}
+                  style={{ width: '100%', maxHeight: '380px', display: 'block' }}
+                />
+              )}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--color-text-muted)' }}>
@@ -5623,7 +5822,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setReplyModalPost(null)}>
                   취소
                 </button>
-                <button type="submit" className="btn btn-amber" style={{ flex: 1 }}>
+                <button type="submit" disabled={cmsSaving} aria-busy={cmsSaving} className="btn btn-amber" style={{ flex: 1 }}>
                   답변 게시 완료
                 </button>
               </div>
@@ -5801,7 +6000,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 className="btn btn-primary"
                 style={{ flex: 1.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
                 onClick={handleSaveCourseThumbnail}
-                disabled={isUploadingThumb}
+                disabled={cmsSaving || (isUploadingThumb)}
               >
                 <Check size={16} />
                 <span>썸네일 변경 저장 완료</span>
@@ -5962,7 +6161,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 className="btn btn-primary"
                 style={{ flex: 1.5 }}
                 onClick={handleSaveLecThumbnail}
-                disabled={isUploadingLecThumb}
+                disabled={cmsSaving || (isUploadingLecThumb)}
               >
                 차시 썸네일 저장 완료
               </button>

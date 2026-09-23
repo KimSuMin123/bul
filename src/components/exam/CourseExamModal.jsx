@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -26,9 +26,8 @@ export default function CourseExamModal({
 }) {
   const { currentUser } = useAuth();
   const { 
-    getExamPool, 
+    beginExam,
     submitExam, 
-    selectRandomQuestions, 
     getExamResult,
     isExamPassed 
   } = useCourse();
@@ -37,11 +36,16 @@ export default function CourseExamModal({
   // Test session state: 'intro' | 'testing' | 'result'
   const [viewState, setViewState] = useState('intro');
 
-  // Question pool and currently selected 20 questions
+  // Only server-issued questions and an opaque attempt id enter client state.
   const [examQuestions, setExamQuestions] = useState([]);
+  const [attemptId, setAttemptId] = useState(null);
+  const [starting, setStarting] = useState(false);
+  const startingRef = useRef(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState({}); // { [questionId]: chosenOptionNumber (1,2,3,4) }
   const [evaluationResult, setEvaluationResult] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   // Load previous attempt if any
   const previousAttempt = useMemo(() => {
@@ -49,15 +53,29 @@ export default function CourseExamModal({
     return getExamResult(currentUser.id, course.id);
   }, [currentUser, course, getExamResult]);
 
-  // Start new exam session with 20 randomly selected questions
-  const handleStartExam = () => {
-    const pool = getExamPool(course.id);
-    const selected20 = selectRandomQuestions(pool, 20);
-    setExamQuestions(selected20);
-    setCurrentIndex(0);
-    setUserAnswers({});
-    setEvaluationResult(null);
-    setViewState('testing');
+  const handleStartExam = async () => {
+    if (startingRef.current || submittingRef.current) return;
+    startingRef.current = true;
+    setStarting(true);
+    try {
+      const session = await beginExam(course.id);
+      if (!session?.attemptId || !Array.isArray(session.questions) || session.questions.length === 0) {
+        throw new Error('시험 문제를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      }
+      setAttemptId(session.attemptId);
+      setExamQuestions(session.questions);
+      setCurrentIndex(0);
+      setUserAnswers({});
+      setEvaluationResult(null);
+      setViewState('testing');
+    } catch (error) {
+      await showAlert(error.message || '시험을 시작하지 못했습니다. 다시 시도해 주세요.', {
+        type: 'error', title: '시험 시작 실패'
+      });
+    } finally {
+      startingRef.current = false;
+      setStarting(false);
+    }
   };
 
   // Answer a question
@@ -75,23 +93,36 @@ export default function CourseExamModal({
 
   // Submit and grade exam
   const handleSubmitExam = async () => {
-    const unAnsweredCount = totalQuestions - answeredCount;
-    if (unAnsweredCount > 0) {
-      const ok = await showConfirm(
-        `아직 ${unAnsweredCount}개의 문제에 답하지 않았습니다.\n\n미응답 문항은 오답(0점) 처리됩니다. 그래도 제출하시겠습니까?`,
-        {
-          title: '미응답 문항 확인',
-          type: 'warning',
-          confirmText: '그대로 제출',
-          cancelText: '더 풀기'
-        }
-      );
-      if (!ok) return;
-    }
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    try {
+      const unAnsweredCount = totalQuestions - answeredCount;
+      if (unAnsweredCount > 0) {
+        const ok = await showConfirm(
+          `아직 ${unAnsweredCount}개의 문제에 답하지 않았습니다.\n\n미응답 문항은 오답(0점) 처리됩니다. 그래도 제출하시겠습니까?`,
+          {
+            title: '미응답 문항 확인',
+            type: 'warning',
+            confirmText: '그대로 제출',
+            cancelText: '더 풀기'
+          }
+        );
+        if (!ok) return;
+      }
 
-    const evaluation = await submitExam(currentUser.id, course.id, examQuestions, userAnswers);
-    setEvaluationResult(evaluation);
-    setViewState('result');
+      if (!attemptId) throw new Error('시험 응시 정보가 없습니다. 시험을 다시 시작해 주세요.');
+      const evaluation = await submitExam(currentUser.id, course.id, attemptId, userAnswers);
+      setEvaluationResult(evaluation);
+      setViewState('result');
+    } catch (error) {
+      await showAlert(error.message || '시험 결과를 저장하지 못했습니다. 답안은 유지되니 다시 제출해 주세요.', {
+        type: 'error', title: '시험 제출 실패'
+      });
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
   };
 
   const currentQ = examQuestions[currentIndex] || null;
@@ -141,6 +172,7 @@ export default function CourseExamModal({
           <button 
             className="alert-modal-close-btn" 
             onClick={onClose}
+            disabled={submitting || starting}
             style={{ position: 'static', background: 'rgba(255,255,255,0.15)', color: '#FFFFFF' }}
             aria-label="닫기"
           >
@@ -274,8 +306,10 @@ export default function CourseExamModal({
                   boxShadow: '0 8px 24px rgba(59, 82, 73, 0.35)'
                 }}
                 onClick={handleStartExam}
+                disabled={starting}
+                aria-busy={starting}
               >
-                <span>📝 자격 평가 시험 시작하기 ▶</span>
+                <span>{starting ? '시험 문제를 불러오는 중...' : '📝 자격 평가 시험 시작하기 ▶'}</span>
               </button>
             </div>
           )}
@@ -456,6 +490,8 @@ export default function CourseExamModal({
                     type="button"
                     className="btn btn-amber"
                     onClick={handleSubmitExam}
+                    disabled={submitting}
+                    aria-busy={submitting}
                     style={{ 
                       minWidth: '140px', 
                       backgroundColor: '#D49B4B', 
@@ -465,7 +501,7 @@ export default function CourseExamModal({
                     }}
                   >
                     <Send size={16} />
-                    <span>시험 제출하기</span>
+                    <span>{submitting ? '시험 제출 중...' : '시험 제출하기'}</span>
                   </button>
                 </div>
               </div>
@@ -581,9 +617,11 @@ export default function CourseExamModal({
                     className="btn btn-primary"
                     style={{ padding: '12px 24px', fontWeight: 700 }}
                     onClick={handleStartExam}
+                    disabled={starting}
+                    aria-busy={starting}
                   >
                     <RotateCcw size={16} />
-                    <span>🔄 새로운 20문제로 재응시하기</span>
+                    <span>{starting ? '시험 문제를 불러오는 중...' : '🔄 새로운 20문제로 재응시하기'}</span>
                   </button>
                 </div>
               </div>

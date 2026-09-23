@@ -1,177 +1,92 @@
 import fs from 'node:fs';
+import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
+import { pipeline } from 'node:stream/promises';
+import { Transform } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '../..');
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const MAX_RAW_BYTES = 1024 * 1024 * 1024;
+const MAX_FINAL_BYTES = 48 * 1024 * 1024;
+class UploadError extends Error { constructor(status, message) { super(message); this.status = status; } }
 
-function getFFmpegPath() {
-  if (process.env.FFMPEG_PATH && fs.existsSync(process.env.FFMPEG_PATH)) {
-    return process.env.FFMPEG_PATH;
-  }
-  // Try standard system PATH
-  return 'ffmpeg';
-}
-
-const FFMPEG_PATH = getFFmpegPath();
-
-function loadSupabaseConfig() {
-  const envPath = path.join(rootDir, '.env');
-  let supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-  let storageKey = process.env.VITE_SUPABASE_ANON_KEY || '';
-
-  if (fs.existsSync(envPath)) {
-    const envText = fs.readFileSync(envPath, 'utf8');
-    const urlMatch = envText.match(/VITE_SUPABASE_URL=(.*)/);
-    const anonMatch = envText.match(/VITE_SUPABASE_ANON_KEY=(.*)/);
-
-    if (urlMatch) supabaseUrl = urlMatch[1].trim();
-    if (anonMatch) storageKey = anonMatch[1].trim();
-  }
-
-  return { supabaseUrl, storageKey };
-}
-
-function runFFmpeg(args) {
-  return new Promise((resolve, reject) => {
-    execFile(FFMPEG_PATH, args, { maxBuffer: 20 * 1024 * 1024 }, (err, stdout, stderr) => {
-      if (err) {
-        return reject(new Error(`FFmpeg 실행 실패: ${err.message}\n${stderr}`));
-      }
-      resolve({ stdout, stderr });
+export function createVideoUploadMiddleware({ supabaseUrl = process.env.VITE_SUPABASE_URL,
+  anonKey = process.env.VITE_SUPABASE_ANON_KEY, request = globalThis.fetch,
+  ffmpegPath = process.env.FFMPEG_PATH || 'ffmpeg', exec = execFile,
+  uploadDir = path.join(rootDir, 'scratch', 'uploads'), maxBytes = MAX_RAW_BYTES } = {}) {
+  let busy = false;
+  const transcode = (args, signal) => new Promise((resolve, reject) => {
+    exec(ffmpegPath, args, { timeout: 10 * 60 * 1000, killSignal: 'SIGKILL', maxBuffer: 1024 * 1024, signal, windowsHide: true }, error => {
+      if (error) reject(new UploadError(500, '동영상 변환에 실패했습니다. 파일 형식과 FFmpeg 설치 상태를 확인해 주세요.'));
+      else resolve();
     });
   });
-}
-
-export function createVideoUploadMiddleware() {
-  const uploadDir = path.join(rootDir, 'scratch', 'uploads');
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-
-  return async function videoUploadMiddleware(req, res, next) {
-    if (req.method === 'POST' && req.url && req.url.startsWith('/api/upload-video')) {
-      const { supabaseUrl, storageKey } = loadSupabaseConfig();
-      if (!supabaseUrl || !storageKey) {
-        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
-        return res.end(JSON.stringify({ error: 'Supabase 서버 환경 변수가 설정되지 않았습니다.' }));
+  return async (req, res, next) => {
+    const parsed = new URL(req.url || '/', 'http://127.0.0.1');
+    if (parsed.pathname !== '/api/upload-video') return next();
+    const respond = (status, data) => {
+      if (res.destroyed || res.writableEnded) return;
+      res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify(data));
+    };
+    if (req.method !== 'POST') return respond(405, { error: 'POST 요청만 지원합니다.' });
+    let workDir;
+    let ownsSlot = false;
+    const abort = new AbortController();
+    const disconnect = () => abort.abort();
+    const close = () => { if (!res.writableEnded) abort.abort(); };
+    req.once('aborted', disconnect);
+    res.once('close', close);
+    const timer = setTimeout(() => abort.abort(), 15 * 60 * 1000);
+    timer.unref?.();
+    try {
+      if (!supabaseUrl || !anonKey) throw new UploadError(503, '스토리지 연결 설정을 확인해 주세요.');
+      const authorization = req.headers.authorization;
+      if (!authorization?.startsWith('Bearer ') || authorization === `Bearer ${anonKey}`) throw new UploadError(401, '관리자 로그인이 필요합니다.');
+      const headers = { apikey: anonKey, Authorization: authorization };
+      // Verify Auth identity and database role before reading the request body.
+      const identity = await request(`${supabaseUrl}/auth/v1/user`, { headers, signal: AbortSignal.any([abort.signal, AbortSignal.timeout(15000)]) });
+      if (!identity.ok || !(await identity.json()).id) throw new UploadError(401, '유효한 로그인 세션이 필요합니다.');
+      const profileRes = await request(`${supabaseUrl}/rest/v1/rpc/current_lms_user`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: '{}', signal: AbortSignal.any([abort.signal, AbortSignal.timeout(15000)]) });
+      const profile = profileRes.ok ? await profileRes.json() : null;
+      if (profile?.role !== 'admin') throw new UploadError(403, '관리자만 영상을 업로드할 수 있습니다.');
+      if (busy) throw new UploadError(429, '다른 영상을 처리하고 있습니다. 완료 후 다시 시도해 주세요.');
+      if (!/^video\//.test(req.headers['content-type'] || '')) throw new UploadError(415, '동영상 파일만 업로드할 수 있습니다.');
+      if (Number(req.headers['content-length']) > maxBytes) throw new UploadError(413, '업로드 파일은 1GB 이하여야 합니다.');
+      busy = true; ownsSlot = true;
+      await fsp.mkdir(uploadDir, { recursive: true });
+      workDir = await fsp.mkdtemp(path.join(uploadDir, 'video-'));
+      const raw = path.join(workDir, 'source');
+      const compressed = path.join(workDir, 'compressed.mp4');
+      let bytes = 0;
+      const limit = new Transform({ transform(chunk, encoding, callback) {
+        bytes += chunk.length;
+        callback(bytes > maxBytes ? new UploadError(413, '업로드 파일은 1GB 이하여야 합니다.') : null, chunk);
+      } });
+      await pipeline(req, limit, fs.createWriteStream(raw, { flags: 'wx' }), { signal: abort.signal });
+      if (!bytes) throw new UploadError(400, '빈 파일은 업로드할 수 없습니다.');
+      await transcode(['-nostdin', '-y', '-threads', '2', '-i', raw, '-vf', 'scale=min(1920\\,iw):-2', '-c:v', 'libx264', '-crf', '26', '-preset', 'ultrafast', '-c:a', 'aac', '-b:a', '64k', '-movflags', '+faststart', compressed], abort.signal);
+      let size = (await fsp.stat(compressed)).size;
+      if (size > MAX_FINAL_BYTES) {
+        await transcode(['-nostdin', '-y', '-threads', '2', '-i', raw, '-vf', 'scale=min(1280\\,iw):-2', '-c:v', 'libx264', '-crf', '30', '-preset', 'ultrafast', '-c:a', 'aac', '-b:a', '64k', '-movflags', '+faststart', compressed], abort.signal);
+        size = (await fsp.stat(compressed)).size;
       }
-
-      const reqUrl = new URL(req.url, 'http://localhost:3000');
-      const originalName = reqUrl.searchParams.get('name') || 'video.mp4';
-      const cleanBaseName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_');
-      const nameWithoutExt = cleanBaseName.replace(/\.[^/.]+$/, "") || 'video';
-      
-      const rawFilePath = path.join(uploadDir, `raw_${Date.now()}_${cleanBaseName}`);
-      const compFilePath = path.join(uploadDir, `comp_${Date.now()}_${nameWithoutExt}.mp4`);
-
-      console.log(`[VOD 자동 인제스천 파이프라인] 클라이언트로부터 수신 시작: ${originalName}`);
-
-      try {
-        // 1. Pipe incoming upload stream to temporary file
-        const writeStream = fs.createWriteStream(rawFilePath);
-        await new Promise((resolve, reject) => {
-          req.pipe(writeStream);
-          writeStream.on('finish', resolve);
-          writeStream.on('error', reject);
-        });
-
-        const rawSizeMb = fs.statSync(rawFilePath).size / (1024 * 1024);
-        console.log(`[VOD 자동 인제스천 파이프라인] 수신 완료 (${rawSizeMb.toFixed(1)} MB). 1080p 고화질 자동 압축 실행 중...`);
-
-        // 2. Transcode with 1080p CRF 26 + Faststart for instant playback
-        const ffmpegArgs = [
-          '-y',
-          '-threads', '0',
-          '-i', rawFilePath,
-          '-c:v', 'libx264',
-          '-crf', '26',
-          '-preset', 'ultrafast',
-          '-c:a', 'aac',
-          '-b:a', '64k',
-          '-movflags', '+faststart',
-          compFilePath
-        ];
-        await runFFmpeg(ffmpegArgs);
-
-        let finalCompPath = compFilePath;
-        let compSizeMb = fs.statSync(finalCompPath).size / (1024 * 1024);
-        console.log(`[VOD 자동 인제스천 파이프라인] 1차 압축 완료: ${compSizeMb.toFixed(1)} MB`);
-
-        // 3. Fallback pass if still > 48MB
-        if (compSizeMb > 48.0) {
-          console.log(`[VOD 자동 인제스천 파이프라인] 48MB 초과(${compSizeMb.toFixed(1)} MB) 감지, 720p 2차 최적화 진행...`);
-          const fallbackPath = path.join(uploadDir, `fallback_${Date.now()}_${nameWithoutExt}.mp4`);
-          await runFFmpeg([
-            '-y',
-            '-threads', '0',
-            '-i', rawFilePath,
-            '-c:v', 'libx264',
-            '-crf', '27',
-            '-vf', 'scale=1280:-2',
-            '-preset', 'ultrafast',
-            '-c:a', 'aac',
-            '-b:a', '64k',
-            '-movflags', '+faststart',
-            fallbackPath
-          ]);
-          if (fs.existsSync(compFilePath)) fs.unlinkSync(compFilePath);
-          finalCompPath = fallbackPath;
-          compSizeMb = fs.statSync(finalCompPath).size / (1024 * 1024);
-          console.log(`[VOD 자동 인제스천 파이프라인] 2차 최적화 완료: ${compSizeMb.toFixed(1)} MB`);
-        }
-
-        // 4. Upload compressed video to Supabase Storage CDN
-        console.log(`[VOD 자동 인제스천 파이프라인] Supabase 클라우드 스토리지로 전송 중...`);
-        const finalBuffer = fs.readFileSync(finalCompPath);
-        const finalStorageName = `lec_${Date.now()}_${nameWithoutExt}.mp4`;
-        const targetUploadUrl = `${supabaseUrl}/storage/v1/object/lectures/${encodeURIComponent(finalStorageName)}`;
-
-        const uploadRes = await fetch(targetUploadUrl, {
-          method: 'POST',
-          headers: {
-            'apikey': storageKey,
-            'Authorization': `Bearer ${storageKey}`,
-            'Content-Type': 'video/mp4'
-          },
-          body: finalBuffer
-        });
-
-        if (!uploadRes.ok) {
-          const errText = await uploadRes.text();
-          throw new Error(`스토리지 업로드 실패 (${uploadRes.status}): ${errText}`);
-        }
-
-        const publicUrl = `${supabaseUrl}/storage/v1/object/public/lectures/${encodeURIComponent(finalStorageName)}`;
-        console.log(`[VOD 자동 인제스천 파이프라인] 성공! 스트리밍 URL 발급: ${publicUrl}`);
-
-        // 5. Clean up temporary files
-        try { if (fs.existsSync(rawFilePath)) fs.unlinkSync(rawFilePath); } catch {}
-        try { if (fs.existsSync(finalCompPath)) fs.unlinkSync(finalCompPath); } catch {}
-
-        // 6. Return response to browser
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({
-          success: true,
-          publicUrl,
-          fileName: finalStorageName,
-          size: finalBuffer.length,
-          compressedMb: compSizeMb.toFixed(1),
-          originalMb: rawSizeMb.toFixed(1)
-        }));
-      } catch (err) {
-        console.error('[VOD 자동 인제스천 파이프라인] 오류 발생:', err);
-        // Clean up on error
-        try { if (fs.existsSync(rawFilePath)) fs.unlinkSync(rawFilePath); } catch {}
-        try { if (fs.existsSync(compFilePath)) fs.unlinkSync(compFilePath); } catch {}
-
-        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ error: err.message || '동영상 자동 압축 및 업로드 중 오류가 발생했습니다.' }));
-      }
-    } else {
-      next();
+      if (size > MAX_FINAL_BYTES) throw new UploadError(413, '변환 후에도 48MB를 초과합니다. 영상을 나누거나 더 압축해 주세요.');
+      const fileName = `lec_${crypto.randomUUID()}.mp4`;
+      const target = `${supabaseUrl}/storage/v1/object/lectures/${fileName}`;
+      const uploaded = await request(target, { method: 'POST', headers: { ...headers, 'Content-Type': 'video/mp4', 'Content-Length': String(size) }, body: fs.createReadStream(compressed), duplex: 'half', signal: abort.signal });
+      if (!uploaded.ok) throw new UploadError(502, `스토리지 업로드에 실패했습니다. (${uploaded.status})`);
+      respond(200, { success: true, publicUrl: target, fileName, size, mimeType: 'video/mp4', originalMb: (bytes / 1024 / 1024).toFixed(1), compressedMb: (size / 1024 / 1024).toFixed(1) });
+    } catch (error) {
+      respond(error.status || (abort.signal.aborted ? 408 : 500), { error: error instanceof UploadError ? error.message : '동영상 처리 중 연결이 끊기거나 오류가 발생했습니다.' });
+    } finally {
+      clearTimeout(timer);
+      req.removeListener('aborted', disconnect);
+      res.removeListener('close', close);
+      if (ownsSlot) busy = false;
+      // Remove only the temporary directory created immediately inside our upload root.
+      if (workDir && path.dirname(path.resolve(workDir)) === path.resolve(uploadDir)) await fsp.rm(workDir, { recursive: true, force: true }).catch(() => {});
     }
   };
 }
