@@ -4,7 +4,16 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["@netlify/blobs", "nodemailer"]
+
+# UTC 18:00 is the following day's 03:00 Korea Standard Time.
+[functions."daily-db-backup"]
+  schedule = "0 18 * * *"
 
 [[redirects]]
   from = "/*"

@@ -49,6 +49,28 @@ test('remote database failure contracts', async t => {
       assert.deepEqual(await remoteDb[method](), []);
     });
   }
+  await t.test('member directory exposes login alias without changing canonical references or selecting secrets', async () => {
+    auth.setAuthSession(sessionFixture);
+    globalThis.fetch = async (url, options) => {
+      const endpoint = new URL(url);
+      assert.equal(endpoint.pathname, '/rest/v1/users');
+      assert.equal(options.headers.Authorization, 'Bearer fixture-user-jwt');
+      const columns = endpoint.searchParams.get('select').split(',');
+      assert.ok(columns.includes('login_id'));
+      assert.ok(!columns.includes('password'));
+      assert.ok(!columns.includes('auth_user_id'));
+      return Response.json([
+        { id: 'original-admin', login_id: 'adsba', role: 'admin', name: 'Admin fixture' },
+        { id: 'student-fixture', login_id: null, role: 'student' },
+      ]);
+    };
+    const users = await remoteDb.getUsers();
+    assert.equal(users[0].id, 'original-admin');
+    assert.equal(users[0].loginId, 'adsba');
+    assert.equal(users[0].role, 'admin');
+    assert.equal(users[1].id, 'student-fixture');
+    assert.equal(users[1].loginId, 'student-fixture');
+  });
   for (const method of writes) {
     await t.test(`${method} rejects an unconfirmed empty write`, async () => {
       globalThis.fetch = async () => Response.json([]);

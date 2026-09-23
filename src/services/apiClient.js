@@ -181,10 +181,11 @@ export const remoteDb = {
     requireExternalDb();
     try {
       // SECURITY: Explicitly omit the 'password' column to prevent credential harvesting in browser
-      const rows = await supabaseFetch('/users?select=id,name,birth_date,phone,member_no,role,created_at');
+      const rows = await supabaseFetch('/users?select=id,login_id,name,birth_date,phone,member_no,role,created_at');
       return rows
         .map(r => ({
           id: r.id,
+          loginId: r.login_id || r.id,
           name: r.name,
           birthDate: r.birth_date,
           phone: r.phone,

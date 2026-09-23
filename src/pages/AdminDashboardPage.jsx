@@ -991,7 +991,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
         return;
       }
 
-      const confirmMsg = `[${user.name} (${user.id})] 회원을 정말 삭제하시겠습니까?\n\n※ 해당 회원의 수강 이력 및 대면 결제 장부 기록도 함께 정리됩니다.`;
+      const confirmMsg = `[${user.name} (${user.loginId || user.id})] 회원을 정말 삭제하시겠습니까?\n\n※ 해당 회원의 수강 이력 및 대면 결제 장부 기록도 함께 정리됩니다.`;
       const ok = await showConfirm(confirmMsg, {
         title: '회원 계정 삭제 확인',
         type: 'error',
@@ -1038,11 +1038,12 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
   const filteredUsers = useMemo(() => {
     if (!searchKeyword.trim()) return allUsers;
     const kw = searchKeyword.trim().toLowerCase();
+    const phoneDigits = kw.replace(/[^0-9]/g, '');
     return allUsers.filter(u =>
-      u.name.toLowerCase().includes(kw) ||
-      u.phone.replace(/[^0-9]/g, '').includes(kw.replace(/[^0-9]/g, '')) ||
-      u.id.toLowerCase().includes(kw) ||
-      (u.memberNo && u.memberNo.toLowerCase().includes(kw))
+      (u.name || '').toLowerCase().includes(kw) ||
+      (phoneDigits.length > 0 && (u.phone || '').replace(/[^0-9]/g, '').includes(phoneDigits)) ||
+      (u.loginId || u.id || '').toLowerCase().includes(kw) ||
+      (u.memberNo || '').toLowerCase().includes(kw)
     );
   }, [allUsers, searchKeyword]);
 
@@ -1971,7 +1972,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         </td>
                         <td style={{ padding: '14px 16px' }}>
                           <strong>{user.name}</strong>{' '}
-                          <span style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>({user.id})</span>
+                          <span style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>({user.loginId || user.id})</span>
                           {user.role === 'admin' && (
                             <span className="badge badge-coral" style={{ marginLeft: '6px', fontSize: '10.5px' }}>관리자</span>
                           )}
@@ -4219,7 +4220,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             </div>
 
             <p className="text-caption" style={{ marginBottom: '18px' }}>
-              아이디: <strong>{resetPwUser.id}</strong> | 전화번호: {resetPwUser.phone}
+              아이디: <strong>{resetPwUser.loginId || resetPwUser.id}</strong> | 전화번호: {resetPwUser.phone}
             </p>
 
             <form onSubmit={handleExecuteResetPassword}>
@@ -4287,7 +4288,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 <div>
                   <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', letterSpacing: '0.04em' }}>대상 회원 정보</span>
                   <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-charcoal)', marginTop: '2px' }}>
-                    {selectedUser.name} <span style={{ fontSize: '13px', fontWeight: 400, color: '#64748B' }}>({selectedUser.id})</span>
+                    {selectedUser.name} <span style={{ fontSize: '13px', fontWeight: 400, color: '#64748B' }}>({selectedUser.loginId || selectedUser.id})</span>
                   </div>
                   <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
                     ☎ {selectedUser.phone} {selectedUser.memberNo && `| 학번: ${selectedUser.memberNo}`}
