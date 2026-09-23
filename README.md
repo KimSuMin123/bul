@@ -16,13 +16,15 @@ npm run build
 
 Netlify 프로젝트 `sehwa-buddha-academy`는 GitHub `KimSuMin123/bul`의 `feat/minhyeok` 브랜치에 연결되어 있습니다. 빌드 명령은 `npm run build`, 게시 디렉터리는 `dist`입니다. 공개 Supabase URL·anon 환경 변수만 Netlify에 설정했습니다.
 
-20:49 KST에 커밋 `b8edab0`가 Published 상태가 되었습니다(deploy ID `6ab3bca3cea2680008d15201`). 운영 `index-DOKtdqdE.js`·`index-CrzWf1ed.css`는 로컬 `dist`와 해시가 같으며 원형 로딩 표시 코드가 포함되어 있습니다. 개원식은 10월 1일 18:29부터 표시되고 18:30~18:35에 진행됩니다. 원형 로딩과 개원식 변경은 유지합니다.
+최신 문서 커밋 `d61fd69`는 21:16 KST에 Published 상태가 되었습니다(deploy ID `6ab3c30271289d0008db263c`). 기능 번들은 20:49 KST에 게시한 `b8edab0`와 동일합니다. 운영 `index-DOKtdqdE.js`·`index-CrzWf1ed.css`는 로컬 `dist`와 해시가 같으며 원형 로딩 표시 코드가 포함되어 있습니다. 개원식은 10월 1일 18:29부터 표시되고 18:30~18:35에 진행됩니다. 원형 로딩과 개원식 변경은 유지합니다.
 
 문자 시험 경로는 사용자 승인 후 일시 적용했지만 함수 인증이 401로 거절됐습니다. 로컬 키의 REST 조회는 200이었고 프로젝트 현재 키의 관리 화면 시험도 401이었습니다. 정확한 인증 거절 원인은 미확정이며 합성 테스트 작업도 생성하지 않았고 실제 SMS 발송은 0건입니다. 사용자 요청에 따라 원래 DB claim 함수·ACL과 원본 LIVE Edge 코드를 복원했고 테스트 RPC와 `LMS_SMS_TEST_PHONE`을 제거한 것을 확인했습니다. 운영 outbox·발송 시도·테스트 작업은 모두 0건입니다. 발신번호와 SOLAPI 설정은 유지합니다. 근거는 `test_artifacts/deployment/sms-rollback/production-verification.json`입니다.
 
-SMS 스케줄러는 가동하지 않았고 실제 수신도 미검증입니다. 기존 브라우저 알림(PWD)은 유지합니다. 관리자 비밀번호와 SMTP 앱 비밀번호는 15분 일회성 입력창을 다시 열고 사용자 입력을 기다리고 있으며 설정 완료로 표시하지 않습니다.
+관리자 변경은 완료했습니다. 사용자 제출 후 helper가 `status=verified`, `changesApplied=true`, `verificationSession=signed-out`을 반환했습니다. 추가 REST 확인으로 유일한 관리자의 원래 canonical ID·admin 역할 유지, Auth 연결 및 `adsba` 별칭을 확인했습니다. 검증 세션은 로그아웃했으며 근거는 `test_artifacts/deployment/admin-verified.json`입니다.
 
-일일 SELECT 백업은 03:00 KST·7일 보관으로 Windows에 예약되어 있습니다. 20:43 KST 사전 백업은 공개 11테이블79행의 격리 복원 PASS이며 SMTP 미설정으로 이메일은 발송하지 못했습니다. SELECT 백업은 전체 Auth·Storage·DB 복원본이 아닙니다.
+SMTP 앱 비밀번호는 저장됐으나 백업 메일 발송은 실패했습니다. 별도 로그인만 진단한 결과 `SMTPAuthenticationError 535`였으며 추가 메일은 보내지 않았습니다. 네이버 2단계 인증용 앱 비밀번호와 SMTP 사용 설정 확인을 요청하고 새 일회성 입력창에서 재입력을 기다립니다. 실제 메일 수신은 미검증입니다. 이는 문자 함수의 HTTP401 오류와 별개입니다. SMS 인증 오류는 미해결이고 스케줄러는 미가동이며 실제 SMS는0건입니다. 기존 브라우저 알림(PWD)은 유지합니다.
+
+일일 SELECT 백업 작업 `LMS-Daily-SELECT-Backup`은 활성화되어 있으며 매일03:00 KST·7일 보관으로 설정되어 있습니다. 21:23 KST에 예약 작업과 같은 PowerShell runner를 한 번 실행하여 공개11테이블79행 내부 저장과 격리 복원 PASS를 확인했습니다. 최신 파일은 `test_artifacts/backups/select-2026-09-23T12-23-53.387Z-464c397e-b8df-468d-9db0-6867fc1bd52f.json`이며 메일 결과는 `failed`입니다. PC가 켜져 있고 현재 사용자가 로그인한 상태여야 하며 절전 자동 깨우기는 꺼져 있습니다. 예약 검사 근거는 `test_artifacts/scheduled-task-verification.json`입니다. SELECT 백업은 전체 Auth·Storage·DB 복원본이 아닙니다.
 
 ## 상세 문서
 
