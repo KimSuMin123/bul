@@ -21,12 +21,13 @@ import {
   sendTestNotification,
   startAdminEnrollmentListener
 } from '../services/notificationService';
+import { exportToExcelCSV, findReceiptByPhoneOrUser, normalizePhone } from '../services/donationService';
 
 export default function AdminDashboardPage() {
   const { showAlert, showConfirm } = useModalAlert();
   const {
     courses, lectures, enrollments, payments,
-    enrollStudent, recordPayment, updateCourseSettings,
+    enrollStudent, recordPayment, donationReceipts, issueDonationReceipt, updateCourseSettings,
     addCourse, deleteCourse, addLecture, updateLecture, deleteLecture, refreshData, qaPosts, addQAAnswer, deleteQAPost,
     certificates
   } = useCourse();
@@ -41,7 +42,7 @@ export default function AdminDashboardPage() {
     checkPhoneAvailable
   } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('enrollment'); // 'enrollment' | 'payment' | 'cms' | 'qa' | 'cert'
+  const [activeTab, setActiveTab] = useState('enrollment'); // 'enrollment' | 'payment' | 'donation' | 'cms' | 'qa' | 'cert'
 
   // PWA & Push Notification State
   const [notifPermission, setNotifPermission] = useState(() => getNotificationPermission());
@@ -290,6 +291,12 @@ export default function AdminDashboardPage() {
   const [payAmount, setPayAmount] = useState('50000');
   const [payMethodMemo, setPayMethodMemo] = useState('대면 카드 결제');
   const [payDate, setPayDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [payWithDonationReceipt, setPayWithDonationReceipt] = useState(false);
+
+  // Donation Receipt Filter state ('all' | 'unissued' | 'issued')
+  const [donationFilter, setDonationFilter] = useState('all');
+  const [donationSearchQuery, setDonationSearchQuery] = useState('');
+  const [selectedDonationReceipt, setSelectedDonationReceipt] = useState(null);
 
   // CMS: Course & Lecture Management state
   const [showNewCourseModal, setShowNewCourseModal] = useState(false);
@@ -917,9 +924,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
     const statusLabel = statusLabels[grantStatus] || grantStatus;
 
     enrollStudent(selectedUser.id, targetCourse ? targetCourse.id : grantCourseId, grantStatus);
-    showAlert(`${selectedUser.name} 님에게 [${courseTitle}] 수강 권한이 [${statusLabel}] 상태로 정상 반영되었습니다.`, { 
-      type: 'success', 
-      title: '수강 권한 처리 완료' 
+    showAlert(`${selectedUser.name} 님에게 [${courseTitle}] 수강 권한이 [${statusLabel}] 상태로 정상 반영되었습니다.`, {
+      type: 'success',
+      title: '수강 권한 처리 완료'
     });
     setShowGrantModal(false);
     refreshData();
@@ -934,17 +941,30 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
       return;
     }
 
+    const student = allUsers.find(u => u.id === payUserId);
+    const course = courses.find(c => c.id === payCourseId);
+
     await recordPayment({
       userId: payUserId,
       courseId: payCourseId,
       manager: payManager,
       amount: parseInt(payAmount, 10),
       methodMemo: payMethodMemo,
-      paidAt: payDate
+      paidAt: payDate,
+      withDonationReceipt: payWithDonationReceipt,
+      studentName: student ? student.name : payUserId,
+      studentPhone: student ? student.phone : '',
+      courseTitle: course ? course.title : payCourseId
     });
 
-    showAlert('대면 수납 내역이 장부에 기록되었으며, 해당 회원의 수강 상태가 [수강중(결제완료)]으로 전환되었습니다.', { type: 'success', title: '수납 처리 완료' });
+    showAlert(
+      payWithDonationReceipt
+        ? '대면 수납 내역 및 기부금 영수증이 장부에 기록되었으며, 해당 회원의 수강 상태가 [수강중(결제완료)]으로 전환되었습니다.'
+        : '대면 수납 내역이 장부에 기록되었으며, 해당 회원의 수강 상태가 [수강중(결제완료)]으로 전환되었습니다.',
+      { type: 'success', title: '수납 처리 완료' }
+    );
     setShowPaymentModal(false);
+    setPayWithDonationReceipt(false);
     await refreshData();
   };
 
@@ -976,18 +996,23 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
     return records.sort((a, b) => new Date(b.paidAt || 0) - new Date(a.paidAt || 0));
   }, [payments, enrollments, courses, currentUser]);
 
-  // 1-Click Approve Pending Payment
-  const handleApprovePendingPayment = async (enr) => {
+  // 1-Click Approve Pending Payment (supports withReceipt = true/false)
+  const handleApprovePendingPayment = async (enr, withReceipt = false) => {
     const student = allUsers.find(u => u.id === enr.userId);
     const course = courses.find(c => c.id === enr.courseId);
     const studentName = student ? student.name : enr.userId;
+    const studentPhone = student ? student.phone : '';
     const courseTitle = course ? course.title : enr.courseId;
     const amount = course ? course.price : 50000;
 
-    const ok = await showConfirm(`[${studentName}] 학인의 [${courseTitle}] 대면 수납을 승인하시겠습니까?\n\n• 수납 금액: ${amount.toLocaleString()}원\n• 승인 즉시 장부에 등재되며, 학인의 '내 강의실' 상태가 [수강 중]으로 전환되어 모든 강의를 시청할 수 있습니다.`, {
-      title: '대면 수납 승인 확인',
+    const confirmMsg = withReceipt
+      ? `[${studentName}] 학인의 [${courseTitle}] 대면 수납 승인 및 기부금 영수증을 동시 발행하시겠습니까?\n\n• 수납 금액: ${amount.toLocaleString()}원\n• 연락처: ${studentPhone || '미등록'}\n• 조치 사항:\n  1) 학인의 수강 상태가 [수강 중]으로 즉시 활성화됩니다.\n  2) 기부금 영수증 대장에 1인 1행(동일 번호는 금액 누적 가산)으로 자동 등록됩니다.`
+      : `[${studentName}] 학인의 [${courseTitle}] 대면 수납을 승인하시겠습니까?\n\n• 수납 금액: ${amount.toLocaleString()}원\n• 승인 즉시 장부에 등재되며, 학인의 '내 강의실' 상태가 [수강 중]으로 전환되어 모든 강의를 시청할 수 있습니다.`;
+
+    const ok = await showConfirm(confirmMsg, {
+      title: withReceipt ? '대면 수납 승인 + 기부영수증 발행' : '대면 수납 승인 확인',
       type: 'info',
-      confirmText: '수납 승인'
+      confirmText: withReceipt ? '수납 승인 + 기부영수증 발행' : '수납 승인'
     });
     if (ok) {
       await recordPayment({
@@ -995,12 +1020,226 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
         courseId: enr.courseId,
         manager: currentUser?.name || '교학처 관리자',
         amount: amount,
-        methodMemo: '교학처 방문 대면 수납 승인',
-        paidAt: new Date().toISOString().split('T')[0]
+        methodMemo: withReceipt ? '교학처 방문 대면 수납 승인 (기부금 영수증 동시 발행)' : '교학처 방문 대면 수납 승인',
+        paidAt: new Date().toISOString().split('T')[0],
+        withDonationReceipt: withReceipt,
+        studentName,
+        studentPhone,
+        courseTitle
       });
-      showAlert(`[${studentName}] 학인의 대면 수납 승인이 완료되었습니다!\n장부에 정상 등재되었으며, 이제 수강이 시작됩니다.`, { type: 'success', title: '수납 승인 완료' });
+      showAlert(
+        withReceipt
+          ? `[${studentName}] 학인의 대면 수납 승인 및 기부금 영수증 발행이 완료되었습니다!\n장부와 기부 영수증 대장(1전번 1행 누적)에 안전하게 등재되었습니다.`
+          : `[${studentName}] 학인의 대면 수납 승인이 완료되었습니다!\n장부에 정상 등재되었으며, 이제 수강이 시작됩니다.`,
+        { type: 'success', title: withReceipt ? '수납 및 기부영수증 발행 완료' : '수납 승인 완료' }
+      );
       await refreshData();
     }
+  };
+
+  // Issue donation receipt for an already paid record
+  const handleIssueReceiptForPayment = async (record) => {
+    const student = allUsers.find(u => u.id === record.userId);
+    const course = courses.find(c => c.id === record.courseId);
+    const studentName = student ? student.name : record.userId;
+    const studentPhone = student ? student.phone : '';
+    const courseTitle = course ? course.title : record.courseId;
+    const amount = record.amount || 50000;
+
+    const ok = await showConfirm(`[${studentName}] 학인에게 기부금 영수증을 발행하시겠습니까?\n\n• 대상 금액: ${amount.toLocaleString()}원\n• 연락처: ${studentPhone || '미등록'}\n• 1개 전화번호당 단 1개 행으로 누적 합산됩니다.`, {
+      title: '기부금 영수증 별도 발행',
+      type: 'info',
+      confirmText: '기부영수증 발행'
+    });
+    if (ok) {
+      await issueDonationReceipt({
+        userId: record.userId,
+        name: studentName,
+        phone: studentPhone,
+        amount,
+        courseTitle,
+        paymentId: record.id,
+        paidAt: record.paidAt || new Date().toISOString().split('T')[0]
+      });
+      showAlert(`[${studentName}] 학인의 기부금 영수증이 발행 대장에 정상 등재/누적되었습니다.`, { type: 'success', title: '기부영수증 발행 완료' });
+      await refreshData();
+    }
+  };
+
+  // 3-Filter Excel Export Handler (전체 보기 / 미발행 건 / 기발행 건)
+  const handleExportFilteredPaymentsExcel = () => {
+    const today = new Date().toISOString().split('T')[0];
+    let exportRows = [];
+    let filterLabel = '';
+
+    const allItems = [
+      ...pendingEnrollments.map(enr => {
+        const student = allUsers.find(u => u.id === enr.userId);
+        const course = courses.find(c => c.id === enr.courseId);
+        const studentPhone = student?.phone || '';
+        const receipt = findReceiptByPhoneOrUser(donationReceipts, studentPhone, enr.userId);
+        return {
+          id: enr.id,
+          type: '대면수납 대기',
+          date: enr.enrolledAt || '접수대기',
+          studentName: student ? student.name : enr.userId,
+          studentPhone,
+          userId: enr.userId,
+          courseTitle: course ? course.title : enr.courseId,
+          amount: course ? course.price : 50000,
+          manager: '교학처 접수',
+          methodMemo: '대면 수납 승인 대기',
+          donationReceiptIssued: Boolean(receipt),
+          donationTotalAmount: receipt ? receipt.totalAmount : 0
+        };
+      }),
+      ...fullPaymentRecords.map(pay => {
+        const student = allUsers.find(u => u.id === pay.userId);
+        const course = courses.find(c => c.id === pay.courseId);
+        const studentPhone = student?.phone || '';
+        const receipt = findReceiptByPhoneOrUser(donationReceipts, studentPhone, pay.userId);
+        return {
+          id: pay.id,
+          type: '수납완료',
+          date: pay.paidAt || '2026-01-01',
+          studentName: student ? student.name : pay.userId,
+          studentPhone,
+          userId: pay.userId,
+          courseTitle: course ? course.title : pay.courseId,
+          amount: pay.amount || (course ? course.price : 50000),
+          manager: pay.manager || '교학처 관리자',
+          methodMemo: pay.methodMemo || '대면 수납',
+          donationReceiptIssued: Boolean(pay.donationReceiptIssued || receipt),
+          donationTotalAmount: receipt ? receipt.totalAmount : 0
+        };
+      })
+    ];
+
+    if (donationFilter === 'unissued') {
+      filterLabel = '기부영수증_미발행_대상자명단(기발행자제외)';
+      exportRows = allItems.filter(item => !item.donationReceiptIssued);
+    } else if (donationFilter === 'issued') {
+      filterLabel = '기부영수증_기발행_완료명단';
+      exportRows = allItems.filter(item => item.donationReceiptIssued);
+    } else {
+      filterLabel = '수납대장_전체명단';
+      exportRows = allItems;
+    }
+
+    if (exportRows.length === 0) {
+      showAlert('선택된 조건에 해당하는 데이터가 없어 엑셀을 생성할 수 없습니다.', { type: 'warning', title: '추출 데이터 없음' });
+      return;
+    }
+
+    const columns = [
+      { key: '_index', label: '순번' },
+      { key: 'type', label: '수납 구분' },
+      { key: 'date', label: '신청/수납일자' },
+      { key: 'studentName', label: '수강생 성명' },
+      { key: 'studentPhone', label: '연락처 (전화번호)' },
+      { key: 'userId', label: '회원 아이디' },
+      { key: 'courseTitle', label: '신청 강좌명' },
+      { key: 'amount', label: '수납금액(원)', formatter: v => (Number(v) || 0).toLocaleString() },
+      { key: 'donationReceiptIssued', label: '기부영수증 발행상태', formatter: v => v ? '발행완료' : '미발행' },
+      { key: 'donationTotalAmount', label: '기부금 누적합산액(원)', formatter: v => v ? (Number(v) || 0).toLocaleString() : '0' },
+      { key: 'manager', label: '수납 담당자' },
+      { key: 'methodMemo', label: '비고' }
+    ];
+
+    const filename = `세화붓다아카데미_${filterLabel}_${today}.csv`;
+    exportToExcelCSV(exportRows, columns, filename);
+    showAlert(`엑셀(CSV) 추출이 완료되었습니다!\n\n• 파일명: ${filename}\n• 총 추출 건수: ${exportRows.length}건\n• 한글 및 금액이 엑셀에서 바로 열립니다.`, { type: 'success', title: '엑셀 추출 완료' });
+  };
+
+  // Filtered lists for UI display
+  const filteredPendingEnrollments = useMemo(() => {
+    return pendingEnrollments.filter(enr => {
+      const student = allUsers.find(u => u.id === enr.userId);
+      const studentPhone = student?.phone || '';
+      const hasReceipt = Boolean(findReceiptByPhoneOrUser(donationReceipts, studentPhone, enr.userId));
+
+      if (donationFilter === 'unissued') return !hasReceipt;
+      if (donationFilter === 'issued') return hasReceipt;
+      return true;
+    });
+  }, [pendingEnrollments, allUsers, donationReceipts, donationFilter]);
+
+  const filteredFullPaymentRecords = useMemo(() => {
+    return fullPaymentRecords.filter(record => {
+      const student = allUsers.find(u => u.id === record.userId);
+      const studentPhone = student?.phone || '';
+      const hasReceipt = Boolean(record.donationReceiptIssued || findReceiptByPhoneOrUser(donationReceipts, studentPhone, record.userId));
+
+      if (donationFilter === 'unissued') return !hasReceipt;
+      if (donationFilter === 'issued') return hasReceipt;
+      return true;
+    });
+  }, [fullPaymentRecords, allUsers, donationReceipts, donationFilter]);
+
+  const filteredDonationReceipts = useMemo(() => {
+    let list = Array.isArray(donationReceipts) ? donationReceipts : [];
+    if (donationSearchQuery.trim()) {
+      const q = donationSearchQuery.trim().toLowerCase();
+      list = list.filter(r =>
+        (r.name && r.name.toLowerCase().includes(q)) ||
+        (r.phone && r.phone.includes(q)) ||
+        (r.userId && r.userId.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }, [donationReceipts, donationSearchQuery]);
+
+  // Donation Stats for Separate Page
+  const donationStats = useMemo(() => {
+    const list = Array.isArray(donationReceipts) ? donationReceipts : [];
+    const totalAmount = list.reduce((sum, r) => sum + (Number(r.totalAmount) || 0), 0);
+    const totalCount = list.reduce((sum, r) => sum + (Number(r.donationCount) || (r.history ? r.history.length : 1)), 0);
+    const uniqueStudents = list.length;
+    let latestDate = '-';
+    if (list.length > 0) {
+      const dates = list.map(r => r.lastIssuedAt).filter(Boolean).sort().reverse();
+      if (dates.length > 0) latestDate = dates[0];
+    }
+    return {
+      totalAmount,
+      totalCount,
+      uniqueStudents,
+      latestDate
+    };
+  }, [donationReceipts]);
+
+  // Export Donation Ledger (1 phone 1 row accumulated) to Excel/CSV
+  const handleExportDonationLedgerExcel = () => {
+    if (!filteredDonationReceipts || filteredDonationReceipts.length === 0) {
+      showAlert('발행 대장에 등록된 기부금 영수증 내역이 없습니다.', { type: 'warning', title: '추출 데이터 없음' });
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    const exportRows = filteredDonationReceipts.map((rcpt, idx) => ({
+      _index: idx + 1,
+      name: rcpt.name,
+      phone: rcpt.phone,
+      userId: rcpt.userId || '-',
+      totalAmount: rcpt.totalAmount || 0,
+      donationCount: rcpt.donationCount || (rcpt.history ? rcpt.history.length : 1),
+      lastIssuedAt: rcpt.lastIssuedAt || '-',
+      createdAt: rcpt.createdAt || rcpt.lastIssuedAt || '-'
+    }));
+
+    const columns = [
+      { key: '_index', label: '순번' },
+      { key: 'name', label: '학인 성명' },
+      { key: 'phone', label: '연락처 (전화번호)' },
+      { key: 'userId', label: '회원 아이디' },
+      { key: 'totalAmount', label: '누적 기부 금액 (원)', formatter: v => (Number(v) || 0).toLocaleString() },
+      { key: 'donationCount', label: '누적 기부 건수', formatter: v => `${v}건 합산` },
+      { key: 'lastIssuedAt', label: '최근 발행일자' },
+      { key: 'createdAt', label: '최초 등록일자' }
+    ];
+
+    const filename = `세화붓다아카데미_기부금영수증_발행대장_${today}.csv`;
+    exportToExcelCSV(exportRows, columns, filename);
+    showAlert(`기부금 영수증 발행 대장 엑셀(CSV) 추출이 완료되었습니다!\n\n• 파일명: ${filename}\n• 총 등재 인원: ${exportRows.length}명 (1전화번호 1행 엄격 누적)\n• 한글 및 금액이 엑셀에서 바로 열립니다.`, { type: 'success', title: '엑셀 추출 완료' });
   };
 
   // Handle Sequential Lock Toggle
@@ -1208,8 +1447,18 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--color-border)', marginBottom: '28px' }}>
+        {/* Tab Navigation (컴퓨터 모드 스크롤 방지 & 간결한 명칭 최적화) */}
+        <div
+          className="admin-tab-nav"
+          style={{
+            display: 'flex',
+            gap: '6px',
+            borderBottom: '2px solid var(--color-border)',
+            marginBottom: '24px',
+            flexWrap: 'wrap',
+            alignItems: 'center'
+          }}
+        >
           <button
             className="btn btn-ghost"
             style={{
@@ -1217,12 +1466,16 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               borderRadius: '0',
               fontWeight: activeTab === 'enrollment' ? 700 : 500,
               color: activeTab === 'enrollment' ? 'var(--color-sage)' : 'var(--color-text-muted)',
-              padding: '12px 18px'
+              padding: '10px 14px',
+              fontSize: '13.5px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
             }}
             onClick={() => setActiveTab('enrollment')}
           >
-            <Users size={16} />
-            <span>수강생 및 권한 관리</span>
+            <Users size={15} />
+            <span>수강생 관리</span>
           </button>
 
           <button
@@ -1232,15 +1485,16 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               borderRadius: '0',
               fontWeight: activeTab === 'payment' ? 700 : 500,
               color: activeTab === 'payment' ? 'var(--color-sage)' : 'var(--color-text-muted)',
-              padding: '12px 18px',
+              padding: '10px 14px',
+              fontSize: '13.5px',
               display: 'flex',
               alignItems: 'center',
               gap: '6px'
             }}
             onClick={() => setActiveTab('payment')}
           >
-            <CreditCard size={16} />
-            <span>교학처 대면 수납 내역 장부 ({fullPaymentRecords.length}건)</span>
+            <CreditCard size={15} />
+            <span>수납 내역 장부 ({fullPaymentRecords.length})</span>
             {pendingEnrollments.length > 0 && (
               <span className="badge badge-amber" style={{ fontSize: '11px', padding: '1px 6px' }}>
                 대기 {pendingEnrollments.length}
@@ -1251,16 +1505,39 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
           <button
             className="btn btn-ghost"
             style={{
+              borderBottom: activeTab === 'donation' ? '3px solid #059669' : '3px solid transparent',
+              borderRadius: '0',
+              fontWeight: activeTab === 'donation' ? 700 : 500,
+              color: activeTab === 'donation' ? '#065F46' : 'var(--color-text-muted)',
+              padding: '10px 14px',
+              fontSize: '13.5px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+            onClick={() => setActiveTab('donation')}
+          >
+            <FileText size={15} color={activeTab === 'donation' ? '#059669' : undefined} />
+            <span>기부금 영수증 ({donationReceipts.length})</span>
+          </button>
+
+          <button
+            className="btn btn-ghost"
+            style={{
               borderBottom: activeTab === 'cms' ? '3px solid var(--color-sage)' : '3px solid transparent',
               borderRadius: '0',
               fontWeight: activeTab === 'cms' ? 700 : 500,
               color: activeTab === 'cms' ? 'var(--color-sage)' : 'var(--color-text-muted)',
-              padding: '12px 18px'
+              padding: '10px 14px',
+              fontSize: '13.5px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
             }}
             onClick={() => setActiveTab('cms')}
           >
-            <BookOpen size={16} />
-            <span>코스 & VOD 콘텐츠 관리</span>
+            <BookOpen size={15} />
+            <span>강좌·VOD 관리</span>
           </button>
 
           <button
@@ -1270,15 +1547,16 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               borderRadius: '0',
               fontWeight: activeTab === 'qa' ? 700 : 500,
               color: activeTab === 'qa' ? 'var(--color-sage)' : 'var(--color-text-muted)',
-              padding: '12px 18px',
+              padding: '10px 14px',
+              fontSize: '13.5px',
               display: 'flex',
               alignItems: 'center',
               gap: '6px'
             }}
             onClick={() => setActiveTab('qa')}
           >
-            <MessageSquare size={16} />
-            <span>학습 Q&A 질의응답 관리 ({qaPosts?.length || 0})</span>
+            <MessageSquare size={15} />
+            <span>학습 Q&A ({qaPosts?.length || 0})</span>
             {pendingQaCount > 0 && (
               <span className="badge badge-amber" style={{ fontSize: '11px', padding: '1px 6px' }}>
                 대기 {pendingQaCount}
@@ -1293,17 +1571,17 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               borderRadius: '0',
               fontWeight: activeTab === 'cert' ? 700 : 500,
               color: activeTab === 'cert' ? 'var(--color-sage)' : 'var(--color-text-muted)',
-              padding: '12px 18px',
+              padding: '10px 14px',
+              fontSize: '13.5px',
               display: 'flex',
               alignItems: 'center',
               gap: '6px'
             }}
             onClick={() => setActiveTab('cert')}
           >
-            <Award size={16} />
-            <span>수료증 발급 및 진위 확인 대장 ({allCompletedCertificates.length})</span>
+            <Award size={15} />
+            <span>수료증 발급 ({allCompletedCertificates.length})</span>
           </button>
-
         </div>
 
         {/* TAB 1: 수강생 및 권한 관리 (Search by name/phone, manual grant) */}
@@ -1365,12 +1643,20 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   <span>+ 신규 사용자 직접 등록</span>
                 </button>
                 <button
-                  className="btn btn-secondary"
+                  className="btn btn-secondary btn-sm"
                   style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                   onClick={() => setActiveTab('payment')}
                 >
-                  <CreditCard size={15} color="var(--color-sage)" />
-                  <span>교학처 대면 수납 내역 장부 (완료 {fullPaymentRecords.length} / 대기 {pendingEnrollments.length})</span>
+                  <CreditCard size={14} color="var(--color-sage)" />
+                  <span>대면 수납 장부 (완료 {fullPaymentRecords.length} / 대기 {pendingEnrollments.length})</span>
+                </button>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#065F46', borderColor: '#A7F3D0' }}
+                  onClick={() => setActiveTab('donation')}
+                >
+                  <FileText size={14} color="#059669" />
+                  <span>기부금 영수증 ({donationReceipts.length}명)</span>
                 </button>
               </div>
             </div>
@@ -1419,7 +1705,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                                   <div key={enr.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
                                     <span style={{ fontWeight: 600 }}>{c ? c.title.substring(0, 18) + '...' : enr.courseId}</span>
                                     <span className={`badge ${enr.status === 'completed' ? 'badge-sage' :
-                                        enr.status === 'active' ? 'badge-sage' : 'badge-amber'
+                                      enr.status === 'active' ? 'badge-sage' : 'badge-amber'
                                       }`}>
                                       {enr.status === 'active' ? '수강중(결제완료)' :
                                         enr.status === 'completed' ? '수료' :
@@ -1481,10 +1767,10 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
           </div>
         )}
 
-        {/* TAB 2: 대면 결제 수납 대장 */}
+        {/* TAB 2: 대면 결제 수납 대장 & 기부금 영수증 관리 */}
         {activeTab === 'payment' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            {/* Top Stat Cards */}
+            {/* Top Stat Cards (4-Grid) */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
               <div className="card" style={{ padding: '20px', borderLeft: '4px solid var(--color-sage)' }}>
                 <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>총 수납 완료 금액</div>
@@ -1502,7 +1788,17 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   {pendingEnrollments.length}명
                 </div>
                 <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
-                  방문/확인 후 즉시 승인 가능
+                  방문/입금 확인 후 즉시 승인 가능
+                </div>
+              </div>
+
+              <div className="card" style={{ padding: '20px', borderLeft: '4px solid #059669', backgroundColor: '#F0FDF4' }}>
+                <div style={{ fontSize: '12px', color: '#047857', marginBottom: '4px', fontWeight: 600 }}>총 기부금 영수증 발행액</div>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: '#047857' }}>
+                  {donationReceipts.reduce((sum, d) => sum + (d.totalAmount || 0), 0).toLocaleString()}원
+                </div>
+                <div style={{ fontSize: '12px', color: '#059669', marginTop: '4px', fontWeight: 600 }}>
+                  총 {donationReceipts.length}명 등재 (1전화번호 1행 누적)
                 </div>
               </div>
 
@@ -1517,6 +1813,80 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               </div>
             </div>
 
+            {/* 기부영수증 필터 탭 바 및 엑셀(CSV) 추출 툴바 */}
+            <div className="card" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', backgroundColor: 'var(--color-surface-warm)', border: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--color-charcoal)' }}>📋 기부영수증 필터:</span>
+                <div style={{ display: 'inline-flex', borderRadius: '8px', border: '1px solid var(--color-border)', overflow: 'hidden', backgroundColor: '#FFFFFF', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                  <button
+                    type="button"
+                    style={{
+                      padding: '8px 14px',
+                      fontSize: '13px',
+                      fontWeight: donationFilter === 'all' ? 700 : 500,
+                      backgroundColor: donationFilter === 'all' ? 'var(--color-sage)' : '#FFFFFF',
+                      color: donationFilter === 'all' ? '#FFFFFF' : 'var(--color-text-main)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onClick={() => setDonationFilter('all')}
+                  >
+                    전체 ({pendingEnrollments.length + fullPaymentRecords.length}건)
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      padding: '8px 14px',
+                      fontSize: '13px',
+                      fontWeight: donationFilter === 'unissued' ? 700 : 500,
+                      backgroundColor: donationFilter === 'unissued' ? '#D97706' : '#FFFFFF',
+                      color: donationFilter === 'unissued' ? '#FFFFFF' : 'var(--color-text-main)',
+                      borderLeft: '1px solid var(--color-border)',
+                      borderRight: '1px solid var(--color-border)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onClick={() => setDonationFilter('unissued')}
+                  >
+                    미발행 (기발행자 제외)
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      padding: '8px 14px',
+                      fontSize: '13px',
+                      fontWeight: donationFilter === 'issued' ? 700 : 500,
+                      backgroundColor: donationFilter === 'issued' ? '#059669' : '#FFFFFF',
+                      color: donationFilter === 'issued' ? '#FFFFFF' : 'var(--color-text-main)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onClick={() => setDonationFilter('issued')}
+                  >
+                    기발행 완료
+                  </button>
+                </div>
+              </div>
+
+              {/* 3가지 조건별 실시간 엑셀 추출 버튼 */}
+              <button
+                type="button"
+                className="btn btn-sm"
+                style={{ backgroundColor: '#1E293B', color: '#FFFFFF', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                onClick={handleExportFilteredPaymentsExcel}
+                title="현재 선택된 필터 조건의 명단을 엑셀(CSV) 파일로 다운로드합니다."
+              >
+                <Download size={15} />
+                <span>
+                  {donationFilter === 'all' && '전체 엑셀(CSV) 다운로드'}
+                  {donationFilter === 'unissued' && '미발행(제외) 엑셀 다운로드'}
+                  {donationFilter === 'issued' && '기발행 엑셀 다운로드'}
+                </span>
+              </button>
+            </div>
+
             {/* SECTION 1: 대면 수납 대기 (납부전) 목록 */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
@@ -1526,39 +1896,46 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       ⏳ 대면 수납 대기 (납부전) 신청 목록
                     </h3>
                     <span className="badge badge-amber" style={{ fontWeight: 700 }}>
-                      {pendingEnrollments.length}건
+                      {filteredPendingEnrollments.length}건
                     </span>
+                    {donationFilter !== 'all' && (
+                      <span className="badge" style={{ fontSize: '11.5px', backgroundColor: '#F1F5F9', color: '#475569' }}>
+                        {donationFilter === 'unissued' ? '미발행자만 표시 중' : '기발행자만 표시 중'}
+                      </span>
+                    )}
                   </div>
                   <p className="text-caption" style={{ marginTop: '4px' }}>
-                    온라인 수강신청을 완료했거나 관리자에게 대기 접수된 학인입니다. 교학처에서 수강료 수납 후 [수납 확인 및 승인]을 누르면 즉시 수강이 시작됩니다.
+                    온라인 수강신청 후 교학처 방문/계좌 입금을 기다리는 학인입니다. [수납 승인] 또는 [수납 승인 + 기부 영수증 발행]을 누르면 즉시 수강이 시작됩니다.
                   </p>
                 </div>
               </div>
 
               <div className="card" style={{ overflowX: 'auto' }}>
-                {pendingEnrollments.length === 0 ? (
+                {filteredPendingEnrollments.length === 0 ? (
                   <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
                     <CheckCircle2 size={32} style={{ color: 'var(--color-sage)', opacity: 0.7, margin: '0 auto 8px auto' }} />
-                    <p style={{ fontWeight: 600, color: 'var(--color-charcoal)', margin: 0 }}>현재 대면 수납 대기 중인 신청 건이 없습니다.</p>
-                    <p style={{ fontSize: '12.5px', marginTop: '4px' }}>모든 신청 학인의 수납이 완료되었거나 대기 신청이 없습니다.</p>
+                    <p style={{ fontWeight: 600, color: 'var(--color-charcoal)', margin: 0 }}>현재 조건에 해당하는 대면 수납 대기 건이 없습니다.</p>
+                    <p style={{ fontSize: '12.5px', marginTop: '4px' }}>모든 신청 학인의 수납이 완료되었거나 선택된 필터 조건에 일치하는 대상자가 없습니다.</p>
                   </div>
                 ) : (
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', textAlign: 'left' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#FFFBEB', borderBottom: '1px solid #FDE68A' }}>
                         <th style={{ padding: '12px 16px', color: '#92400E' }}>신청일자</th>
-                        <th style={{ padding: '12px 16px', color: '#92400E' }}>수강생 성명 (아이디 / 연락처)</th>
-                        <th style={{ padding: '12px 16px', color: '#92400E' }}>신청 강좌명</th>
+                        <th style={{ padding: '12px 16px', color: '#92400E' }}>학인 성명·연락처</th>
+                        <th style={{ padding: '12px 16px', color: '#92400E' }}>신청 강좌</th>
                         <th style={{ padding: '12px 16px', color: '#92400E' }}>수강료</th>
-                        <th style={{ padding: '12px 16px', color: '#92400E' }}>진행 상태</th>
-                        <th style={{ padding: '12px 16px', color: '#92400E', textAlign: 'center' }}>대면 수납 승인 조치</th>
+                        <th style={{ padding: '12px 16px', color: '#92400E', textAlign: 'center' }}>기부영수증</th>
+                        <th style={{ padding: '12px 16px', color: '#92400E', textAlign: 'center' }}>수납 승인 조치</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {pendingEnrollments.map(enr => {
+                      {filteredPendingEnrollments.map(enr => {
                         const student = allUsers.find(u => u.id === enr.userId);
                         const course = courses.find(c => c.id === enr.courseId);
                         const amount = course ? course.price : 50000;
+                        const studentPhone = student?.phone || '';
+                        const receipt = findReceiptByPhoneOrUser(donationReceipts, studentPhone, enr.userId);
 
                         return (
                           <tr key={enr.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
@@ -1566,9 +1943,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             <td style={{ padding: '14px 16px' }}>
                               <strong>{student ? student.name : enr.userId}</strong>{' '}
                               <span style={{ color: '#64748B', fontSize: '12px' }}>({enr.userId})</span>
-                              {student?.phone && (
-                                <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
-                                  ☎ {student.phone}
+                              {studentPhone && (
+                                <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px', fontWeight: 500 }}>
+                                  ☎ {studentPhone}
                                 </div>
                               )}
                             </td>
@@ -1578,21 +1955,40 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-charcoal)' }}>
                               {amount.toLocaleString()}원
                             </td>
-                            <td style={{ padding: '14px 16px' }}>
-                              <span className="badge badge-amber" style={{ background: '#FEF3C7', color: '#92400E', fontWeight: 700 }}>
-                                <Clock size={12} />
-                                <span>대면 결제 대기</span>
-                              </span>
+                            <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                              {receipt ? (
+                                <span className="badge badge-sage" style={{ fontSize: '12px', fontWeight: 700 }}>
+                                  기발행 (누적 {receipt.totalAmount.toLocaleString()}원)
+                                </span>
+                              ) : (
+                                <span className="badge" style={{ backgroundColor: '#F1F5F9', color: '#64748B', fontSize: '12px' }}>
+                                  영수증 미발행
+                                </span>
+                              )}
                             </td>
                             <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                              <button
-                                className="btn btn-amber btn-sm"
-                                style={{ backgroundColor: '#D49B4B', borderColor: '#B8860B', color: '#FFFFFF', fontWeight: 700 }}
-                                onClick={() => handleApprovePendingPayment(enr)}
-                              >
-                                <CreditCard size={14} />
-                                <span>대면 수납 확인 및 승인</span>
-                              </button>
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  className="btn btn-amber btn-sm"
+                                  style={{ backgroundColor: '#D49B4B', borderColor: '#B8860B', color: '#FFFFFF', fontWeight: 600 }}
+                                  onClick={() => handleApprovePendingPayment(enr, false)}
+                                  title="일반 수납 승인만 진행합니다."
+                                >
+                                  <CreditCard size={13} />
+                                  <span>수납 승인</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-sm"
+                                  style={{ backgroundColor: '#059669', borderColor: '#047857', color: '#FFFFFF', fontWeight: 700 }}
+                                  onClick={() => handleApprovePendingPayment(enr, true)}
+                                  title="수납 승인과 동시에 기부금 영수증 대장에 1전번 1행 누적 가산 등록합니다."
+                                >
+                                  <FileText size={13} />
+                                  <span>수납 승인 + 기부 영수증 발행</span>
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1612,8 +2008,13 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       🏛️ 교학처 대면 수납 완료 장부
                     </h3>
                     <span className="badge badge-sage" style={{ fontWeight: 700 }}>
-                      {fullPaymentRecords.length}건 등재됨
+                      {filteredFullPaymentRecords.length}건
                     </span>
+                    {donationFilter !== 'all' && (
+                      <span className="badge" style={{ fontSize: '11.5px', backgroundColor: '#F1F5F9', color: '#475569' }}>
+                        {donationFilter === 'unissued' ? '미발행자만 표시 중' : '기발행자만 표시 중'}
+                      </span>
+                    )}
                   </div>
                   <p className="text-caption" style={{ marginTop: '4px' }}>
                     현금, 카드, 계좌이체 등 대면 방문 수납이 완료되어 수강이 승인된 공식 장부 기록입니다.
@@ -1630,24 +2031,25 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   <thead>
                     <tr style={{ backgroundColor: 'var(--color-surface-warm)', borderBottom: '1px solid var(--color-border)' }}>
                       <th style={{ padding: '12px 16px' }}>수납일자</th>
-                      <th style={{ padding: '12px 16px' }}>수강생 성명 (ID)</th>
-                      <th style={{ padding: '12px 16px' }}>수강 대상 코스</th>
+                      <th style={{ padding: '12px 16px' }}>학인 성명·연락처</th>
+                      <th style={{ padding: '12px 16px' }}>신청 강좌</th>
                       <th style={{ padding: '12px 16px' }}>수납 금액</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center' }}>기부 영수증</th>
                       <th style={{ padding: '12px 16px' }}>수납 담당자</th>
-                      <th style={{ padding: '12px 16px' }}>결제수단 및 비고</th>
+                      <th style={{ padding: '12px 16px' }}>결제수단·비고</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {fullPaymentRecords.length === 0 ? (
+                    {filteredFullPaymentRecords.length === 0 ? (
                       <tr>
-                        <td colSpan={6} style={{ textAlign: 'center', padding: '50px 16px', color: 'var(--color-text-muted)' }}>
+                        <td colSpan={7} style={{ textAlign: 'center', padding: '50px 16px', color: 'var(--color-text-muted)' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                             <CreditCard size={38} style={{ opacity: 0.35, color: 'var(--color-sage)' }} />
                             <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--color-charcoal)' }}>
-                              현재 등록된 교학처 대면 수납 내역이 없습니다.
+                              현재 조건에 해당하는 교학처 대면 수납 내역이 없습니다.
                             </div>
                             <p style={{ fontSize: '13px', margin: 0, maxWidth: '450px', lineHeight: '1.6' }}>
-                              위 대면 수납 대기 목록에서 <strong>[대면 수납 확인 및 승인]</strong>을 누르시거나, 상단의 <strong>[신규 수납 직접 기록하기]</strong>를 통해 수납 내역을 등재해 주세요.
+                              선택하신 필터 조건에 일치하는 수납 내역이 없거나 아직 등록된 수납 내역이 없습니다.
                             </p>
                             <button
                               type="button"
@@ -1662,9 +2064,12 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         </td>
                       </tr>
                     ) : (
-                      fullPaymentRecords.map(pay => {
+                      filteredFullPaymentRecords.map(pay => {
                         const student = allUsers.find(u => u.id === pay.userId);
                         const course = courses.find(c => c.id === pay.courseId);
+                        const studentPhone = student?.phone || '';
+                        const receipt = findReceiptByPhoneOrUser(donationReceipts, studentPhone, pay.userId);
+                        const isIssued = Boolean(pay.donationReceiptIssued || receipt);
 
                         return (
                           <tr key={pay.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
@@ -1672,15 +2077,37 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             <td style={{ padding: '14px 16px' }}>
                               <strong>{student ? student.name : pay.userId}</strong>{' '}
                               <span style={{ color: '#64748B', fontSize: '12px' }}>({pay.userId})</span>
+                              {studentPhone && (
+                                <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
+                                  ☎ {studentPhone}
+                                </div>
+                              )}
                               {student?.memberNo && (
-                                <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '2px' }}>
-                                  {student.memberNo}
+                                <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '1px' }}>
+                                  학번: {student.memberNo}
                                 </div>
                               )}
                             </td>
                             <td style={{ padding: '14px 16px' }}>{course ? course.title : pay.courseId}</td>
                             <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-sage)' }}>
-                              {pay.amount.toLocaleString()}원
+                              {(pay.amount || 0).toLocaleString()}원
+                            </td>
+                            <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                              {isIssued ? (
+                                <span className="badge badge-sage" style={{ fontSize: '12px', fontWeight: 700 }}>
+                                  🧾 발행완료
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="btn btn-outline btn-xs"
+                                  style={{ color: '#059669', borderColor: '#059669', fontWeight: 600 }}
+                                  onClick={() => handleIssueReceiptForPayment(pay)}
+                                  title="이 수납 건에 대해 기부금 영수증을 발행합니다 (1전번 1행 누적 가산)."
+                                >
+                                  + 기부영수증 발행
+                                </button>
+                              )}
                             </td>
                             <td style={{ padding: '14px 16px' }}>{pay.manager}</td>
                             <td style={{ padding: '14px 16px' }}>
@@ -1693,6 +2120,294 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            {/* SECTION 3: 🧾 기부금 영수증 발행 대장 별도 페이지 바로가기 안내 */}
+            <div
+              className="card"
+              style={{
+                marginTop: '8px',
+                padding: '20px 24px',
+                background: 'linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%)',
+                border: '1.5px solid #A7F3D0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '16px'
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileText size={20} style={{ color: '#059669' }} />
+                  <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#065F46' }}>
+                    기부금 영수증 발행 대장 (별도 페이지로 분리 관리)
+                  </h4>
+                  <span className="badge badge-sage" style={{ fontWeight: 800, backgroundColor: '#D1FAE5', color: '#065F46' }}>
+                    총 {donationReceipts.length}명 등재 (1전화번호 1행 엄격 누적)
+                  </span>
+                </div>
+                <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: '#047857', lineHeight: '1.5' }}>
+                  수강생의 수납이 2건 이상 발생해도 <strong>1개의 전화번호당 1개의 행</strong>으로 자동 합산 보관됩니다.
+                  상세 대장 조회, 실시간 검색, 영수 확인서 출력 및 대장 전용 엑셀 다운로드는 전용 페이지에서 확인하세요.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{
+                  backgroundColor: '#059669',
+                  borderColor: '#047857',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 18px'
+                }}
+                onClick={() => setActiveTab('donation')}
+              >
+                <span>기부금 영수증 발행 대장 페이지로 이동</span>
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: 기부금 영수증 발행 대장 별도 전용 페이지 (1전화번호 1행 엄격 누적 보관) */}
+        {activeTab === 'donation' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Top Page Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '18px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: '#ECFDF5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FileText size={24} />
+                  </div>
+                  <div>
+                    <h2 className="heading-2 font-serif" style={{ margin: 0, color: '#065F46', fontSize: '22px' }}>
+                      사단법인 세화붓다아카데미 기부금 영수증 발행 대장
+                    </h2>
+                    <p className="text-caption" style={{ margin: '4px 0 0 0', color: '#475569' }}>
+                      수강생 1인의 수납이 2건이든 3건이든 <strong>1개의 전화번호당 단 1개의 행</strong>으로만 엄격히 관리되며, 추가 수납 시 금액만 누적 가산되어 영구 보관됩니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Header Right Action Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  onClick={() => setActiveTab('payment')}
+                >
+                  <CreditCard size={15} />
+                  <span>대면 수납 장부 이동</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  style={{
+                    backgroundColor: '#059669',
+                    borderColor: '#047857',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)'
+                  }}
+                  onClick={handleExportDonationLedgerExcel}
+                  title="1전화번호 1행 엄격 누적된 기부금 영수증 발행 대장 전체를 엑셀(CSV)로 다운로드합니다."
+                >
+                  <Download size={15} />
+                  <span>대장 엑셀(CSV) 다운로드</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Top 4 KPI / Statistics Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+              <div className="card" style={{ padding: '20px', borderLeft: '4px solid #059669', background: '#FFFFFF' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#64748B', fontSize: '13px', fontWeight: 600 }}>
+                  <span>총 기부 영수 금액</span>
+                  <CreditCard size={18} color="#059669" />
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 900, color: '#065F46', marginTop: '10px' }}>
+                  {(donationStats.totalAmount || 0).toLocaleString()}원
+                </div>
+                <div style={{ fontSize: '12px', color: '#059669', marginTop: '4px', fontWeight: 600 }}>
+                  ✓ 공식 기부(수납) 누적 총액
+                </div>
+              </div>
+
+              <div className="card" style={{ padding: '20px', borderLeft: '4px solid #0284C7', background: '#FFFFFF' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#64748B', fontSize: '13px', fontWeight: 600 }}>
+                  <span>총 기부자 수 (1전번 1행)</span>
+                  <Users size={18} color="#0284C7" />
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 900, color: '#0369A1', marginTop: '10px' }}>
+                  {donationStats.uniqueStudents}명
+                </div>
+                <div style={{ fontSize: '12px', color: '#0284C7', marginTop: '4px', fontWeight: 600 }}>
+                  ✓ 전화번호 기준 고유 학인
+                </div>
+              </div>
+
+              <div className="card" style={{ padding: '20px', borderLeft: '4px solid #D97706', background: '#FFFFFF' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#64748B', fontSize: '13px', fontWeight: 600 }}>
+                  <span>총 누적 합산 건수</span>
+                  <CheckCircle2 size={18} color="#D97706" />
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 900, color: '#B45309', marginTop: '10px' }}>
+                  {donationStats.totalCount}건
+                </div>
+                <div style={{ fontSize: '12px', color: '#D97706', marginTop: '4px', fontWeight: 600 }}>
+                  ✓ 복수 수납 누적 가산 반영
+                </div>
+              </div>
+
+              <div className="card" style={{ padding: '20px', borderLeft: '4px solid #8B5CF6', background: '#FFFFFF' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#64748B', fontSize: '13px', fontWeight: 600 }}>
+                  <span>최근 영수증 발행일</span>
+                  <Clock size={18} color="#8B5CF6" />
+                </div>
+                <div style={{ fontSize: '20px', fontWeight: 800, color: '#6D28D9', marginTop: '12px' }}>
+                  {donationStats.latestDate}
+                </div>
+                <div style={{ fontSize: '12px', color: '#8B5CF6', marginTop: '6px', fontWeight: 600 }}>
+                  ✓ 대면 수납 승인 연동
+                </div>
+              </div>
+            </div>
+
+            {/* Filter & Real-time Search Toolbar */}
+            <div className="card" style={{ padding: '16px 20px', background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '280px' }}>
+                  <div style={{ position: 'relative', width: '100%', maxWidth: '380px' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ paddingLeft: '36px', height: '40px', fontSize: '14px', width: '100%' }}
+                      placeholder="학인 성명, 전화번호, 회원 아이디 실시간 검색..."
+                      value={donationSearchQuery}
+                      onChange={(e) => setDonationSearchQuery(e.target.value)}
+                    />
+                    {donationSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setDonationSearchQuery('')}
+                        style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}
+                      >
+                        <X size={15} />
+                      </button>
+                    )}
+                  </div>
+                  <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>
+                    검색 결과: <strong style={{ color: '#065F46' }}>{filteredDonationReceipts.length}명</strong> / 전체 {donationReceipts.length}명
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '12.5px', color: '#64748B' }}>
+                    💡 2건 이상의 수납도 전화번호가 동일하면 1개의 행으로 합산됩니다.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Donation Ledger Table */}
+            <div className="card" style={{ overflowX: 'auto', border: '1.5px solid #A7F3D0', padding: 0 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#ECFDF5', borderBottom: '1.5px solid #A7F3D0' }}>
+                    <th style={{ padding: '14px 16px', color: '#065F46', width: '50px' }}>순번</th>
+                    <th style={{ padding: '14px 16px', color: '#065F46' }}>학인 성명</th>
+                    <th style={{ padding: '14px 16px', color: '#065F46' }}>연락처</th>
+                    <th style={{ padding: '14px 16px', color: '#065F46' }}>아이디</th>
+                    <th style={{ padding: '14px 16px', color: '#065F46', textAlign: 'right' }}>누적 기부액</th>
+                    <th style={{ padding: '14px 16px', color: '#065F46', textAlign: 'center' }}>누적 건수</th>
+                    <th style={{ padding: '14px 16px', color: '#065F46' }}>최근 발행일</th>
+                    <th style={{ padding: '14px 16px', color: '#065F46' }}>최초 등록일</th>
+                    <th style={{ padding: '14px 16px', color: '#065F46', textAlign: 'center', width: '130px' }}>영수 확인서</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredDonationReceipts.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} style={{ textAlign: 'center', padding: '60px 20px', color: '#64748B' }}>
+                        <FileText size={40} style={{ color: '#10B981', opacity: 0.7, margin: '0 auto 12px auto' }} />
+                        <h4 style={{ fontWeight: 700, color: 'var(--color-charcoal)', margin: '0 0 6px 0', fontSize: '16px' }}>
+                          {donationSearchQuery ? '검색어와 일치하는 기부금 영수증 발급자가 없습니다.' : '현재 등록된 기부금 영수증 발행 대장이 비어있습니다.'}
+                        </h4>
+                        <p style={{ fontSize: '13px', color: '#64748B', maxWidth: '520px', margin: '0 auto 16px auto', lineHeight: '1.6' }}>
+                          교학처 대면 수납 장부에서 수강생 신청 내역을 <strong>[수납 승인 + 기부 영수증 발행]</strong> 하시면
+                          이곳 대장에 1전화번호 1행으로 자동 등록 및 금액 누적 합산됩니다.
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => setActiveTab('payment')}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <CreditCard size={14} />
+                          <span>교학처 대면 수납 장부 바로가기</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredDonationReceipts.map((rcpt, idx) => (
+                      <tr
+                        key={rcpt.id || rcpt.phone || idx}
+                        style={{
+                          borderBottom: '1px solid #E2E8F0',
+                          backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#FAFCFB'
+                        }}
+                      >
+                        <td style={{ padding: '14px 16px', color: '#64748B', fontWeight: 600 }}>{idx + 1}</td>
+                        <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-charcoal)' }}>
+                          {rcpt.name}
+                        </td>
+                        <td style={{ padding: '14px 16px', fontWeight: 600, color: '#1E293B' }}>
+                          ☎ {rcpt.phone}
+                        </td>
+                        <td style={{ padding: '14px 16px', color: '#64748B' }}>
+                          {rcpt.userId || '-'}
+                        </td>
+                        <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 900, fontSize: '15px', color: '#047857' }}>
+                          {(rcpt.totalAmount || 0).toLocaleString()}원
+                        </td>
+                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                          <span className="badge badge-sage" style={{ fontWeight: 800, fontSize: '12px', padding: '3px 8px' }}>
+                            {rcpt.donationCount || (rcpt.history ? rcpt.history.length : 1)}건 합산
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 16px', color: '#475569', fontWeight: 500 }}>
+                          {rcpt.lastIssuedAt || '-'}
+                        </td>
+                        <td style={{ padding: '14px 16px', color: '#94A3B8', fontSize: '12px' }}>
+                          {rcpt.createdAt || rcpt.lastIssuedAt || '-'}
+                        </td>
+                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            style={{ color: '#065F46', borderColor: '#059669', display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 700, padding: '4px 10px' }}
+                            onClick={() => setSelectedDonationReceipt(rcpt)}
+                            title="세화붓다아카데미 공식 기부금 영수 확인서를 열람하고 인쇄/PDF 출력합니다."
+                          >
+                            <FileText size={14} />
+                            <span>영수증 보기</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -2935,6 +3650,18 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 />
               </div>
 
+              <div className="form-group" style={{ marginTop: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                  <input
+                    type="checkbox"
+                    checked={payWithDonationReceipt}
+                    onChange={(e) => setPayWithDonationReceipt(e.target.checked)}
+                    style={{ width: '16px', height: '16px', accentColor: '#059669' }}
+                  />
+                  <span>기부금 영수증도 함께 발행하기 (1전번 1행 누적 대장에 등록)</span>
+                </label>
+              </div>
+
               <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
                 <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowPaymentModal(false)}>
                   취소
@@ -2944,6 +3671,122 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Donation Receipt View & Print Modal (사단법인 세화붓다아카데미 기부금 영수 확인서) */}
+      {selectedDonationReceipt && (
+        <div className="modal-backdrop" onClick={() => setSelectedDonationReceipt(null)}>
+          <div
+            className="modal-card"
+            style={{ padding: '36px', maxWidth: '640px', width: '90%', borderRadius: '16px', background: '#FFFFFF', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '2px solid var(--color-border)', paddingBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="badge badge-sage" style={{ fontWeight: 800, padding: '4px 10px' }}>공식 기부 확인</span>
+                <span style={{ fontSize: '13px', color: '#64748B' }}>발행번호: {selectedDonationReceipt.id}</span>
+              </div>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setSelectedDonationReceipt(null)}
+                style={{ padding: '4px 8px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* 영수증 본문 (인쇄용 레이아웃) */}
+            <div style={{ border: '2px solid #065F46', borderRadius: '12px', padding: '28px', backgroundColor: '#FBFDFB', position: 'relative' }}>
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#047857', letterSpacing: '0.1em' }}>[사]세화붓다아카데미</div>
+                <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#064E3B', margin: '6px 0 10px 0', letterSpacing: '0.08em' }}>
+                  기부금 (수강료) 영수 확인서
+                </h2>
+                <div style={{ width: '80px', height: '3px', backgroundColor: '#059669', margin: '0 auto' }} />
+              </div>
+
+              {/* 기부자 정보 */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', marginBottom: '20px' }}>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
+                    <th style={{ padding: '10px 12px', width: '28%', backgroundColor: '#F0FDF4', color: '#065F46', textAlign: 'left' }}>학인 성명</th>
+                    <td style={{ padding: '10px 12px', fontWeight: 700, color: '#1E293B' }}>{selectedDonationReceipt.name}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
+                    <th style={{ padding: '10px 12px', backgroundColor: '#F0FDF4', color: '#065F46', textAlign: 'left' }}>연락처 (전화번호)</th>
+                    <td style={{ padding: '10px 12px', fontWeight: 600 }}>{selectedDonationReceipt.phone}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
+                    <th style={{ padding: '10px 12px', backgroundColor: '#F0FDF4', color: '#065F46', textAlign: 'left' }}>회원 아이디</th>
+                    <td style={{ padding: '10px 12px', color: '#475569' }}>{selectedDonationReceipt.userId || '미기재'}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '2px solid #059669' }}>
+                    <th style={{ padding: '12px 12px', backgroundColor: '#DCFCE7', color: '#065F46', textAlign: 'left', fontWeight: 800 }}>누적 기부(수납) 총액</th>
+                    <td style={{ padding: '12px 12px', fontSize: '18px', fontWeight: 900, color: '#047857' }}>
+                      일금 {(selectedDonationReceipt.totalAmount || 0).toLocaleString()}원정 (₩{(selectedDonationReceipt.totalAmount || 0).toLocaleString()})
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* 납부 세부 이력 */}
+              {Array.isArray(selectedDonationReceipt.history) && selectedDonationReceipt.history.length > 0 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#065F46', marginBottom: '6px' }}>
+                    📌 기부금 합산 세부 내역 ({selectedDonationReceipt.history.length}건):
+                  </div>
+                  <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '10px', maxHeight: '120px', overflowY: 'auto' }}>
+                    {selectedDonationReceipt.history.map((h, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '4px 0', borderBottom: i < selectedDonationReceipt.history.length - 1 ? '1px dashed #E2E8F0' : 'none' }}>
+                        <span>• {h.courseTitle || '불교의례 강좌'} ({h.issuedAt || h.date || '-'})</span>
+                        <strong style={{ color: '#047857' }}>{(Number(h.amount) || 0).toLocaleString()}원</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <p style={{ textAlign: 'center', fontSize: '13px', color: '#334155', lineHeight: '1.7', margin: '20px 0 24px 0' }}>
+                위 금액을 사단법인 세화불학원 부설 세화붓다아카데미<br />
+                불교의례 인재양성 및 교육기금으로 정히 영수함.
+              </p>
+
+              {/* 발행일 및 직인 */}
+              <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                <div style={{ fontSize: '13px', color: '#64748B', marginBottom: '8px' }}>
+                  발행일자: {selectedDonationReceipt.lastIssuedAt || new Date().toISOString().split('T')[0]}
+                </div>
+                <div style={{ fontSize: '18px', fontWeight: 900, color: '#064E3B', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <span>[사]세화붓다아카데미 이사장</span>
+                  <span style={{ display: 'inline-block', border: '2px solid #DC2626', color: '#DC2626', borderRadius: '50%', padding: '4px 8px', fontSize: '12px', fontWeight: 800 }}>
+                    직인생략
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 하단 버튼 */}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+                onClick={() => setSelectedDonationReceipt(null)}
+              >
+                닫기
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ flex: 1, backgroundColor: '#059669', borderColor: '#047857', fontWeight: 700 }}
+                onClick={() => window.print()}
+              >
+                인쇄 / PDF 출력
+              </button>
+            </div>
           </div>
         </div>
       )}

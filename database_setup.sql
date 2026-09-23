@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS certificates CASCADE;
 DROP TABLE IF EXISTS qa_answers CASCADE;
 DROP TABLE IF EXISTS qa_posts CASCADE;
 DROP TABLE IF EXISTS progress CASCADE;
+DROP TABLE IF EXISTS donation_receipts CASCADE;
 DROP TABLE IF EXISTS payments CASCADE;
 DROP TABLE IF EXISTS enrollments CASCADE;
 DROP TABLE IF EXISTS lectures CASCADE;
@@ -90,7 +91,23 @@ CREATE TABLE payments (
     paid_at DATE NOT NULL,
     manager VARCHAR(100) NOT NULL,
     amount INT NOT NULL,
-    method_memo VARCHAR(200)
+    method_memo VARCHAR(200),
+    donation_receipt_issued BOOLEAN DEFAULT false
+);
+
+-- ==============================================================================
+-- 5-1. 기부금 영수증 대장 테이블 (donation_receipts) - 1개 전화번호당 1행 엄격 누적
+-- ==============================================================================
+CREATE TABLE donation_receipts (
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+    name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL UNIQUE,
+    total_amount INT NOT NULL DEFAULT 0,
+    last_issued_at DATE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    donation_count INT DEFAULT 1,
+    history JSONB DEFAULT '[]'::jsonb
 );
 
 -- ==============================================================================
@@ -214,8 +231,17 @@ CREATE POLICY "Enrollments can be managed by client" ON enrollments FOR ALL USIN
 -- 5. payments 정책
 DROP POLICY IF EXISTS "Payments are readable by everyone" ON payments;
 DROP POLICY IF EXISTS "Payments can be inserted" ON payments;
+DROP POLICY IF EXISTS "Payments can be updated" ON payments;
 CREATE POLICY "Payments are readable by everyone" ON payments FOR SELECT USING (true);
 CREATE POLICY "Payments can be inserted" ON payments FOR INSERT WITH CHECK (true);
+CREATE POLICY "Payments can be updated" ON payments FOR UPDATE USING (true);
+
+-- 5-1. donation_receipts 정책
+ALTER TABLE donation_receipts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Donation receipts are readable by everyone" ON donation_receipts;
+DROP POLICY IF EXISTS "Donation receipts can be managed" ON donation_receipts;
+CREATE POLICY "Donation receipts are readable by everyone" ON donation_receipts FOR SELECT USING (true);
+CREATE POLICY "Donation receipts can be managed" ON donation_receipts FOR ALL USING (true);
 
 -- 6. progress 정책
 DROP POLICY IF EXISTS "Progress is readable by everyone" ON progress;

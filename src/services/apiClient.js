@@ -535,7 +535,8 @@ export const remoteDb = {
         paidAt: p.paid_at,
         manager: p.manager,
         amount: p.amount,
-        methodMemo: p.method_memo
+        methodMemo: p.method_memo,
+        donationReceiptIssued: Boolean(p.donation_receipt_issued)
       }));
     } catch (err) {
       console.warn('Remote getPayments failed:', err);
@@ -553,7 +554,8 @@ export const remoteDb = {
         paid_at: pmt.paidAt,
         manager: pmt.manager,
         amount: pmt.amount,
-        method_memo: pmt.methodMemo
+        method_memo: pmt.methodMemo,
+        donation_receipt_issued: Boolean(pmt.donationReceiptIssued)
       };
       const [inserted] = await supabaseFetch('/payments', {
         method: 'POST',
@@ -562,6 +564,20 @@ export const remoteDb = {
       return inserted;
     } catch (err) {
       console.warn('Remote insertPayment failed:', err);
+      return null;
+    }
+  },
+
+  async updatePaymentDonationReceiptStatus(paymentId, issued = true) {
+    if (!isExternalDbConfigured || !paymentId) return null;
+    try {
+      const [updated] = await supabaseFetch(`/payments?id=eq.${encodeURIComponent(paymentId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ donation_receipt_issued: issued })
+      });
+      return updated;
+    } catch (err) {
+      console.warn('Remote updatePaymentDonationReceiptStatus failed:', err);
       return null;
     }
   },
@@ -586,6 +602,58 @@ export const remoteDb = {
       return res;
     } catch (err) {
       console.warn('Remote processCoursePayment failed, falling back to sequential writes:', err);
+      return null;
+    }
+  },
+
+  // ================= DONATION RECEIPTS (1전화번호 1행 엄격 누적) =================
+  async getDonationReceipts() {
+    if (!isExternalDbConfigured) return null;
+    try {
+      const rows = await supabaseFetch('/donation_receipts?select=*&order=last_issued_at.desc');
+      return rows.map(r => ({
+        id: r.id,
+        userId: r.user_id,
+        name: r.name,
+        phone: r.phone,
+        totalAmount: Number(r.total_amount) || 0,
+        lastIssuedAt: r.last_issued_at,
+        createdAt: r.created_at,
+        donationCount: Number(r.donation_count) || (Array.isArray(r.history) ? r.history.length : 1),
+        history: Array.isArray(r.history) ? r.history : []
+      }));
+    } catch (err) {
+      console.warn('Remote getDonationReceipts failed (fallback to in-memory):', err);
+      return null;
+    }
+  },
+
+  async upsertDonationReceipt(receipt) {
+    if (!isExternalDbConfigured || !receipt) return null;
+    try {
+      const payload = {
+        id: receipt.id,
+        user_id: receipt.userId || null,
+        name: receipt.name,
+        phone: receipt.phone,
+        total_amount: Number(receipt.totalAmount) || 0,
+        last_issued_at: receipt.lastIssuedAt || new Date().toISOString().split('T')[0],
+        created_at: receipt.createdAt || new Date().toISOString(),
+        donation_count: Number(receipt.donationCount) || 1,
+        history: receipt.history || []
+      };
+
+      // Upsert using phone as unique conflict target
+      const [result] = await supabaseFetch('/donation_receipts?on_conflict=phone', {
+        method: 'POST',
+        headers: {
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify(payload)
+      });
+      return result;
+    } catch (err) {
+      console.warn('Remote upsertDonationReceipt warning:', err);
       return null;
     }
   },

@@ -31,6 +31,13 @@ import {
   purgeLegacyLocalStorage
 } from '../src/services/storage.js';
 
+import {
+  normalizePhone,
+  aggregateDonationReceipt,
+  findReceiptByPhoneOrUser,
+  exportToExcelCSV
+} from '../src/services/donationService.js';
+
 // ==============================================================================
 // 1. UNIT TESTS: certService
 // ==============================================================================
@@ -306,3 +313,128 @@ test('integration - WatchPage expiration date check logic', () => {
   assert.equal(isExpired(todayStr), false, 'Today should be valid until end of day');
   assert.equal(isExpired(null), false, 'No expiry date means no expiration');
 });
+
+// ==============================================================================
+// 6. UNIT TESTS: donationService (1전화번호 1행 엄격 누적 & 3필터 엑셀 추출)
+// ==============================================================================
+test('donationService - normalizePhone formatting', () => {
+  assert.equal(normalizePhone('01012345678'), '010-1234-5678');
+  assert.equal(normalizePhone('010-1234-5678'), '010-1234-5678');
+  assert.equal(normalizePhone('010 9876 5432'), '010-9876-5432');
+  assert.equal(normalizePhone('0222608888'), '02-2260-8888');
+  assert.equal(normalizePhone(''), '');
+  assert.equal(normalizePhone(null), '');
+});
+
+test('donationService - aggregateDonationReceipt strictly keeps 1 row per phone across 2, 3+ donations', () => {
+  let receipts = [];
+
+  // [1차 기부] 홍길동 50,000원 수납
+  const res1 = aggregateDonationReceipt(receipts, {
+    userId: 'hong123',
+    name: '홍길동',
+    phone: '010-1111-2222',
+    amount: 50000,
+    courseTitle: '불교의례법사 과정 I'
+  });
+  receipts = res1.updatedList;
+
+  assert.equal(receipts.length, 1, '최초 등록 시 1개 행 생성');
+  assert.equal(receipts[0].totalAmount, 50000, '최초 금액 50,000원');
+  assert.equal(receipts[0].donationCount, 1);
+  assert.equal(receipts[0].name, '홍길동');
+
+  // [2차 기부] 동일 전화번호(010-1111-2222)로 다른 강좌 70,000원 추가 수납
+  const res2 = aggregateDonationReceipt(receipts, {
+    userId: 'hong123',
+    name: '홍길동',
+    phone: '01011112222', // 하이픈 없는 형태여도 동일인 인식
+    amount: 70000,
+    courseTitle: '불교의례법사 과정 II'
+  });
+  receipts = res2.updatedList;
+
+  assert.equal(receipts.length, 1, '동일 전화번호 2회 수납 시에도 행은 반드시 1개만 유지');
+  assert.equal(receipts[0].totalAmount, 120000, '누적 금액이 50000 + 70000 = 120,000원으로 합산');
+  assert.equal(receipts[0].donationCount, 2, '기부 횟수는 2건으로 갱신');
+  assert.equal(receipts[0].history.length, 2, '세부 이력 2건 보관');
+
+  // [3차 기부] 동일 전화번호로 30,000원 추가 수납
+  const res3 = aggregateDonationReceipt(receipts, {
+    userId: 'hong123',
+    name: '홍길동',
+    phone: '010-1111-2222',
+    amount: 30000,
+    courseTitle: '불교의례해설 특강'
+  });
+  receipts = res3.updatedList;
+
+  assert.equal(receipts.length, 1, '동일 전화번호 3회 수납 시에도 행은 엄격히 1개 행만 유지');
+  assert.equal(receipts[0].totalAmount, 150000, '누적 금액 120000 + 30000 = 150,000원 합산');
+  assert.equal(receipts[0].donationCount, 3);
+  assert.equal(receipts[0].history.length, 3);
+
+  // [다른 학인 기부] 이순신 100,000원 수납 (다른 전화번호)
+  const res4 = aggregateDonationReceipt(receipts, {
+    userId: 'lee456',
+    name: '이순신',
+    phone: '010-9999-8888',
+    amount: 100000,
+    courseTitle: '불교의례법사 과정 I'
+  });
+  receipts = res4.updatedList;
+
+  assert.equal(receipts.length, 2, '다른 전화번호 등록 시 신규 1행 추가되어 총 2행');
+  assert.equal(receipts[1].name, '이순신');
+  assert.equal(receipts[1].totalAmount, 100000);
+});
+
+test('donationService - 3가지 필터(전체/미발행/기발행) 판별 및 엑셀(CSV) UTF-8 BOM 인코딩 검증', () => {
+  const receipts = [
+    {
+      id: 'don_1',
+      userId: 'user_issued',
+      name: '기발행자',
+      phone: '010-1234-5678',
+      totalAmount: 100000,
+      lastIssuedAt: '2026-09-20'
+    }
+  ];
+
+  // 기발행 여부 판별 검증
+  assert.ok(findReceiptByPhoneOrUser(receipts, '010-1234-5678', 'user_issued'));
+  assert.equal(findReceiptByPhoneOrUser(receipts, '010-0000-0000', 'user_other'), null);
+
+  // 3개 필터 분기 대상자 분류 테스트
+  const mockStudents = [
+    { id: 'user_issued', name: '기발행자', phone: '010-1234-5678' },
+    { id: 'user_unissued', name: '미발행자', phone: '010-9999-0000' }
+  ];
+
+  const allList = mockStudents;
+  const unissuedList = mockStudents.filter(s => !findReceiptByPhoneOrUser(receipts, s.phone, s.id));
+  const issuedList = mockStudents.filter(s => Boolean(findReceiptByPhoneOrUser(receipts, s.phone, s.id)));
+
+  assert.equal(allList.length, 2, '전체 보기는 2명 모두 포함');
+  assert.equal(unissuedList.length, 1, '미발행 건(기발행자 제외) 필터는 미발행자 1명만 포함');
+  assert.equal(unissuedList[0].id, 'user_unissued');
+  assert.equal(issuedList.length, 1, '기발행 건 필터는 기발행자 1명만 포함');
+  assert.equal(issuedList[0].id, 'user_issued');
+
+  // CSV 생성 검증 (UTF-8 BOM \uFEFF 확인)
+  const columns = [
+    { key: '_index', label: '순번' },
+    { key: 'name', label: '성명' },
+    { key: 'phone', label: '전화번호' },
+    { key: 'amount', label: '금액', formatter: v => `${v}원` }
+  ];
+  const testData = [{ name: '홍길동, 특수', phone: '010-1111-2222', amount: 50000 }];
+  const csv = exportToExcelCSV(testData, columns, 'test.csv');
+
+  assert.ok(typeof csv === 'string');
+  assert.ok(csv.startsWith('\uFEFF'), 'CSV는 엑셀 한글 깨짐 방지를 위해 UTF-8 BOM으로 시작해야 함');
+  assert.ok(csv.includes('"순번","성명","전화번호","금액"'));
+  assert.ok(csv.includes('"홍길동, 특수"'), '쉼표가 포함된 값은 안전하게 큰따옴표로 이스케이프되어야 함');
+  assert.ok(csv.includes('50000원'));
+});
+

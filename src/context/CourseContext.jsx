@@ -12,6 +12,7 @@ import {
 } from '../services/examService.js';
 import { remoteDb, isExternalDbConfigured, deleteLectureVideo } from '../services/apiClient.js';
 import { notifyAdminCourseApplication } from '../services/notificationService.js';
+import { aggregateDonationReceipt, normalizePhone, findReceiptByPhoneOrUser } from '../services/donationService.js';
 import { useAuth } from './AuthContext.jsx';
 
 export const DEFAULT_COURSES = [
@@ -110,6 +111,7 @@ export function CourseProvider({ children }) {
   const [certificates, setCertificates] = useState([]);
   const [qaPosts, setQaPosts] = useState([]);
   const [examAttempts, setExamAttempts] = useState([]);
+  const [donationReceipts, setDonationReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
   // Admin bypass mode for sequential lock testing (default false: enforce lock even for admin)
   const [adminBypassLock, setAdminBypassLock] = useState(false);
@@ -161,13 +163,14 @@ export function CourseProvider({ children }) {
 
       if (isAdmin) {
         if (isExternalDbConfigured) {
-          const [rEnrs, rPays, rProg, rCerts, rQA, rAttempts] = await Promise.all([
+          const [rEnrs, rPays, rProg, rCerts, rQA, rAttempts, rDonations] = await Promise.all([
             remoteDb.getEnrollments().catch(() => []),
             remoteDb.getPayments().catch(() => []),
             remoteDb.getProgress().catch(() => []),
             remoteDb.getCertificates().catch(() => []),
             remoteDb.getQAPosts().catch(() => []),
-            remoteDb.getExamAttempts().catch(() => [])
+            remoteDb.getExamAttempts().catch(() => []),
+            remoteDb.getDonationReceipts().catch(() => [])
           ]);
           setEnrollments(prev => {
             const combined = [...(Array.isArray(rEnrs) ? rEnrs : [])];
@@ -183,6 +186,7 @@ export function CourseProvider({ children }) {
           if (Array.isArray(rCerts) && rCerts.length > 0) setCertificates(rCerts);
           if (Array.isArray(rQA)) setQaPosts(rQA);
           if (Array.isArray(rAttempts) && rAttempts.length > 0) setExamAttempts(rAttempts);
+          if (Array.isArray(rDonations) && rDonations.length > 0) setDonationReceipts(rDonations);
         } else {
           setEnrollments(localEnrs);
         }
@@ -479,7 +483,59 @@ export function CourseProvider({ children }) {
     return item;
   }, [courses, enrollments, currentUser, notifySyncUpdate]);
 
-  const recordPayment = useCallback(async ({ userId, courseId, manager, amount, methodMemo, paidAt }) => {
+  // 1전화번호당 1행 엄격 누적 가산 기부금 영수증 발행 함수
+  const issueDonationReceipt = useCallback(async ({
+    userId,
+    name,
+    phone,
+    amount,
+    courseTitle = '강좌 수강료',
+    paymentId = null,
+    paidAt = null
+  }) => {
+    let resultReceipt = null;
+
+    setDonationReceipts(prev => {
+      const res = aggregateDonationReceipt(prev, {
+        userId,
+        name,
+        phone,
+        amount,
+        courseTitle,
+        paymentId,
+        paidAt
+      });
+      resultReceipt = res.targetReceipt;
+      return res.updatedList;
+    });
+
+    if (paymentId) {
+      setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, donationReceiptIssued: true } : p));
+      if (isExternalDbConfigured) {
+        remoteDb.updatePaymentDonationReceiptStatus(paymentId, true).catch(err => console.warn(err));
+      }
+    }
+
+    if (isExternalDbConfigured && resultReceipt) {
+      await remoteDb.upsertDonationReceipt(resultReceipt).catch(err => console.warn('Supabase upsertDonationReceipt warning:', err));
+    }
+
+    notifySyncUpdate({ type: 'DONATION_RECEIPT_ISSUED', phone, userId });
+    return resultReceipt;
+  }, [notifySyncUpdate]);
+
+  const recordPayment = useCallback(async ({
+    userId,
+    courseId,
+    manager,
+    amount,
+    methodMemo,
+    paidAt,
+    withDonationReceipt = false,
+    studentName = '',
+    studentPhone = '',
+    courseTitle = ''
+  }) => {
     const newPay = {
       id: `pay_${Date.now()}`,
       userId,
@@ -487,10 +543,24 @@ export function CourseProvider({ children }) {
       paidAt: paidAt || new Date().toISOString().split('T')[0],
       manager: manager.trim(),
       amount: Number(amount) || 0,
-      methodMemo: methodMemo.trim()
+      methodMemo: methodMemo.trim(),
+      donationReceiptIssued: Boolean(withDonationReceipt)
     };
 
     setPayments(prev => [...prev, newPay]);
+
+    // 기부 영수증 동시 발행 옵션이 활성화된 경우 1전번 1행 누적 가산 대장에 자동 등재
+    if (withDonationReceipt && (studentPhone || userId)) {
+      await issueDonationReceipt({
+        userId,
+        name: studentName,
+        phone: studentPhone,
+        amount: Number(amount) || 0,
+        courseTitle: courseTitle || '불교의례 강좌 수강료',
+        paymentId: newPay.id,
+        paidAt: newPay.paidAt
+      });
+    }
 
     if (isExternalDbConfigured) {
       // 1. Attempt atomic transaction RPC first
@@ -530,7 +600,7 @@ export function CourseProvider({ children }) {
 
     notifySyncUpdate({ type: 'PAYMENT_RECORDED', userId, courseId });
     return newPay;
-  }, [enrollStudent, notifySyncUpdate]);
+  }, [enrollStudent, issueDonationReceipt, notifySyncUpdate]);
 
   const updateCourseSettings = useCallback(async (courseId, updates) => {
     let finalUpdates = { ...updates };
@@ -849,6 +919,9 @@ export function CourseProvider({ children }) {
         getCourseProgress,
         enrollStudent,
         recordPayment,
+        donationReceipts,
+        setDonationReceipts,
+        issueDonationReceipt,
         updateCourseSettings,
         addCourse,
         deleteCourse,

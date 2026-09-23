@@ -74,6 +74,16 @@ h1, h2, h3, h4, .font-serif, .heading-1, .heading-2, .heading-3, p {
   display: none;
 }
 
+/* PC/Desktop Mode: Prevent horizontal scroll and allow smooth wrapping */
+@media (min-width: 769px) {
+  .mobile-tab-scroll,
+  .admin-tab-nav {
+    overflow-x: visible !important;
+    white-space: normal !important;
+    flex-wrap: wrap !important;
+  }
+}
+
 /* Watch Page Layout Grid Default */
 .watch-layout {
   display: grid;
