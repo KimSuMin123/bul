@@ -2,3 +2,7 @@
 # Login and registration are public. Admin actions independently verify /auth/v1/user
 # and the stored profile role; no client-supplied role grants access.
 verify_jwt = false
+
+[functions.lms-sms]
+# A dedicated worker secret is checked inside the handler; no public dispatch.
+verify_jwt = false

@@ -1,7 +1,10 @@
 // Runtime-independent handler: dependency injection keeps tests entirely offline.
-const profileColumns = 'id,auth_user_id,name,birth_date,phone,member_no,role,created_at';
+export const PRIVACY_POLICY_VERSION = '2026-09-23';
+const profileColumns = 'id,login_id,auth_user_id,name,birth_date,phone,member_no,role,created_at,privacy_consent,privacy_consent_at,privacy_policy_version,privacy_consent_source';
 const publicProfile = p => ({ id: p.id, name: p.name, birthDate: p.birth_date,
-  phone: p.phone, memberNo: p.member_no, role: p.role, createdAt: p.created_at });
+  phone: p.phone, memberNo: p.member_no, role: p.role, createdAt: p.created_at,
+  loginId: p.login_id || p.id, privacyConsent: p.privacy_consent, privacyConsentAt: p.privacy_consent_at,
+  privacyPolicyVersion: p.privacy_policy_version, privacyConsentSource: p.privacy_consent_source });
 class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }
 export async function digest(value) {
   return [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)))].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -66,6 +69,7 @@ export function createHandler({ url, serviceKey, anonKey, allowedOrigins = [], f
       const id = String(body.id || body.userId || '').trim().toLowerCase();
       const phoneLookup = String(body.phone || '').replace(/[^0-9]/g, '');
       const newRegistration = action === 'register' || action === 'admin-register';
+      if (newRegistration && (body.privacyConsent !== true || body.privacyPolicyVersion !== PRIVACY_POLICY_VERSION)) throw new HttpError(400, '현재 개인정보 수집·이용 안내를 확인하고 필수 동의해 주세요.');
       if (newRegistration && !/^[a-z0-9_.-]{2,50}$/.test(id)) throw new HttpError(400, '신규 아이디는 영문, 숫자, 점, 밑줄, 하이픈 2~50자로 입력해 주세요.');
       if (!newRegistration && !(action === 'availability' && !id && /^\d{9,15}$/.test(phoneLookup)) && (!id || id.length > 50)) throw new HttpError(400, '아이디를 확인해 주세요.');
       if (!actor) {
@@ -85,10 +89,10 @@ export function createHandler({ url, serviceKey, anonKey, allowedOrigins = [], f
         if (!existing.auth_user_id) {
           if (!await legacyMatches(password, existing.password)) throw new HttpError(401, '아이디 또는 비밀번호가 일치하지 않습니다.');
           let authUser;
-          try { authUser = await createAuth(id, password); }
+          try { authUser = await createAuth(existing.id, password); }
           catch {
             // Recover an interrupted first migration only by proving the same Auth password.
-            const session = await signIn(id, password);
+            const session = await signIn(existing.id, password);
             authUser = session.user;
           }
           const linked = await api(`/rest/v1/users?id=eq.${encodeURIComponent(existing.id)}&auth_user_id=is.null`, { method: 'PATCH', prefer: 'return=representation', body: { auth_user_id: authUser.id, password: null } });
@@ -97,7 +101,7 @@ export function createHandler({ url, serviceKey, anonKey, allowedOrigins = [], f
             if (current?.auth_user_id !== authUser.id) throw new HttpError(409, '계정 연결 상태를 확인해 주세요.');
           }
         }
-        const session = await signIn(id, password);
+        const session = await signIn(existing.id, password);
         const current = await find(id);
         if (session.user?.id !== current?.auth_user_id) throw new HttpError(401, '계정 연결 상태를 확인해 주세요.');
         return respond({ session, user: publicProfile(current) });
@@ -131,6 +135,8 @@ export function createHandler({ url, serviceKey, anonKey, allowedOrigins = [], f
       try {
         const rows = await api('/rest/v1/users', { method: 'POST', prefer: 'return=representation', body: {
           id, auth_user_id: authUser.id, password: null, name, birth_date: birthDate, phone,
+          privacy_consent: true, privacy_policy_version: PRIVACY_POLICY_VERSION,
+          privacy_consent_source: actor ? 'admin_attested' : 'registration',
           member_no: `BUDDHA-${crypto.randomUUID()}`, role: actor && body.role === 'admin' ? 'admin' : 'student'
         } });
         profile = rows?.[0];

@@ -78,6 +78,9 @@ test('certService - enrichCertificate edge cases & null safety', () => {
   assert.equal(enriched.certGrade, '2급');
   assert.equal(enriched.issuingOrg, '사단법인 세화불학원');
   assert.equal(enriched.studentName, '홍길동');
+  assert.equal(enriched.certRegNo, '민간자격 등록번호 제 2026- 00183호');
+  assert.equal(enrichCertificate({ ...rawCert, certRegNo: '기존 발급번호' }).certRegNo, '기존 발급번호');
+  assert.equal(enrichCertificate(rawCert, { id: rawCert.courseId, certType: '시험 종목', certRegNo: '사용자 지정 등록번호' }).certRegNo, '사용자 지정 등록번호');
 });
 
 test('certService - generateCertNumber and generateMemberNumber format', () => {

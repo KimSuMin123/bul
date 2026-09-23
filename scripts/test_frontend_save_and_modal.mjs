@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { enrollmentConfirmation, PRIVACY_POLICY_VERSION } from '../src/config/sitePolicy.js';
 
 // Execute the actual event handlers with isolated UI/API dependencies.
 // No browser, network, or application data is used.
@@ -43,6 +44,7 @@ test('Escape cancels a confirmation', () => {
 function applyContext(overrides = {}) {
   return {
     currentUser: { id: 'test-user' }, course: { id: 'test-course', title: 'Test' },
+    courses: [{ id: 'test-course', title: 'Test', price: 50000 }], enrollmentConfirmation,
     applyingRef: { current: false }, setApplying() {},
     enrollStudent: async () => ({}), showAlert: async () => {},
     showConfirm: async () => true, onNavigate() {}, ...overrides,
@@ -189,12 +191,14 @@ test('new member account success and payment failure are reported separately', a
     registeringUserRef: { current: false }, setIsSubmittingUser() {},
     setUserModalError(message) { assert.equal(message, ''); },
     newUserForm: {
-      id: 'new-test-user', name: 'Test', password: 'test-only', phone: '000',
+      privacyConsent: true, privacyPolicyVersion: PRIVACY_POLICY_VERSION,
+      id: 'new-test-user', name: 'Test', password: 'FixtureOnly123!', phone: '000',
       birthDate: '2000-01-01', role: 'student', memberNo: 'test',
       assignCourse: true, courseId: 'test-course', status: 'active',
       recordPayment: true, paymentAmount: '100', paymentMethodMemo: 'Test',
     },
     adminRegisterUser: async () => { registeredCount++; return { id: 'new-test-user' }; },
+    PRIVACY_POLICY_VERSION,
     enrollStudent: () => assert.fail('paid enrollment must use the payment transaction'),
     recordPayment: async data => {
       assert.equal(data.userId, 'new-test-user');
@@ -322,7 +326,7 @@ const cmsFailureCases = [
   ['handleSaveLecThumbnail', { thumbModalLec: { id: 'lecture' }, thumbLecPreviewUrl: 'https://example.invalid/image.png', thumbLecUrlInput: '' }, 'updateLecture'],
   ['handleToggleSequential', {}, 'updateCourseSettings', ['course', false]],
   ['handleCreateLecture', { lecForm: { title: 'Lecture', videoUrl: 'https://example.invalid/video.mp4' }, uploadMode: 'url', setUploadSuccessMsg() {}, setUploadErrorMsg() {} }, 'addLecture'],
-  ['handleExecuteResetPassword', { resetPwUser: { id: 'user' }, newTempPassword: 'fixture-only', setIsResettingPw() {} }, 'adminResetPassword'],
+  ['handleExecuteResetPassword', { resetPwUser: { id: 'user' }, newTempPassword: 'FixtureOnly123!', setIsResettingPw() {} }, 'adminResetPassword'],
   ['handleDeleteUser', { currentUser: { id: 'admin' } }, 'adminDeleteUser', [{ id: 'user', name: 'User' }]],
   ['handleReplaceVideoSubmit', {
     replaceModalLec: { id: 'lecture' }, replaceVideoFile: { name: 'fixture.mp4' },

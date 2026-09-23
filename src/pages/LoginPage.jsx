@@ -17,6 +17,14 @@ export default function LoginPage({ onNavigate }) {
   useEffect(() => {
     if (!loginTargetUserId || currentUser?.id !== loginTargetUserId) return;
     setLoginTargetUserId(null);
+    try {
+      const target = sessionStorage.getItem('sehwa-login-return');
+      sessionStorage.removeItem('sehwa-login-return');
+      if (target?.startsWith('#watch?') && new URLSearchParams(target.split('?')[1]).has('id')) {
+        window.location.hash = target;
+        return;
+      }
+    } catch { /* Continue with the normal signed-in landing page. */ }
     onNavigate(currentUser.role === 'admin' ? 'admin' : 'dashboard');
   }, [currentUser?.id, currentUser?.role, loginTargetUserId, onNavigate]);
 

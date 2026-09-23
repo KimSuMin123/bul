@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   MessageSquare, Clock, CheckCircle2, Lock, Unlock, 
   Send, Trash2, Edit3, PlayCircle, PlusCircle, AlertCircle, 
@@ -21,6 +21,7 @@ export default function LectureQABoard({
   const { showAlert, showConfirm } = useModalAlert();
   const [qaBusy, setQaBusy] = useState(false);
   const qaBusyRef = useRef(false);
+  const focusedQuestionLink = useRef(null);
   const runQAAction = async (action) => {
     if (qaBusyRef.current) return;
     qaBusyRef.current = true;
@@ -61,6 +62,24 @@ export default function LectureQABoard({
     if (!currentLecId) return [];
     return (qaPosts || []).filter(p => p.lectureId === currentLecId);
   }, [qaPosts, currentLecId]);
+
+  useEffect(() => {
+    const focusQuestion = () => {
+      const id = new URLSearchParams(window.location.hash.split('?')[1] || '').get('question');
+      if (!id || !lectureQuestions.some(post => post.id === id)) return;
+      const target = `${currentLecId}:${id}`;
+      if (focusedQuestionLink.current === target) return;
+      if (filter !== 'all') { setFilter('all'); return; }
+      const element = document.getElementById(`question-${id}`);
+      if (!element) return;
+      focusedQuestionLink.current = target;
+      element?.scrollIntoView({ block: 'center' });
+      element?.focus({ preventScroll: true });
+    };
+    focusQuestion();
+    window.addEventListener('hashchange', focusQuestion);
+    return () => window.removeEventListener('hashchange', focusQuestion);
+  }, [lectureQuestions, filter]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -495,7 +514,9 @@ export default function LectureQABoard({
 
             return (
               <div 
-                key={post.id} 
+                key={post.id}
+                id={`question-${post.id}`}
+                tabIndex={-1}
                 className="card qa-question-card" 
                 style={{ 
                   padding: '24px', 

@@ -5,6 +5,10 @@ import {
 } from 'lucide-react';
 import { useCourse } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
+import NamoAudio from '../components/home/NamoAudio';
+import OpeningCeremony from '../components/home/OpeningCeremony';
+import AnnouncementPopup from '../components/announcements/AnnouncementPopup';
+import '../styles/home-experience.css';
 
 export default function HomePage({ onNavigate, onSelectCourse }) {
   const { courses } = useCourse();
@@ -105,19 +109,7 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
 
             {/* Right: Namo Buddhaya Illustration (No Background) */}
             <div style={{ flex: '0 0 auto', display: 'flex', justifyContent: 'center', margin: '0 auto', alignSelf: 'center' }}>
-              <img
-                src="/images/namo_buddhaya.png"
-                alt="나모붓다야 - 세화불학원 [붓다아카데미]"
-                style={{
-                  width: '255px',
-                  maxWidth: '100%',
-                  maxHeight: '340px',
-                  objectFit: 'contain',
-                  height: 'auto',
-                  display: 'block',
-                  mixBlendMode: 'multiply'
-                }}
-              />
+              <NamoAudio />
             </div>
           </div>
 
@@ -164,6 +156,9 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
           </div>
         </div>
       </section>
+
+      <OpeningCeremony />
+      <AnnouncementPopup />
 
       {/* Courses Catalog Section */}
       <section id="curriculum-section" style={{ backgroundColor: '#FFFFFF', padding: '60px 0' }}>

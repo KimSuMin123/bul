@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { UserPlus, Check, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import PrivacyConsent from '../components/common/PrivacyConsent.jsx';
+import { PRIVACY_POLICY_VERSION } from '../config/sitePolicy.js';
 
 export default function RegisterPage({ onNavigate }) {
   const { register, checkIdAvailable, checkPhoneAvailable, login } = useAuth();
@@ -19,6 +21,7 @@ export default function RegisterPage({ onNavigate }) {
   const [error, setError] = useState('');
   const [successResult, setSuccessResult] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [privacyConsent, setPrivacyConsent] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -58,6 +61,11 @@ export default function RegisterPage({ onNavigate }) {
     e.preventDefault();
     setError('');
 
+    if (!privacyConsent) {
+      setError('개인정보 수집·이용에 동의해 주세요.');
+      return;
+    }
+
     if (!idChecked) {
       setError('아이디 중복확인을 완료해 주세요.');
       return;
@@ -75,7 +83,9 @@ export default function RegisterPage({ onNavigate }) {
         password: formData.password,
         name: formData.name,
         birthDate: formData.birthDate,
-        phone: formData.phone
+        phone: formData.phone,
+        privacyConsent,
+        privacyPolicyVersion: PRIVACY_POLICY_VERSION
       });
 
       setSuccessResult(newUser);
@@ -271,11 +281,13 @@ export default function RegisterPage({ onNavigate }) {
                 />
               </div>
 
+              <PrivacyConsent checked={privacyConsent} onChange={setPrivacyConsent} disabled={isSubmitting} />
+
               <button 
                 type="submit" 
                 className="btn btn-primary" 
                 style={{ width: '100%', padding: '12px', marginTop: '12px', opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !privacyConsent}
               >
                 <span>{isSubmitting ? '가입 처리 중...' : '회원가입 완료'}</span>
                 <ArrowRight size={16} />

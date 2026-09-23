@@ -8,7 +8,7 @@ function fixture({ users = [], authUsers = [], role = 'student', rate = true, fa
   const parsed = new URL(url), path = parsed.pathname, body = options.body ? JSON.parse(options.body) : {};
   calls.push({ path, body, headers: options.headers, method: options.method });
   if (path.endsWith('/lms_auth_rate_limit')) return Response.json(rate);
-  if (path.endsWith('/lms_find_user')) return Response.json(profiles.find(p => p.id.toLowerCase() === body.p_id.toLowerCase()) || null);
+  if (path.endsWith('/lms_find_user')) return Response.json(profiles.find(p => (p.id.toLowerCase() === body.p_id.toLowerCase() || p.login_id?.toLowerCase() === body.p_id.toLowerCase())) || null);
   if (path.endsWith('/lms_phone_available')) return Response.json(!profiles.some(p => p.phone === body.p_phone));
   if (path === '/auth/v1/user') return options.headers.Authorization === 'Bearer verified-session' ? Response.json({ id: 'auth-actor' }) : Response.json({}, { status: 401 });
   if (path === '/auth/v1/admin/users' && options.method === 'POST') {
@@ -72,10 +72,12 @@ test('existing Auth login does not recreate identities or trust profile role inp
 });
 test('public registration generates member number and ignores privileged role',async()=>{
  const f=fixture();
- const result=await f.call({action:'register',id:'new-user',password:'Password1!',name:'New',birthDate:'2000-01-01',phone:'010-1234-5678',role:'admin',memberNo:'forged'});
+ const result=await f.call({action:'register',privacyConsent:true,privacyPolicyVersion:'2026-09-23',id:'new-user',password:'Password1!',name:'New',birthDate:'2000-01-01',phone:'010-1234-5678',role:'admin',memberNo:'forged'});
  assert.equal(result.status,200); assert.equal(result.body.user.role,'student');
  assert.match(result.body.user.memberNo,/^BUDDHA-/); assert.notEqual(result.body.user.memberNo,'forged');
  assert.equal(f.profiles[0].password,null); assert.equal(f.profiles[0].phone,'01012345678');
+ assert.equal(f.profiles[0].privacy_consent,true);assert.equal(f.profiles[0].privacy_policy_version,'2026-09-23');
+ assert.equal(f.profiles[0].privacy_consent_source,'registration');assert.equal(f.profiles[0].privacy_consent_at,undefined);
 });
 test('admin actions require a verified Auth identity and stored admin role',async()=>{
  for(const token of [undefined,'forged','public-key','server-secret']) {
@@ -91,8 +93,9 @@ test('administrator registration can assign admin and password reset uses Auth a
  const reset=await f.call({action:'admin-reset',userId:'legacy',newPassword:'Updated1!'},'verified-session');
  assert.equal(reset.status,200);
  assert.ok(f.calls.some(c=>c.path==='/auth/v1/admin/users/known' && c.method==='PUT'));
- const created=await f.call({action:'admin-register',id:'new-admin',password:'Password1!',name:'Admin',birthDate:'2000-01-01',phone:'01099999999',role:'admin'},'verified-session');
+ const created=await f.call({action:'admin-register',privacyConsent:true,privacyPolicyVersion:'2026-09-23',id:'new-admin',password:'Password1!',name:'Admin',birthDate:'2000-01-01',phone:'01099999999',role:'admin'},'verified-session');
  assert.equal(created.status,200); assert.equal(created.body.user.role,'admin');
+ assert.equal(f.profiles.at(-1).privacy_consent_source,'admin_attested');
 });
 test('name and phone are not sufficient to reset a password',async()=>{
  const f=fixture({users:[legacy]});
@@ -106,7 +109,7 @@ test('rate limit failure denies login before credential lookup',async()=>{
 });
 test('profile persistence failure is not reported as successful registration',async()=>{
  const f=fixture({failProfile:true});
- const result=await f.call({action:'register',id:'new-user',password:'Password1!',name:'New',birthDate:'2000-01-01',phone:'01012345678'});
+ const result=await f.call({action:'register',privacyConsent:true,privacyPolicyVersion:'2026-09-23',id:'new-user',password:'Password1!',name:'New',birthDate:'2000-01-01',phone:'01012345678'});
  assert.equal(result.status,400); assert.equal(result.body.user,undefined);
  assert.equal(JSON.stringify(result.body).includes('server-secret'),false);
 });
@@ -118,6 +121,24 @@ test('legacy Korean and spaced ids can login and receive an administrator reset'
  assert.equal(reset.status,200);
  const available=await f.call({action:'availability',id:'한글 사용자'});
  assert.equal(available.body.idAvailable,false);
- const newUser=await f.call({action:'register',id:'신규 한글',password:'New12345!',name:'New',birthDate:'2000-01-01',phone:'01099999999'});
+ const newUser=await f.call({action:'register',privacyConsent:true,privacyPolicyVersion:'2026-09-23',id:'신규 한글',password:'New12345!',name:'New',birthDate:'2000-01-01',phone:'01099999999'});
  assert.equal(newUser.status,400);
+});
+
+test('registration requires explicit current consent before Auth writes',async()=>{
+ for(const consent of [undefined,false,'true',1]) {
+  const f=fixture(); const result=await f.call({action:'register',id:'new-user',privacyConsent:consent,privacyPolicyVersion:'2026-09-23'});
+  assert.equal(result.status,400); assert.equal(f.calls.length,0);
+ }
+ const f=fixture(); assert.equal((await f.call({action:'register',id:'new-user',privacyConsent:true,privacyPolicyVersion:'old'})).status,400);
+});
+test('login alias preserves canonical Auth identity and legacy reset semantics',async()=>{
+ const email=await syntheticEmail('Legacy');
+ const f=fixture({users:[{...legacy,login_id:'adsba',auth_user_id:'known'}],authUsers:[{id:'known',email,password:'Password1!'}]});
+ const result=await f.call({action:'login',id:'ADSBA',password:'Password1!'});
+ assert.equal(result.status,200); assert.equal(result.body.user.id,'Legacy'); assert.equal(result.body.user.loginId,'adsba');
+ assert.equal(f.calls.find(c=>c.path==='/auth/v1/token').body.email,email);
+ const old=fixture({users:[{...legacy,login_id:'adsba'}]});
+ assert.equal((await old.call({action:'login',id:'adsba',password:legacy.password})).status,200);
+ assert.equal(old.identities[0].email,email);
 });

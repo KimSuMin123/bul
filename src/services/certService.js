@@ -79,6 +79,7 @@ export function enrichCertificate(cert, courseObj = null) {
     certType: cert.certType || qual.certType,
     certGrade: cert.certGrade || qual.certGrade,
     certTypeFull: cert.certTypeFull || qual.certTypeFull,
+    certRegNo: cert.certRegNo || qual.customCertRegNo,
     certEnTitle: cert.certEnTitle || qual.certEnTitle,
     regOffice: cert.regOffice || qual.regOffice,
     issuingOrg: cert.issuingOrg || '사단법인 세화불학원',

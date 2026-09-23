@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { removeStored, STORAGE_KEYS, initStorage } from '../services/storage';
 import { remoteDb } from '../services/apiClient';
 import { clearAuthSession, getAuthSession, signOutSession } from '../services/authSession';
+import { PRIVACY_POLICY_VERSION } from '../config/sitePolicy.js';
 
 const AuthContext = createContext(null);
 
@@ -75,7 +76,8 @@ export function AuthProvider({ children }) {
   };
   const checkIdAvailable = async id => (await remoteDb.checkAvailability({ id: id.trim() })).idAvailable === true;
   const checkPhoneAvailable = async phone => (await remoteDb.checkAvailability({ phone: phone.replace(/[^0-9]/g, '') })).phoneAvailable === true;
-  const validateMember = ({ id, password, name, birthDate, phone }) => {
+  const validateMember = ({ id, password, name, birthDate, phone, privacyConsent, privacyPolicyVersion }) => {
+    if (privacyConsent !== true || privacyPolicyVersion !== PRIVACY_POLICY_VERSION) throw new Error('현재 개인정보 수집·이용 안내를 확인하고 동의해 주세요.');
     if (!id?.trim() || !name?.trim() || !birthDate || !phone?.trim()) throw new Error('회원 정보를 모두 입력해 주세요.');
     if (!password || password.length < 8 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
       throw new Error('비밀번호는 영문, 숫자, 기호를 포함하여 8자 이상이어야 합니다.');

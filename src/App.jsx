@@ -4,13 +4,13 @@ import Footer from './components/common/Footer';
 import ConflictModal from './components/common/ConflictModal';
 
 import HomePage from './pages/HomePage';
-import DashboardPage from './pages/DashboardPage';
-import CourseDetailPage from './pages/CourseDetailPage';
-import WatchPage from './pages/WatchPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import CertificateVerifyPage from './pages/CertificateVerifyPage';
-import AboutPage from './pages/AboutPage';
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
+const CourseDetailPage = React.lazy(() => import('./pages/CourseDetailPage'));
+const WatchPage = React.lazy(() => import('./pages/WatchPage'));
+const LoginPage = React.lazy(() => import('./pages/LoginPage'));
+const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
+const CertificateVerifyPage = React.lazy(() => import('./pages/CertificateVerifyPage'));
+const AboutPage = React.lazy(() => import('./pages/AboutPage'));
 
 // Lazy load heavy admin dashboard to optimize initial bundle size
 const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage'));
@@ -71,7 +71,10 @@ export default function App() {
   const { refreshData, error: courseError } = useCourse();
 
   // Navigation state: 'home' | 'about' | 'dashboard' | 'courseDetail' | 'watch' | 'login' | 'register' | 'verify' | 'admin'
-  const [currentView, setCurrentView] = useState('home');
+  const [currentView, setCurrentView] = useState(() => {
+    const route = window.location.hash.slice(1).split('?')[0];
+    return ['home', 'dashboard', 'watch', 'login', 'register', 'verify', 'admin', 'about', 'courseDetail'].includes(route) ? route : route === 'course' ? 'courseDetail' : 'home';
+  });
   const [selectedCourseId, setSelectedCourseId] = useState('course-ritual-8-11');
   const [selectedLectureId, setSelectedLectureId] = useState('lec-ritual-08-1');
   const [aboutTab, setAboutTab] = useState('intro');
@@ -111,7 +114,7 @@ export default function App() {
           if (loading) return;
           const userIsAdmin = isAdmin;
           if (!userIsAdmin) {
-            showAlert('관리자 계정(admin)만 접근할 수 있는 페이지입니다.', { type: 'warning', title: '접근 권한 제한' });
+            showAlert('관리자 계정만 접근할 수 있는 페이지입니다.', { type: 'warning', title: '접근 권한 제한' });
             setCurrentView('login');
             window.location.hash = 'login';
             return;
@@ -130,13 +133,17 @@ export default function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
     updatePageSEO(currentView, { tab: aboutTab });
-    if (refreshData) {
-      refreshData().catch(() => {});
-    }
-  }, [currentView, aboutTab, selectedLectureId, selectedCourseId, refreshData]);
+  }, [currentView, aboutTab, selectedLectureId, selectedCourseId]);
+
+  useEffect(() => {
+    void refreshData({ ifStale: true });
+  }, [currentView, selectedLectureId, selectedCourseId, refreshData]);
 
   const handleNavigate = (view, subParam) => {
     // Route validation and the render guard use the latest authenticated state.
+    if (view === 'login' && currentView === 'watch') {
+      try { sessionStorage.setItem('sehwa-login-return', window.location.hash); } catch { /* Storage may be unavailable. */ }
+    }
 
     if (view === 'about') {
       const tab = subParam || 'intro';
@@ -167,7 +174,7 @@ export default function App() {
   };
 
   // Initial Auth Loading Screen
-  if (loading) {
+  if (loading && ['dashboard', 'watch', 'admin'].includes(currentView)) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
         <img 
@@ -196,6 +203,7 @@ export default function App() {
               <button className="btn btn-secondary btn-sm" onClick={() => refreshData()}>다시 불러오기</button>
             </div>
           )}
+          <React.Suspense fallback={<div role="status" style={{ padding: '32px' }}>화면을 불러오는 중입니다...</div>}>
           {currentView === 'about' && (
             <AboutPage 
               initialTab={aboutTab} 
@@ -261,6 +269,7 @@ export default function App() {
               )}
             </React.Suspense>
           )}
+          </React.Suspense>
         </main>
 
         <Footer />

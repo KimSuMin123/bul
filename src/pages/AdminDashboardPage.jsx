@@ -22,6 +22,9 @@ import {
   startAdminEnrollmentListener
 } from '../services/notificationService';
 import { exportToExcelCSV, findReceiptByPhoneOrUser, normalizePhone } from '../services/donationService';
+import AnnouncementManager from '../components/announcements/AnnouncementManager';
+import { PRIVACY_POLICY_VERSION } from '../config/sitePolicy.js';
+import '../styles/home-experience.css';
 
 export default function AdminDashboardPage() {
   const { showAlert, showConfirm } = useModalAlert();
@@ -798,6 +801,7 @@ export default function AdminDashboardPage() {
     role: 'student',
     password: 'buddha1234!',
     memberNo: '',
+    privacyConsent: false,
     assignCourse: true,
     courseId: 'course-ritual-8-11',
     status: 'active',
@@ -830,6 +834,7 @@ export default function AdminDashboardPage() {
       role: 'student',
       password: 'buddha1234!',
       memberNo: defaultMemberNo,
+      privacyConsent: false,
       assignCourse: true,
       courseId: firstCourse ? firstCourse.id : 'course-ritual-8-11',
       status: 'active',
@@ -870,8 +875,8 @@ export default function AdminDashboardPage() {
       setUserModalError('아이디를 입력해 주세요.');
       return;
     }
-    if (!newUserForm.password || newUserForm.password.trim().length < 4) {
-      setUserModalError('비밀번호는 최소 4자리 이상 입력해 주세요.');
+    if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(newUserForm.password.trim())) {
+      setUserModalError('비밀번호는 영문, 숫자, 특수문자를 포함하여 8자 이상 입력해 주세요.');
       return;
     }
     if (!newUserForm.phone.trim()) {
@@ -880,6 +885,10 @@ export default function AdminDashboardPage() {
     }
     if (!newUserForm.birthDate) {
       setUserModalError('생년월일을 입력해 주세요.');
+      return;
+    }
+    if (!newUserForm.privacyConsent) {
+      setUserModalError('회원의 개인정보 수집·이용 동의를 확인해 주세요.');
       return;
     }
 
@@ -896,7 +905,9 @@ export default function AdminDashboardPage() {
         birthDate: newUserForm.birthDate,
         phone: newUserForm.phone.trim(),
         role: newUserForm.role,
-        memberNo: newUserForm.memberNo.trim()
+        memberNo: newUserForm.memberNo.trim(),
+        privacyConsent: true,
+        privacyPolicyVersion: PRIVACY_POLICY_VERSION
       });
 
       // 2. Assign Course if selected
@@ -1003,8 +1014,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
     e.preventDefault();
     return runCmsAction(async () => {
       if (!resetPwUser) return;
-      if (!newTempPassword || newTempPassword.trim().length < 4) {
-        showAlert('새 비밀번호는 최소 4자 이상이어야 합니다.', { type: 'warning', title: '입력 확인' });
+      if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(newTempPassword.trim())) {
+        showAlert('새 비밀번호는 영문, 숫자, 특수문자를 포함하여 8자 이상 입력해 주세요.', { type: 'warning', title: '입력 확인' });
         return;
       }
 
@@ -1012,7 +1023,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
         setIsResettingPw(true);
         await adminResetPassword(resetPwUser.id, newTempPassword.trim());
         setUsersVersion(v => v + 1);
-        showAlert(`[${resetPwUser.name}] 님의 비밀번호가 '${newTempPassword.trim()}'(으)로 성공적으로 초기화되었습니다.\n학인에게 변경된 비밀번호를 안내해 주시기 바랍니다.`, { type: 'success', title: '비밀번호 초기화 완료' });
+        showAlert(`[${resetPwUser.name}] 님의 비밀번호가 초기화되었습니다. 변경된 비밀번호는 안전한 방법으로 학인에게 안내해 주세요.`, { type: 'success', title: '비밀번호 초기화 완료' });
+        setNewTempPassword('');
         setResetPwUser(null);
       } catch (err) {
         showAlert(`비밀번호 초기화 실패: ${err.message}`, { type: 'error', title: '초기화 오류' });
@@ -1849,7 +1861,12 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             <Award size={15} />
             <span>수료증 발급 ({allCompletedCertificates.length})</span>
           </button>
+          <button className="btn btn-ghost" style={{ borderBottom: activeTab === 'announcements' ? '3px solid var(--color-sage)' : '3px solid transparent' }} onClick={() => setActiveTab('announcements')}>
+            <Bell size={15} /><span>메인 공지</span>
+          </button>
         </div>
+
+        {activeTab === 'announcements' && <AnnouncementManager />}
 
         {/* TAB 1: 수강생 및 권한 관리 (Search by name/phone, manual grant) */}
         {activeTab === 'enrollment' && (
@@ -3955,7 +3972,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 </h4>
 
                 <div className="form-group" style={{ marginBottom: '6px' }}>
-                  <label className="form-label">임시 비밀번호 (최소 4자 이상) *</label>
+                  <label className="form-label">임시 비밀번호 (영문·숫자·특수문자 포함 8자 이상) *</label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type={showNewUserPw ? "text" : "password"}
@@ -4069,6 +4086,10 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 )}
               </div>
 
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '9px', marginBottom: '18px', fontSize: '13px' }}>
+                <input type="checkbox" checked={newUserForm.privacyConsent} onChange={(e) => setNewUserForm({ ...newUserForm, privacyConsent: e.target.checked })} required />
+                회원의 개인정보 수집·이용 동의를 확인했습니다.
+              </label>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button
                   type="button"

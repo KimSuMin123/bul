@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Lock, CheckCircle, FileText, Download, ChevronLeft, 
+import {
+  Lock, CheckCircle, FileText, Download, ChevronLeft,
   ChevronRight, BookOpen, Clock, AlertTriangle, ArrowLeft, MessageSquare,
   ChevronDown, ChevronUp, Layers, Shield
 } from 'lucide-react';
@@ -14,18 +14,26 @@ import { useModalAlert } from '../context/ModalAlertContext';
 export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
   const { currentUser, isAdmin } = useAuth();
   const { showAlert, showConfirm } = useModalAlert();
-  const { 
-    lectures, courses, enrollments, hasLectureAccess, isLectureLocked, 
-    getLectureProgress, qaPosts, adminBypassLock, toggleAdminBypassLock 
+  const {
+    lectures, courses, enrollments, hasLectureAccess, isLectureLocked,
+    getLectureProgress, qaPosts, adminBypassLock, toggleAdminBypassLock
   } = useCourse();
 
   const [currentLecture, setCurrentLecture] = useState(null);
   const [course, setCourse] = useState(null);
   const [showDeniedModal, setShowDeniedModal] = useState(false);
   const [unauthorizedCourseTitle, setUnauthorizedCourseTitle] = useState('');
-  
+
   // Tab state: 'info' | 'qa'
-  const [activeTab, setActiveTab] = useState('info');
+  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.hash.split('?')[1] || '').has('question') ? 'qa' : 'info');
+  useEffect(() => {
+    const selectLinkedQuestion = () => {
+      if (new URLSearchParams(window.location.hash.split('?')[1] || '').has('question')) setActiveTab('qa');
+    };
+    selectLinkedQuestion();
+    window.addEventListener('hashchange', selectLinkedQuestion);
+    return () => window.removeEventListener('hashchange', selectLinkedQuestion);
+  }, [lectureId]);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const [seekTrigger, setSeekTrigger] = useState(null);
 
@@ -160,9 +168,9 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
 
     // Check sequential lock
     if (isLectureLocked(currentUser?.id, targetLec.id)) {
-      showAlert(`이전 차시(제${Number(targetLec.orderIndex) - 1}강)를 100% 완강하셔야 다음 차시를 수강하실 수 있습니다. (순차 학습 적용)`, { 
-        type: 'warning', 
-        title: '🔒 순차 학습 잠금 안내' 
+      showAlert(`이전 차시(제${Number(targetLec.orderIndex) - 1}강)를 80% 이상 수강하셔야 다음 차시를 수강하실 수 있습니다. (순차 학습 적용)`, {
+        type: 'warning',
+        title: '🔒 순차 학습 잠금 안내'
       });
       return;
     }
@@ -192,7 +200,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
   return (
     <div style={{ padding: '24px 0 60px 0' }}>
       <div className="container">
-        
+
         {/* Top Header & Breadcrumb & Admin Bypass Controls */}
         <div className="watch-header-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
           <div className="watch-breadcrumb-left" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minWidth: 0 }}>
@@ -207,14 +215,14 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             {/* Admin Bypass Lock Test Switch */}
             {isAdmin && (
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '8px', 
-                  backgroundColor: '#FFFFFF', 
-                  padding: '4px 10px', 
-                  borderRadius: '6px', 
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  backgroundColor: '#FFFFFF',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
                   border: adminBypassLock ? '1px solid #16A34A' : '1px solid #D97706',
                   fontSize: '12px'
                 }}
@@ -242,34 +250,34 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
 
         {/* Video Player & Playlist Layout */}
         <div className="watch-layout">
-          
+
           {/* Left Column: Player & Lecture Description */}
           <div>
             {/* If Unauthorized or Locked, show placeholder */}
             {!hasAccess ? (
-              <div 
-                className="player-wrapper" 
-                style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
+              <div
+                className="player-wrapper"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   backgroundColor: '#161819',
                   color: '#FFFFFF',
                   textAlign: 'center',
                   padding: '30px'
                 }}
               >
-                <div 
-                  style={{ 
-                    width: '64px', 
-                    height: '64px', 
-                    borderRadius: '50%', 
-                    background: 'var(--color-coral-subtle)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    marginBottom: '16px' 
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    background: 'var(--color-coral-subtle)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '16px'
                   }}
                 >
                   <Lock size={32} color="var(--color-coral)" />
@@ -285,29 +293,29 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                 </button>
               </div>
             ) : isLocked ? (
-              <div 
-                className="player-wrapper" 
-                style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
+              <div
+                className="player-wrapper"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   backgroundColor: '#161819',
                   color: '#FFFFFF',
                   textAlign: 'center',
                   padding: '40px 24px'
                 }}
               >
-                <div 
-                  style={{ 
-                    width: '64px', 
-                    height: '64px', 
-                    borderRadius: '50%', 
-                    background: 'rgba(217, 119, 6, 0.18)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    marginBottom: '16px' 
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    background: 'rgba(217, 119, 6, 0.18)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '16px'
                   }}
                 >
                   <Lock size={36} color="var(--color-amber)" />
@@ -316,7 +324,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                   선수 차시 학습이 필요합니다 (순차 학습 잠금)
                 </h3>
                 <p style={{ color: '#CBD5E1', fontSize: '14px', maxWidth: '460px', lineHeight: '1.6', marginBottom: '20px' }}>
-                  본 과정은 단계별 체계적인 학습을 위해 <strong>이전 차시(제{Number(currentLecture.orderIndex) - 1}강)를 100% 완강</strong>하셔야 본 차시가 오픈됩니다.
+                  본 과정은 단계별 체계적인 학습을 위해 <strong>이전 차시(제{Number(currentLecture.orderIndex) - 1}강)를 80% 이상 수강</strong>하셔야 본 차시가 오픈됩니다.
                 </p>
                 {prevLec && (
                   <button className="btn btn-amber btn-sm" onClick={() => handleSelectEpisode(prevLec)}>
@@ -326,7 +334,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                 )}
               </div>
             ) : (
-              <VideoPlayer 
+              <VideoPlayer
                 lecture={{
                   ...currentLecture,
                   thumbnail: currentLecture.thumbnail || course?.thumbnail
@@ -468,15 +476,15 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                     <span>강의 커리큘럼 목차</span>
                   </h3>
                   <p className="text-caption" style={{ marginTop: '4px', marginBottom: 0 }}>
-                    {course.sequentialUnlock !== false ? '🔒 순차 학습 적용 (완강 시 오픈)' : '자유 수강 코스'}
+                    {course.sequentialUnlock !== false ? '🔒 순차 학습 적용 (80% 이상 시 오픈)' : '자유 수강 코스'}
                   </p>
                 </div>
 
                 {/* Quick Toggle All */}
                 {lectureGroups.length > 1 && (
                   <div style={{ display: 'flex', gap: '4px' }}>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="btn btn-ghost btn-sm"
                       style={{ fontSize: '11px', padding: '3px 6px', color: '#64748B' }}
                       onClick={expandAll}
@@ -484,8 +492,8 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                     >
                       전체 펼침
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="btn btn-ghost btn-sm"
                       style={{ fontSize: '11px', padding: '3px 6px', color: '#64748B' }}
                       onClick={collapseAll}
@@ -507,7 +515,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                   }).length;
 
                   return (
-                    <div 
+                    <div
                       key={group.id}
                       style={{
                         borderRadius: 'var(--radius-sm)',
@@ -531,11 +539,11 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                          <span 
-                            style={{ 
-                              fontSize: '11px', 
-                              fontWeight: 700, 
-                              padding: '2px 6px', 
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              padding: '2px 6px',
                               borderRadius: '4px',
                               backgroundColor: isCurrentInGroup ? 'var(--color-sage)' : '#E2E8F0',
                               color: isCurrentInGroup ? '#FFFFFF' : '#475569'
@@ -592,14 +600,14 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                                   ) : isEpLocked ? (
                                     <Lock size={15} color="#94A3B8" />
                                   ) : (
-                                    <div 
-                                      style={{ 
-                                        width: '18px', 
-                                        height: '18px', 
-                                        borderRadius: '50%', 
-                                        border: '1.5px solid #CBD5E1', 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
+                                    <div
+                                      style={{
+                                        width: '18px',
+                                        height: '18px',
+                                        borderRadius: '50%',
+                                        border: '1.5px solid #CBD5E1',
+                                        display: 'flex',
+                                        alignItems: 'center',
                                         justifyContent: 'center',
                                         fontSize: '10px',
                                         fontWeight: 700,
@@ -613,11 +621,11 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
 
                                 {/* Mini Thumbnail */}
                                 <div style={{ width: '42px', height: '26px', borderRadius: '4px', overflow: 'hidden', backgroundColor: '#1E2022', flexShrink: 0 }}>
-                                  <img 
-                                    src={lec.thumbnail || course?.thumbnail} 
-                                    alt={lec.title} 
+                                  <img
+                                    src={lec.thumbnail || course?.thumbnail}
+                                    alt={lec.title}
                                     onError={(e) => { e.target.style.display = 'none'; }}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                   />
                                 </div>
 
@@ -629,7 +637,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                                     <span>{Math.round((lec.durationSeconds || 2400) / 60)}분</span>
                                     <span>•</span>
                                     <span>
-                                      {isEpCompleted ? '완강 (100%)' : isEpLocked ? '🔒 이전 완강 필요' : prog?.progressRate > 0 ? `진도 ${prog.progressRate}%` : '미수강'}
+                                      {isEpCompleted ? '완강 (100%)' : isEpLocked ? '🔒 이전 강의 80% 필요' : prog?.progressRate > 0 ? `진도 ${prog.progressRate}%` : '미수강'}
                                     </span>
                                   </div>
                                 </div>

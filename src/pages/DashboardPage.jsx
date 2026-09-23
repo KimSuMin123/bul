@@ -9,6 +9,7 @@ import { useCourse } from '../context/CourseContext';
 import { useModalAlert } from '../context/ModalAlertContext';
 import CertificateModal from '../components/certificate/CertificateModal';
 import CourseExamModal from '../components/exam/CourseExamModal';
+import { APPROVAL_SCHEDULE, enrollmentConfirmation } from '../config/sitePolicy.js';
 
 export default function DashboardPage({ onNavigate, onStartLecture }) {
   const { currentUser } = useAuth();
@@ -115,7 +116,8 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
     setApplying(true);
     try {
       await enrollStudent(currentUser.id, courseId, 'pending');
-      showAlert(`수강 신청이 정상 접수되었습니다!\n\n현재 [대기상태 (대면 수납 대기)]로 등록되었습니다.\n교학처(010-4702-0283)에 방문하시어 수납을 완료하시면 [수강 중]으로 전환됩니다.`, { type: 'success', title: '수강 신청 접수 완료' });
+      const course = courses.find(item => item.id === courseId);
+      await showAlert(enrollmentConfirmation(course || { title: '선택한 강좌', price: 0 }), { type: 'success', title: '수강 신청 접수 완료' });
     } catch (error) {
       await showAlert(error.message || '수강 신청을 저장하지 못했습니다. 다시 시도해 주세요.', {
         type: 'error', title: '수강 신청 실패'
@@ -533,7 +535,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
             </div>
             <div>
               <strong>• 순차 학습 시스템 (선수 차시 잠금)</strong>
-              <p>깊이 있는 이해를 위해 이전 차시를 100% 완강해야 다음 차시가 열립니다. (일부 통합 코스 제외)</p>
+              <p>이전 차시 진도율이 80% 이상이면 다음 차시가 열립니다. 수료 및 자격증 발급에는 100% 완강과 시험 합격이 필요합니다. (일부 통합 코스는 자유 수강)</p>
             </div>
             <div>
               <strong>• 수료증 진위 확인</strong>
@@ -592,7 +594,8 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                 <div>
                   <strong>수납 전용 계좌 (농협)</strong>
                   <div style={{ color: 'var(--color-charcoal)', fontWeight: 600, marginTop: '2px' }}>농협 301-0264-3664-41 <span style={{ fontWeight: 400, color: '#64748B' }}>(사단법인 세화불학원)</span></div>
-                  <div style={{ color: '#94A3B8', fontSize: '12px' }}>* 입금자명에 학인 성명을 기재해 주시면 신속히 수강 승인됩니다.</div>
+                  <div style={{ color: '#64748B', fontSize: '12px' }}>{APPROVAL_SCHEDULE}</div>
+                  <div style={{ color: '#64748B', fontSize: '12px' }}>입금자명에 학인 성명을 기재해 주세요.</div>
                 </div>
               </div>
 

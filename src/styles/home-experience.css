@@ -1,0 +1,45 @@
+.namo-audio { text-align: center; width: min(255px, 100%); margin: 0 auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.namo-audio-button { display: block; width: 100%; border-radius: 16px; }
+.namo-audio-button img { width: 100%; max-height: 340px; object-fit: contain; mix-blend-mode: multiply; }
+.namo-audio-button:focus-visible, .announcement-popup button:focus-visible, .opening-ceremony button:focus-visible { outline: 3px solid #d49b4b; outline-offset: 3px; }
+.namo-audio p { font-size: 13px; margin-top: 8px; color: #475569; }
+.opening-ceremony { max-width: 880px; margin: 36px auto; padding: 28px; background: #fff; border: 1px solid var(--color-border-warm); border-radius: 18px; text-align: center; }
+.opening-ceremony h2 { font-size: 25px; margin: 10px 0; }
+.opening-ceremony p { color: #475569; }
+.opening-stage { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 20px auto; padding: 24px; background: #f8f4ec; border-radius: 14px; }
+.opening-ribbon { display: flex; width: min(100%, 360px); height: 36px; justify-content: center; gap: 0; }
+.opening-ribbon span { flex: 1; background: linear-gradient(#d49b4b, #a45f39); border-block: 3px solid #8f4f36; }
+.opening-ribbon span:first-child { border-radius: 9px 0 0 9px; }
+.opening-ribbon span:last-child { border-radius: 0 9px 9px 0; }
+.opening-ribbon.cut { gap: 28px; }
+.opening-ribbon.animated span { animation: ribbon-pulse 2s ease-in-out infinite alternate; }
+@keyframes ribbon-pulse { to { filter: brightness(1.18); } }
+.opening-ceremony progress { width: 100%; height: 12px; accent-color: #3b5249; }
+.opening-controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 16px 0; }
+.opening-note { font-size: 12px; }
+.announcement-error { color: #a52626 !important; }
+.announcement-load-error { max-width: 1100px; margin: 10px auto; padding: 10px 20px; color: #a52626; background: #fff4f4; border-radius: 8px; }
+.announcement-overlay { position: fixed; inset: 0; z-index: 900; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(16, 26, 20, .66); }
+.announcement-popup { width: min(100%, 560px); max-height: min(90vh, 800px); overflow: auto; background: #fff; border-radius: 16px; box-shadow: 0 16px 50px rgba(0,0,0,.25); }
+.announcement-popup-top, .announcement-popup-bottom { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 20px; }
+.announcement-popup-top { background: #f6f5ef; }
+.announcement-popup-image { width: 100%; max-height: 380px; object-fit: contain; background: #f5f5f5; }
+.announcement-popup-body { padding: 18px 24px; }
+.announcement-popup-body h2 { font-size: 23px; margin-bottom: 10px; }
+.announcement-popup-body p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; margin-bottom: 16px; }
+.announcement-popup-bottom { border-top: 1px solid #e2e8f0; flex-wrap: wrap; }
+.announcement-admin { max-width: 780px; }
+.announcement-admin h2, .announcement-admin h3 { margin-bottom: 12px; }
+.announcement-admin-form { display: grid; gap: 16px; margin: 20px 0 30px; }
+.announcement-fieldset { border: 0; display: grid; gap: 16px; min-width: 0; }
+.announcement-admin-form label { display: grid; gap: 6px; font-weight: 600; }
+.announcement-admin-dates { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+.announcement-admin-preview { max-width: 240px; max-height: 200px; object-fit: contain; margin-bottom: 8px; }
+.announcement-checkbox { display: flex !important; flex-direction: row; align-items: center; }
+.announcement-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.announcement-admin-list { display: grid; gap: 10px; }
+.announcement-admin-list li { display: flex; justify-content: space-between; gap: 15px; border: 1px solid #ddd; border-radius: 8px; padding: 14px; }
+.announcement-admin-list p { color: #64748b; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .announcement-admin-dates { grid-template-columns: 1fr; } .announcement-popup-bottom .btn { flex: 1; white-space: normal; } .opening-ceremony { margin: 20px 12px; padding: 20px; } }
+@media (prefers-reduced-motion: reduce) { .opening-ribbon.animated span { animation: none; } }

@@ -12,7 +12,7 @@ function initialDatabase() {
   return {
     courses: [{ id: courseId, title: '브라우저 검증 과정', subtitle: '실제 UI를 통한 저장 검증', category: '테스트 과정', thumbnail: '/images/logo.png', default_period_days: 90, sequential_unlock: true, price: 50000, instructor: '테스트 교수', cert_type: '테스트 자격', cert_grade: '2급', cert_type_full: '테스트 자격 2급', raw_exam_text: '' }],
     lectures: [{ id: 'lecture-e2e', course_id: courseId, order_index: 1, title: '브라우저 검증 강의', duration_seconds: 60, video_url: '', description: '테스트 차시' }],
-    enrollments: [], payments: [], progress: [], certificates: [], qa_posts: [], exam_attempts: [], donation_receipts: [],
+    enrollments: [], payments: [], progress: [], certificates: [], qa_posts: [], exam_attempts: [], donation_receipts: [], site_announcements: [],
     users: [student, admin].map(user => ({ id: user.id, name: user.name, role: user.role, member_no: user.memberNo, phone: user.phone, birth_date: user.birthDate, created_at: '2026-01-01' }))
   };
 }

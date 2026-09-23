@@ -113,6 +113,59 @@ try {
   await check('successful empty course response stays empty', async () => {
     assert.equal(await page.evaluate(() => course.courses.length), 0);
   });
+  await check('fresh route and focus refreshes reuse the confirmed scope without duplicate requests', async () => {
+    await page.evaluate(async () => {
+      fixture.calls = [];
+      await Promise.all([course.refreshData({ifStale:true}), course.refreshData({ifStale:true})]);
+      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await flush();
+    assert.deepEqual(await page.evaluate(() => fixture.calls), []);
+  });
+  await check('expired route cache reloads external approval and answers once for concurrent callers', async () => {
+    await page.evaluate(async () => {
+      fixture.calls = [];
+      fixture.data.Enrollments = [{id:'approved-elsewhere',userId:'student-a',courseId:'c1',status:'active',expireAt:'2099-01-01'}];
+      fixture.data.QAPosts = [{id:'external-question',lectureId:'l1',answers:[{id:'external-answer'}]}];
+      const originalNow = Date.now;
+      Date.now = () => originalNow() + 30001;
+      await Promise.all([course.refreshData({ifStale:true}), course.refreshData({ifStale:true})]);
+    });
+    await page.waitForFunction(() => course.enrollments[0]?.id === 'approved-elsewhere');
+    assert.equal(await page.evaluate(() => course.qaPosts[0]?.answers[0]?.id), 'external-answer');
+    assert.equal(await page.evaluate(() => fixture.calls.filter(([name]) => name === 'getEnrollments').length), 1);
+    assert.equal(await page.evaluate(() => fixture.calls.filter(([name]) => name === 'getQAPosts').length), 1);
+    assert.equal(await page.evaluate(() => course.hasCourseAccess('student-a','c1')), true);
+  });
+  await check('expired focus refresh updates external changes and an immediate second focus is deduplicated', async () => {
+    await page.evaluate(() => {
+      fixture.calls = [];
+      fixture.data.Enrollments = [{id:'focus-approval',userId:'student-a',courseId:'c1',status:'active',expireAt:'2099-01-01'}];
+      const originalNow = Date.now;
+      Date.now = () => originalNow() + 30001;
+      window.dispatchEvent(new Event('focus'));
+      window.dispatchEvent(new Event('focus'));
+    });
+    await page.waitForFunction(() => course.enrollments[0]?.id === 'focus-approval');
+    assert.equal(await page.evaluate(() => fixture.calls.filter(([name]) => name === 'getEnrollments').length), 1);
+  });
+  await check('explicit retry bypasses a fresh failed cache and account changes never reuse the previous cache', async () => {
+    assert.equal(await page.evaluate(async () => { fixture.fail.getEnrollments = true; return course.refreshData(); }), false);
+    await page.evaluate(async () => {
+      delete fixture.fail.getEnrollments;
+      fixture.data.Enrollments = [{id:'retry-confirmed',userId:'student-a'}];
+      await course.refreshData();
+    });
+    await page.waitForFunction(() => course.enrollments[0]?.id === 'retry-confirmed' && !course.error);
+    await page.evaluate(() => {
+      fixture.calls = [];
+      fixture.data.Enrollments = [{id:'new-user-row',userId:'student-b'}];
+      setTestUser({id:'student-b',role:'student'});
+    });
+    await page.waitForFunction(() => course.enrollments[0]?.id === 'new-user-row');
+    assert.deepEqual(await page.evaluate(() => fixture.calls.filter(([name]) => name === 'getEnrollments').map(([,userId]) => userId)), ['student-b']);
+  });
   await check('refresh removes server-deleted records, including empty results', async () => {
     await page.evaluate(async () => {
       fixture.data.Enrollments = [{id:'e1', userId:'student-a', courseId:'c1'}];
@@ -153,18 +206,21 @@ try {
     await flush();
     assert.equal(await page.evaluate(() => course.hasCourseAccess('student-a','c1')), false);
   });
-  await check('sequential access waits for complete progress, including the 95 percent boundary', async () => {
+  await check('sequential access respects the 80 percent boundary without marking completion', async () => {
     await page.evaluate(async () => {
       fixture.data.Courses = [{id:'c1',sequentialUnlock:true}];
       fixture.data.Lectures = [{id:'l1',courseId:'c1',orderIndex:1},{id:'l2',courseId:'c1',orderIndex:2}];
-      fixture.data.Progress = [{userId:'student-a',lectureId:'l1',progressRate:95,completed:false}];
+      fixture.data.Progress = [{userId:'student-a',lectureId:'l1',progressRate:79.99,completed:false}];
       await course.refreshData();
     });
     await flush();
     assert.equal(await page.evaluate(() => course.isLectureLocked('student-a','l2')), true);
-    await page.evaluate(async () => { fixture.data.Progress[0].progressRate = 100; fixture.data.Progress[0].completed = true; await course.refreshData(); });
-    await flush();
-    assert.equal(await page.evaluate(() => course.isLectureLocked('student-a','l2')), false);
+    for (const rate of [80, 80.01, 95, 100]) {
+      await page.evaluate(async rate => { fixture.data.Progress[0].progressRate = rate; await course.refreshData(); }, rate);
+      await flush();
+      assert.equal(await page.evaluate(() => course.isLectureLocked('student-a','l2')), false);
+      assert.equal(await page.evaluate(() => course.progressList[0].completed), false);
+    }
   });
   await check('old account response cannot overwrite new account state', async () => {
     await page.evaluate(() => {

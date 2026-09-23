@@ -1,16 +1,17 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { 
-  Clock, BookOpen, User, CheckCircle, ArrowLeft, 
+import {
+  Clock, BookOpen, User, CheckCircle, ArrowLeft,
   Lock, PlayCircle, ShieldCheck, ChevronRight, ChevronDown, ChevronUp, Layers
 } from 'lucide-react';
 import { useCourse } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
 import { useModalAlert } from '../context/ModalAlertContext';
+import { APPROVAL_SCHEDULE, PAYMENT_ACCOUNT, enrollmentConfirmation } from '../config/sitePolicy.js';
 
 export default function CourseDetailPage({ courseId, onNavigate, onStartLecture }) {
-  const { 
-    courses, lectures, enrollments, hasCourseAccess, enrollStudent, 
-    isLectureLocked, getLectureProgress 
+  const {
+    courses, lectures, enrollments, hasCourseAccess, enrollStudent,
+    isLectureLocked, getLectureProgress
   } = useCourse();
   const { currentUser } = useAuth();
   const { showConfirm, showAlert } = useModalAlert();
@@ -108,7 +109,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
       if (!course) return;
 
       await enrollStudent(currentUser.id, course.id, 'pending');
-      await showAlert(`[${course.title}] 수강 신청이 완료되었습니다!\n\n• 현재 [대기상태 (대면 수납 대기)]로 접수되었습니다.\n• 교학처(010-4702-0283)에 방문하시어 수납을 완료하시면 [수강 중]으로 즉시 전환됩니다.\n• [내 강의실]에서 신청 내역을 언제든 확인하실 수 있습니다.`, {
+      await showAlert(enrollmentConfirmation(course), {
         title: '수강 신청 완료',
         type: 'success'
       });
@@ -160,9 +161,9 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
 
     const locked = isLectureLocked(currentUser?.id, lec.id);
     if (locked) {
-      showAlert(`이전 차시(제${Number(lec.orderIndex) - 1}강)를 100% 완강하셔야 다음 차시를 수강하실 수 있습니다. (순차 학습 적용)`, { 
-        type: 'warning', 
-        title: '🔒 순차 학습 잠금 안내' 
+      showAlert(`이전 차시(제${Number(lec.orderIndex) - 1}강)를 80% 이상 수강하셔야 다음 차시를 수강하실 수 있습니다. (순차 학습 적용)`, {
+        type: 'warning',
+        title: '🔒 순차 학습 잠금 안내'
       });
       return;
     }
@@ -173,10 +174,10 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
   return (
     <div style={{ padding: '36px 0 70px 0' }}>
       <div className="container">
-        
+
         {/* Back Button */}
-        <button 
-          className="btn btn-secondary btn-sm" 
+        <button
+          className="btn btn-secondary btn-sm"
           style={{ marginBottom: '20px' }}
           onClick={() => onNavigate('home')}
         >
@@ -185,10 +186,10 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
         </button>
 
         {/* Course Hero Banner */}
-        <div 
+        <div
           className="card"
-          style={{ 
-            padding: '36px', 
+          style={{
+            padding: '36px',
             marginBottom: '36px',
             backgroundColor: '#FFFFFF',
             border: '1px solid var(--color-border)'
@@ -225,7 +226,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
               <div>
                 <span className="text-caption" style={{ display: 'block', marginBottom: '2px' }}>학습 방식</span>
                 <strong style={{ color: course.sequentialUnlock !== false ? 'var(--color-amber-dark)' : 'inherit' }}>
-                  {course.sequentialUnlock !== false ? '🔒 차시별 순차 학습 (완강 시 오픈)' : '자유 수강'}
+                  {course.sequentialUnlock !== false ? '🔒 차시별 순차 학습 (80% 이상 시 오픈)' : '자유 수강'}
                 </strong>
               </div>
               <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)' }} />
@@ -238,7 +239,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
             {/* Action Bar */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '16px', paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
               {isEnrolled ? (
-                <button 
+                <button
                   className="btn btn-primary btn-lg"
                   onClick={() => {
                     if (courseLectures.length > 0) {
@@ -257,11 +258,11 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                     교학처 수납 대기 중
                   </span>
                   <span style={{ fontSize: '13px', color: '#64748B' }}>
-                    교학처(010-4702-0283)에 방문하시어 수납을 완료하시면 승인됩니다.
+                    {PAYMENT_ACCOUNT}<br />{APPROVAL_SCHEDULE}
                   </span>
                 </div>
               ) : (
-                <button 
+                <button
                   className="btn btn-amber btn-lg"
                   onClick={handleApplyCourse}
                   disabled={applying}
@@ -284,14 +285,14 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                 <span>강의 상세 커리큘럼 ({courseLectures.length}차시)</span>
               </h2>
               <p style={{ fontSize: '13.5px', color: '#64748B', margin: 0 }}>
-                {course.sequentialUnlock !== false ? '• 본 과정은 이전 차시를 100% 완강해야 다음 차시가 열리는 [순차 학습]이 적용되어 있습니다.' : '• 자유롭게 원하는 차시를 선택하여 수강하실 수 있습니다.'}
+                {course.sequentialUnlock !== false ? '• 본 과정은 이전 차시 진도율이 80% 이상이면 다음 차시가 열리는 [순차 학습]이 적용되어 있습니다.' : '• 자유롭게 원하는 차시를 선택하여 수강하실 수 있습니다.'}
               </p>
             </div>
 
             {/* Accordion Controls */}
             {lectureGroups.length > 1 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button 
+                <button
                   type="button"
                   className="btn btn-secondary btn-sm"
                   style={{ fontSize: '12px', padding: '6px 12px' }}
@@ -300,7 +301,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                   <ChevronDown size={14} />
                   <span>전체 펼치기</span>
                 </button>
-                <button 
+                <button
                   type="button"
                   className="btn btn-secondary btn-sm"
                   style={{ fontSize: '12px', padding: '6px 12px' }}
@@ -325,10 +326,10 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
               const hasLockedInGroup = group.lectures.some(l => isLectureLocked(currentUser?.id, l.id));
 
               return (
-                <div 
+                <div
                   key={group.id}
                   className="card"
-                  style={{ 
+                  style={{
                     padding: 0,
                     overflow: 'hidden',
                     border: '1px solid var(--color-border)',
@@ -336,10 +337,10 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                   }}
                 >
                   {/* Group Header (Clickable Accordion) */}
-                  <div 
+                  <div
                     onClick={() => toggleGroup(group.id)}
-                    style={{ 
-                      padding: '16px 20px', 
+                    style={{
+                      padding: '16px 20px',
                       backgroundColor: isOpen ? 'var(--color-surface-warm)' : '#FFFFFF',
                       cursor: 'pointer',
                       display: 'flex',
@@ -350,15 +351,15 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div 
-                        style={{ 
-                          width: '32px', 
-                          height: '32px', 
-                          borderRadius: '6px', 
+                      <div
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '6px',
                           backgroundColor: isOpen ? 'var(--color-sage)' : '#E2E8F0',
                           color: isOpen ? '#FFFFFF' : '#475569',
-                          display: 'flex', 
-                          alignItems: 'center', 
+                          display: 'flex',
+                          alignItems: 'center',
                           justifyContent: 'center',
                           fontWeight: 700,
                           fontSize: '13px'
@@ -392,13 +393,13 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                           순차 잠금 포함
                         </span>
                       )}
-                      <div 
-                        style={{ 
-                          width: '28px', 
-                          height: '28px', 
-                          borderRadius: '50%', 
-                          display: 'flex', 
-                          alignItems: 'center', 
+                      <div
+                        style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
                           justifyContent: 'center',
                           backgroundColor: isOpen ? '#FFFFFF' : 'var(--color-surface-warm)',
                           color: 'var(--color-charcoal)'
@@ -419,12 +420,12 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                         const isLastInGroup = idx === group.lectures.length - 1;
 
                         return (
-                          <div 
+                          <div
                             key={lec.id}
-                            style={{ 
-                              padding: '16px 20px', 
-                              display: 'flex', 
-                              alignItems: 'center', 
+                            style={{
+                              padding: '16px 20px',
+                              display: 'flex',
+                              alignItems: 'center',
                               justifyContent: 'space-between',
                               gap: '16px',
                               backgroundColor: isEpLocked ? '#FBFBFC' : '#FFFFFF',
@@ -435,25 +436,25 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: 0 }}>
                               {/* Order Number / Status Icon */}
-                              <div 
-                                style={{ 
-                                  width: '38px', 
-                                  height: '38px', 
-                                  borderRadius: '50%', 
-                                  background: isEpCompleted 
-                                    ? 'var(--color-sage-subtle, #E8F5E9)' 
-                                    : isEpLocked 
-                                      ? '#F1F5F9' 
-                                      : 'var(--color-surface-warm)', 
-                                  display: 'flex', 
-                                  alignItems: 'center', 
+                              <div
+                                style={{
+                                  width: '38px',
+                                  height: '38px',
+                                  borderRadius: '50%',
+                                  background: isEpCompleted
+                                    ? 'var(--color-sage-subtle, #E8F5E9)'
+                                    : isEpLocked
+                                      ? '#F1F5F9'
+                                      : 'var(--color-surface-warm)',
+                                  display: 'flex',
+                                  alignItems: 'center',
                                   justifyContent: 'center',
                                   fontWeight: 700,
                                   fontSize: '13px',
-                                  color: isEpCompleted 
-                                    ? 'var(--color-sage)' 
-                                    : isEpLocked 
-                                      ? '#94A3B8' 
+                                  color: isEpCompleted
+                                    ? 'var(--color-sage)'
+                                    : isEpLocked
+                                      ? '#94A3B8'
                                       : 'var(--color-charcoal)',
                                   flexShrink: 0
                                 }}
@@ -498,12 +499,12 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
 
                               {isEnrolled ? (
                                 isEpLocked ? (
-                                  <button 
+                                  <button
                                     type="button"
                                     className="btn btn-secondary btn-sm"
-                                    style={{ 
-                                      backgroundColor: '#F1F5F9', 
-                                      color: '#64748B', 
+                                    style={{
+                                      backgroundColor: '#F1F5F9',
+                                      color: '#64748B',
                                       borderColor: '#CBD5E1',
                                       fontSize: '12.5px',
                                       display: 'inline-flex',
@@ -511,16 +512,16 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                                       gap: '5px'
                                     }}
                                     onClick={() => handleLectureClick(lec)}
-                                    title="이전 차시를 완강하셔야 본 차시를 수강하실 수 있습니다."
+                                    title="이전 차시를 80% 이상 수강하셔야 본 차시를 수강하실 수 있습니다."
                                   >
                                     <Lock size={13} color="#94A3B8" />
                                     <span>잠김</span>
                                   </button>
                                 ) : isEpCompleted ? (
-                                  <button 
+                                  <button
                                     type="button"
                                     className="btn btn-secondary btn-sm"
-                                    style={{ 
+                                    style={{
                                       fontSize: '12.5px',
                                       display: 'inline-flex',
                                       alignItems: 'center',
@@ -532,10 +533,10 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                                     <span>복습 수강</span>
                                   </button>
                                 ) : (
-                                  <button 
+                                  <button
                                     type="button"
                                     className="btn btn-primary btn-sm"
-                                    style={{ 
+                                    style={{
                                       fontSize: '12.5px',
                                       display: 'inline-flex',
                                       alignItems: 'center',
@@ -548,7 +549,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                                   </button>
                                 )
                               ) : (
-                                <button 
+                                <button
                                   type="button"
                                   className="btn btn-secondary btn-sm"
                                   onClick={() => showAlert('본 강좌의 수강 권한이 필요합니다. 교학처 수납 후 승인됩니다.', { type: 'warning', title: '수강 권한 안내' })}

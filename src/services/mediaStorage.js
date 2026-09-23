@@ -41,6 +41,10 @@ export function createMediaStorage({ url, key, token = getAccessToken, request =
     const path = objectPath(value, 'lectures');
     return path && /^thumbs\/[^/]+\.(?:jpe?g|png|webp|gif)$/i.test(path) ? signedUrl(path, false) : value;
   }
+  async function getNamoAudioUrl() {
+    // The matching DB policy exposes only this public greeting audio object.
+    return signedUrl('audio/namo_buddhaya_song.mp3', false);
+  }
   async function sendFile(file, target, headers, onProgress, local = false) {
     return new Promise((resolve, reject) => {
       const xhr = xhrFactory();
@@ -112,9 +116,9 @@ export function createMediaStorage({ url, key, token = getAccessToken, request =
     if (!res.ok) throw new Error('이미지 저장에 실패했습니다. 다시 시도해 주세요.');
     return { publicUrl: `${url}/storage/v1/object/public/thumbnails/${fileName}`, fileName, size: blob.size };
   }
-  return { getLectureVideoUrl, getThumbnailUrl, uploadLectureVideo, deleteLectureVideo, uploadThumbnailImage };
+  return { getLectureVideoUrl, getThumbnailUrl, getNamoAudioUrl, uploadLectureVideo, deleteLectureVideo, uploadThumbnailImage };
 }
 
 const media = createMediaStorage({ url: env.VITE_SUPABASE_URL || '', key: env.VITE_SUPABASE_ANON_KEY || '',
   localMode: import.meta.env?.DEV === true && env.VITE_VIDEO_UPLOAD_MODE === 'local' });
-export const { getLectureVideoUrl, getThumbnailUrl, uploadLectureVideo, deleteLectureVideo, uploadThumbnailImage } = media;
+export const { getLectureVideoUrl, getThumbnailUrl, getNamoAudioUrl, uploadLectureVideo, deleteLectureVideo, uploadThumbnailImage } = media;

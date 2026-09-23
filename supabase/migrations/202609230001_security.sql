@@ -305,4 +305,22 @@ END $$;
 REVOKE ALL ON FUNCTION lms_private.parse_legacy_exam(text) FROM PUBLIC,anon,authenticated;
 INSERT INTO lms_private.course_exams(course_id,questions)
 SELECT course_id,lms_private.parse_legacy_exam(raw_text) FROM lms_private.legacy_exam_text WHERE lms_private.parse_legacy_exam(raw_text) IS NOT NULL ON CONFLICT(course_id) DO NOTHING;
+-- Keep row security explicit even when upgrading a schema whose bootstrap differed.
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lectures ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.qa_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.qa_answers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.certificates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exam_attempts ENABLE ROW LEVEL SECURITY;
+-- Private data is accessed through owner-executed functions and the server role.
+ALTER TABLE lms_private.course_exams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lms_private.default_exam ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lms_private.legacy_exam_text ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lms_private.exam_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lms_private.playback_clocks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lms_private.auth_rate_limits ENABLE ROW LEVEL SECURITY;
 COMMIT;

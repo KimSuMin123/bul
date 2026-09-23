@@ -52,6 +52,18 @@ test('legacy thumbnail signing permits anonymous token but not video signing',as
  assert.match(await media.getThumbnailUrl(`${url}/storage/v1/object/public/lectures/thumbs/a.jpg`),/token=thumb/);
  await assert.rejects(()=>media.getLectureVideoUrl(`${url}/storage/v1/object/public/lectures/a.mp4`));
 });
+test('public greeting audio signs only the fixed approved object without fetching audio bytes', async () => {
+ const calls=[];
+ const media=createMediaStorage({url,key,token:async()=>key,request:async(target,options)=>{
+  calls.push({target,options});
+  return Response.json({signedURL:'/object/sign/lectures/audio/namo_buddhaya_song.mp3?token=fixture'});
+ }});
+ assert.match(await media.getNamoAudioUrl(), /audio\/namo_buddhaya_song\.mp3\?token=fixture$/);
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].target,`${url}/storage/v1/object/sign/lectures/audio/namo_buddhaya_song.mp3`);
+ assert.equal(calls[0].options.method,'POST');
+ assert.equal(calls[0].options.headers.Authorization,`Bearer ${key}`);
+});
 test('deletion resolves private and legacy object URLs and ignores external sources', async () => {
  const calls=[];
  const media=createMediaStorage({url,key,token:async()=>'jwt',request:async(target,options)=>{

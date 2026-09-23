@@ -5,6 +5,7 @@ import { remoteDb, isExternalDbConfigured, deleteLectureVideo } from '../service
 import { notifyAdminCourseApplication } from '../services/notificationService.js';
 import { aggregateDonationReceipt, normalizePhone, findReceiptByPhoneOrUser } from '../services/donationService.js';
 import { useAuth } from './AuthContext.jsx';
+import { canOpenNextLecture } from '../config/sitePolicy.js';
 
 const CourseContext = createContext(null);
 
@@ -23,6 +24,7 @@ export function CourseProvider({ children }) {
   const [error, setError] = useState(null);
   const requestVersion = useRef(0);
   const progressReadVersion = useRef(0);
+  const lastRefresh = useRef({ scope: null, at: 0 });
   const pendingPayments = useRef({});
   const syncSource = useRef(`course_${Math.random().toString(36).slice(2)}`);
   const scope = `${currentUser?.id || ''}:${isAdmin}:${currentUser?.activeSessionToken || ''}`;
@@ -36,7 +38,9 @@ export function CourseProvider({ children }) {
   }, []);
 
   // A successful empty response replaces old data; a failed request preserves it.
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(async (options = {}) => {
+    if (options.ifStale && lastRefresh.current.scope === scope && Date.now() - lastRefresh.current.at < 30000) return true;
+    lastRefresh.current = { scope, at: Date.now() };
     const version = ++requestVersion.current;
     const progressVersion = ++progressReadVersion.current;
     if (!isExternalDbConfigured) {
@@ -146,16 +150,26 @@ export function CourseProvider({ children }) {
     const handleLocalSync = () => {
       refreshData();
     };
+    const refreshVisible = () => {
+      if (document.visibilityState === 'visible') void refreshData({ ifStale: true });
+    };
+    // Remote approvals and answers still reach an already-open signed-in tab.
+    const freshnessTimer = currentUser?.id ? setInterval(refreshVisible, 30000) : null;
     if (typeof window !== 'undefined') {
       window.addEventListener('buddha_sync_update', handleLocalSync);
+      window.addEventListener('focus', refreshVisible);
+      document.addEventListener('visibilitychange', refreshVisible);
     }
 
     return () => {
       requestVersion.current++;
       progressReadVersion.current++;
       if (syncChannel) syncChannel.close();
+      if (freshnessTimer) clearInterval(freshnessTimer);
       if (typeof window !== 'undefined') {
         window.removeEventListener('buddha_sync_update', handleLocalSync);
+        window.removeEventListener('focus', refreshVisible);
+        document.removeEventListener('visibilitychange', refreshVisible);
       }
     };
   }, [refreshData, scope, currentUser?.id, isAdmin]);
@@ -209,7 +223,7 @@ export function CourseProvider({ children }) {
     // Sort lectures by orderIndex
     const courseLecs = lectures
       .filter(l => l.courseId === currentLec.courseId)
-      .sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
+      .sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
     const currentIndex = courseLecs.findIndex(l => l.id === lectureId);
     if (currentIndex <= 0) return false; // 1st lecture is always unlocked
@@ -221,8 +235,7 @@ export function CourseProvider({ children }) {
     const prevLec = courseLecs[currentIndex - 1];
     const prevProg = progressList.find(p => String(p.userId) === String(targetUserId) && p.lectureId === prevLec.id);
     
-    const isCompleted = Boolean(prevProg && (prevProg.completed === true || (Number(prevProg.progressRate) || 0) >= 100));
-    return !isCompleted;
+    return !canOpenNextLecture(prevProg);
   }, [lectures, courses, progressList, isAdmin, adminBypassLock, currentUser?.id]);
 
   // =========================================================================
