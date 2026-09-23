@@ -7,14 +7,27 @@
 .opening-ceremony { max-width: 880px; margin: 36px auto; padding: 28px; background: #fff; border: 1px solid var(--color-border-warm); border-radius: 18px; text-align: center; }
 .opening-ceremony h2 { font-size: 25px; margin: 10px 0; }
 .opening-ceremony p { color: #475569; }
-.opening-stage { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 20px auto; padding: 24px; background: #f8f4ec; border-radius: 14px; }
-.opening-ribbon { display: flex; width: min(100%, 360px); height: 36px; justify-content: center; gap: 0; }
-.opening-ribbon span { flex: 1; background: linear-gradient(#d49b4b, #a45f39); border-block: 3px solid #8f4f36; }
+.opening-stage { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 20px auto; padding: 24px; background: #f8f4ec; border-radius: 14px; }
+.opening-ribbon { display: flex; width: min(100%, 360px); height: 36px; justify-content: center; gap: 0; transition: gap .8s ease-out; }
+.opening-ribbon span { flex: 1; background: linear-gradient(#d49b4b, #a45f39); border-block: 3px solid #8f4f36; transition: transform .8s ease-out; }
 .opening-ribbon span:first-child { border-radius: 9px 0 0 9px; }
 .opening-ribbon span:last-child { border-radius: 0 9px 9px 0; }
 .opening-ribbon.cut { gap: 28px; }
+.opening-ribbon.cut span:first-child { transform: rotate(-7deg); }
+.opening-ribbon.cut span:last-child { transform: rotate(7deg); }
 .opening-ribbon.animated span { animation: ribbon-pulse 2s ease-in-out infinite alternate; }
 @keyframes ribbon-pulse { to { filter: brightness(1.18); } }
+.opening-countdown { display: grid; gap: 4px; }
+.opening-countdown-number { font-size: clamp(36px, 8vw, 56px); font-weight: 800; font-variant-numeric: tabular-nums; color: #80502a; line-height: 1.15; }
+.opening-cut-countdown { display: flex; align-items: baseline; gap: 6px; }
+.opening-celebration { position: absolute; inset: 0; pointer-events: none; }
+.opening-celebration i { position: absolute; left: calc(5% + var(--spark-index) * 8%); top: 8px; width: 8px; height: 14px; border-radius: 2px; background: #be8842; animation: opening-confetti 2.2s ease-out both; animation-delay: calc(var(--spark-index) * .08s); }
+.opening-celebration i:nth-child(3n) { background: #4f7860; }
+.opening-celebration i:nth-child(3n + 1) { background: #bd657d; }
+@keyframes opening-confetti { from { opacity: 0; transform: translateY(-15px) rotate(0); } 15% { opacity: 1; } to { opacity: 0; transform: translateY(230px) rotate(210deg); } }
+.opening-lotus-reaction { min-height: 28px; }
+.opening-lotus { display: inline-block; font-size: 44px; line-height: 1.5; animation: opening-lotus-bloom .8s ease-out both; }
+@keyframes opening-lotus-bloom { from { opacity: 0; transform: scale(.45) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 .opening-ceremony progress { width: 100%; height: 12px; accent-color: #3b5249; }
 .opening-controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 16px 0; }
 .opening-note { font-size: 12px; }
@@ -42,4 +55,4 @@
 .announcement-admin-list li { display: flex; justify-content: space-between; gap: 15px; border: 1px solid #ddd; border-radius: 8px; padding: 14px; }
 .announcement-admin-list p { color: #64748b; overflow-wrap: anywhere; }
 @media (max-width: 600px) { .announcement-admin-dates { grid-template-columns: 1fr; } .announcement-popup-bottom .btn { flex: 1; white-space: normal; } .opening-ceremony { margin: 20px 12px; padding: 20px; } }
-@media (prefers-reduced-motion: reduce) { .opening-ribbon.animated span { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .opening-ribbon.animated span, .opening-celebration i, .opening-lotus { animation: none; } .opening-ribbon, .opening-ribbon span { transition: none; } .opening-celebration i { transform: rotate(20deg); } }

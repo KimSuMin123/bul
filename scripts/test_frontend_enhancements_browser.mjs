@@ -37,6 +37,7 @@ let browser;
 try {
   browser = await chromium.launch({ executablePath, headless: true });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await page.clock.setFixedTime(new Date('2026-10-01T09:28:59.999Z'));
   await page.addInitScript(() => { window.Audio = class { constructor() { this.paused = true; this.listeners = {}; } set src(value) { this.source = value; } addEventListener(name, fn) { this.listeners[name] = fn; } removeEventListener(name) { delete this.listeners[name]; } removeAttribute() {} load() {} async play() { this.paused = false; } pause() { this.paused = true; } }; });
   await page.goto(base);
   await page.getByRole('dialog', { name: '개원 안내' }).waitFor();
@@ -50,15 +51,9 @@ try {
   await page.getByText('음성 재생 중', { exact: false }).waitFor();
   await page.getByRole('button', { name: '나모붓다야 음성 일시정지' }).click();
   await page.getByText('음성 일시정지', { exact: false }).waitFor();
-  await page.getByRole('button', { name: '미리 체험하기' }).click();
-  await page.getByRole('button', { name: '체험 시작' }).click();
-  await page.waitForTimeout(1100);
-  await page.getByRole('button', { name: '일시정지' }).click();
-  const paused = await page.locator('.opening-ceremony progress').getAttribute('value');
-  await page.waitForTimeout(350);
-  assert.equal(await page.locator('.opening-ceremony progress').getAttribute('value'), paused);
-  await page.getByRole('button', { name: '처음부터' }).click();
-  assert.equal(Number(await page.locator('.opening-ceremony progress').getAttribute('value')), 0);
+  // Ceremony stays completely hidden until one minute before the scheduled start.
+  assert.equal(await page.locator('.opening-ceremony').count(), 0);
+  assert.equal(await page.getByRole('button', { name: '미리 체험하기' }).count(), 0);
   await page.getByRole('button', { name: '관리' }).click();
   await page.getByLabel('제목').fill('새 공지');
   await page.getByLabel('본문').fill('관리자가 작성했습니다.');

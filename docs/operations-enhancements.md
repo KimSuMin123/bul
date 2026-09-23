@@ -1,6 +1,31 @@
 # 운영 변경과 확인 결과
 
-2026-09-23 기준 Netlify(`netlify.toml`)와 Vercel(`vercel.json`) 설정은 둘 다 `npm run build` → `dist` 정적 배포입니다. 실제 호스팅 공급자·자동 배포 연결은 확인하지 못했습니다. Git 원격 호스트는 github.com이며 `.github/workflows`는 없습니다. lockfile 기반 `npm ci` 후 빌드하고, 배포 캐시는 lockfile을 키로 구분합니다. 서비스 키는 절대 VITE 변수로 노출하지 않습니다.
+2026-09-23 기준 운영 Netlify 프로젝트 `sehwa-buddha-academy`는 GitHub `KimSuMin123/bul`에 연결되었으며 production branch는 `feat/minhyeok`입니다. 빌드 명령은 `npm run build`, 게시 디렉터리는 `dist`이고 Netlify 환경 변수에는 `VITE_SUPABASE_URL`과 `VITE_SUPABASE_ANON_KEY`만 설정했습니다. 2026-09-23 20:28 KST에 커밋 `289bb05`가 Published 상태가 되었습니다(deploy ID `6ab3b7f933e4b1d280146acf`). 저장소의 Vercel 설정도 같은 정적 빌드 방식을 사용하지만 운영 배포는 Netlify입니다. `.github/workflows`는 없으며 Netlify가 연결된 브랜치를 빌드합니다. 로컬 재현은 lockfile 기반 `npm ci` 후 빌드하고, 캐시는 lockfile을 키로 구분합니다. 서비스 키는 절대 VITE 변수로 노출하지 않습니다.
+
+## 확정된 문자·백업 메일 설정
+
+사용자가 확정한 값과 이후 변경 위치는 다음과 같습니다. 예시는 `config/enhancements.env.example`에 기록했으며 예시 편집만으로 운영 환경이 바뀌지는 않습니다.
+
+| 항목 | 확정값 | 실제 설정·변경 위치 |
+|---|---|---|
+| 문자 발신번호 | 010-8028-7565 | Supabase Edge Function secret `LMS_SMS_SENDER=01080287565` |
+| 관리자 문자 수신번호 | 010-4702-0283 | 같은 프로젝트의 `LMS_SMS_ADMIN_PHONE=01047020283` |
+| 백업 메일 발신주소 | tntn211@naver.com | 백업 예약 실행 환경의 `SMTP_FROM` |
+| 백업 메일 수신주소 | tntn211@naver.com | 백업 예약 실행 환경의 `BACKUP_EMAIL_TO` |
+| 네이버 SMTP 서버·포트 | smtp.naver.com · 465(SSL/TLS) | `SMTP_HOST`, `SMTP_PORT` |
+| 네이버 SMTP 사용자명 | tntn211@naver.com | `SMTP_USER`(전체 메일 주소) |
+
+문자 발신번호는 추후 바꿀 수 있으며 새 번호를 SOLAPI에 별도로 등록·인증한 뒤 `LMS_SMS_SENDER`를 변경합니다. 관리자 수신번호는 별개이고 이번 변경에서도 유지합니다. 공급자 API 키·비밀과 앱 비밀번호는 예시에 빈 값으로 남깁니다. 백업 실행 환경은 기존 ignored `.env` 또는 실행 계정의 비밀 저장소에서 관리하며 SMS 설정과 혼합하지 않습니다.
+
+네이버 공식 도움말은 SMTP 서버 `smtp.naver.com`, 포트 465의 SSL 연결, 2단계 인증과 애플리케이션 비밀번호 필요를 안내합니다. 발송 사용자명은 전체 네이버 메일 주소를 사용합니다. 네이버 메일 환경설정에서 SMTP 사용을 허용한 후 앱 비밀번호를 `SMTP_PASSWORD`로 안전하게 공급해야 합니다. 계정 로그인 비밀번호를 예시에 넣지 않습니다. [SMTP 서버·포트·인증 조건](https://help.naver.com/service/30029/contents/21341?lang=ko&osType=PC), [SMTP 사용자명 형식](https://help.naver.com/service/30029/contents/21349?osType=PC). 공식 IMAP/SMTP 가이드의 대안 포트 587은 STARTTLS로 연결하며, 이 예시는 기존 465 설정을 유지합니다.
+
+배포 담당자가 기존 ignored `.env`에 `LMS_SMS_SENDER=01080287565`, `SMTP_HOST=smtp.naver.com`, `SMTP_PORT=465`, `SMTP_FROM=tntn211@naver.com`, `SMTP_USER=tntn211@naver.com`, `BACKUP_EMAIL_TO=tntn211@naver.com`을 저장하고 재파싱 검증 및 기존 다른 설정 보존을 확인했습니다. Supabase `buddha-academy → Edge Functions → Secrets`의 `LMS_SMS_SENDER`도 2026-09-23 11:10:22 UTC(20:10:22 KST)에 저장하고 이름·digest 행으로 확인했습니다. 이 확인 범위의 설정 적용은 완료했습니다.
+
+배포 담당자가 Supabase Edge Functions Secrets에 `SOLAPI_API_KEY`와 `SOLAPI_API_SECRET`을 저장하고 각각 이름·digest 행 생성을 확인했습니다. 비밀 값은 코드·`.env`·문서에 기록하지 않았으며 예시의 비밀 값도 빈 상태로 유지합니다.
+
+SOLAPI에서 발신번호 `01080287565`의 활성화와 조회 당시 잔액300원·일일 잔여50건을 확인했습니다. **운영 문자 실발송과 백업 이메일 실제 수신은 아직 미검증입니다.** SMS cron은 활성화하지 않았습니다. 관리자 새 비밀번호와 네이버 `SMTP_PASSWORD`(앱 비밀번호)는 사용자 입력 대기이며 설정 완료로 표시하지 않습니다. Secrets 저장과 발신번호 활성화는 실제 발송 성공을 뜻하지 않습니다. 최신 백업도 `email=not-configured`이며 메일 발송 준비는 아직 완료되지 않았습니다.
+
+`node scripts/smtp_setup_local.mjs`는 15분 동안 유효한 일회성 로컬 입력창을 엽니다. 사용자가 앱 비밀번호를 두 번 직접 입력·제출하면 기존 ignored `.env`의 `SMTP_PASSWORD`만 저장하고, 해당 파일의 접근을 현재 Windows 사용자와 SYSTEM으로 제한합니다. 다른 설정은 보존하며 값을 로그에 출력하지 않습니다. 파일에는 평문 설정이 저장되므로 저장소에 추가하면 안 됩니다. 이 도구 자체는 메일을 발송하지 않으며 저장 후 실제 백업·메일 발송을 별도로 검증해야 합니다. 임시 파일을 사용하는 보존·접근권한·위조 요청·동시 제출·만료 테스트8개를 통과했습니다.
 
 ## 현재 요청: 평문 SELECT 백업, 매일 03:00 KST, 7일 보관
 
@@ -69,7 +94,7 @@ Supabase Auth와 프로필 변경은 원자 트랜잭션이 아니므로 `requir
 `node scripts/test_operations.mjs`는 암호화·변조 감지·잘못된 키·백업 실패 보존·잠금·로컬 복원 제한·모의 관리자 성공/실패/불확실 응답을 검증합니다. 전체 PostgreSQL/Supabase 복원, 실제 이메일 수신, 실제 관리자 변경은 수행된 것으로 표시하지 않습니다.
 
 
-예약 작업 시험 실행(2026-09-23 18:53:58 KST)도 실제 수행했습니다. 다음 실행은2026-09-24 03:00 KST입니다. 결과는 내부 저장 성공10테이블79행, 이메일 미설정으로 LastTaskResult=1이며 새 파일은 `test_artifacts/backups/select-2026-09-23T09-54-00.041Z-7857fe0e-ec67-41f1-98ce-27143c1fe76e.json`입니다. 이 최신79행도 PGlite 복원·모든 선택 열 일치·SHA-256 검증을 완료했습니다. 두 스냅샷 사이 행 수 변화는 운영 동시 변경 가능성을 보여주며 원자적 시점 백업을 의미하지 않습니다.
+예약 작업 시험 실행(2026-09-23 18:53:58 KST)도 실제 수행했습니다. 다음 실행은2026-09-24 03:00 KST입니다. 결과는 내부 저장 성공10테이블79행, 이메일 미설정으로 LastTaskResult=1이며 새 파일은 `test_artifacts/backups/select-2026-09-23T09-54-00.041Z-7857fe0e-ec67-41f1-98ce-27143c1fe76e.json`입니다. 이 당시79행도 PGlite 복원·모든 선택 열 일치·SHA-256 검증을 완료했습니다. 두 스냅샷 사이 행 수 변화는 운영 동시 변경 가능성을 보여주며 원자적 시점 백업을 의미하지 않습니다.
 
 운영 테스트17항목과 모의 SMTP TLS/STARTTLS·실패알림3항목을 통과했습니다. SMTP 테스트는 실제 메일을 발송하지 않았습니다.
 
@@ -84,16 +109,18 @@ Supabase Auth와 프로필 변경은 원자 트랜잭션이 아니므로 `requir
 재현예: PowerShell에서 `PERF_LABEL`/`PERF_BUILD` 환경변수를 설정한 뒤 `npx playwright test --config scripts/measure_loading.config.mjs`를 실행합니다. 제한모바일은 `PERF_THROTTLED=1`, `PERF_SAMPLES=1`로 실행하고 `node scripts/measure_loading_report.mjs`로 완전한 비교표를 생성합니다. 비교를 재현하려면 변경전보관빌드 `test_artifacts/performance/before-dist`를 보존해야 합니다.
 
 
-## Netlify 수동 배포 준비(2026-09-23 추가 확인)
+## Netlify 배포와 수동 배포 준비물(2026-09-23)
 
-사용자가 지정한 운영 도메인과 Netlify 프로젝트는 `https://xn--2j1bkkm2t5tbj2hx7go2ry0o.com/`, `sehwa-buddha-academy`입니다. 공개 HTML 3회 GET은 모두200이었고 첫 요청942ms, 후속72ms·72ms였습니다. 이는 HTTP응답시간이며 화면표시나WebVitals가 아닙니다. 운영 응답은 Netlify·Brotli·HSTS·must-revalidate를 확인했고 CSP/X-Frame-Options/nosniff/Referrer-Policy는 없었습니다. 원자료는 `test_artifacts/netlify/live-http-before.json`입니다.
+사용자가 지정한 운영 도메인과 Netlify 프로젝트는 `https://xn--2j1bkkm2t5tbj2hx7go2ry0o.com/`, `sehwa-buddha-academy`입니다. 배포 전 공개 HTML 3회 GET은 모두200이었고 첫 요청942ms, 후속72ms·72ms였습니다. 이는 HTTP응답시간이며 화면표시나WebVitals가 아닙니다. 당시 응답은 Netlify·Brotli·HSTS·must-revalidate를 확인했고 CSP/X-Frame-Options/nosniff/Referrer-Policy는 없었습니다. 배포 전 원자료는 `test_artifacts/netlify/live-http-before.json`입니다.
+
+GitHub 연결을 통한 20:28 KST 운영 게시 후 HTTP200, OG v4 이미지의 SHA-256 원본 일치, 로컬 MP3 HEAD200(29,141,829bytes), 보안·캐시 헤더를 확인했습니다. 근거는 `test_artifacts/netlify/http-verification.json`입니다. 이 검사는 정적 배포·파일·헤더 확인이며 운영 사용자 흐름 전체나 실제 모바일 로딩 성능 검증을 뜻하지 않습니다.
 
 기존 `public/_redirects`의 SPA규칙을 유지했고 `public/_headers`를 추가하여 수동 ZIP에도 X-Frame-Options DENY, nosniff, Referrer-Policy 및 해시 assets 장기캐시를 포함합니다. 신규 CSP는 강제하지 않았습니다. 현재 inline이벤트와 React스타일·외부폰트 사용을 검토한 뒤 정책을 별도로 검증해야 합니다. [Netlify리디렉트문서](https://docs.netlify.com/manage/routing/redirects/overview/), [수동Drop문서](https://docs.netlify.com/start/quickstarts/netlify-drop-quickstart/).
 
 `npm run build`후 `scripts/package_netlify.py`를 실제 Python으로 실행하면 `output/netlify`에 업로드 ZIP과 SHA-256manifest를 만듭니다. archive루트의 index.html·_redirects·_headers·로컬음원 존재, ZIPCRC, 서버전용 비밀값 미포함을 검사합니다. ZIP에는 프론트엔드 정적파일만 들어갑니다. Supabase migration/EdgeFunction/서버비밀은 별도 배포 대상이므로 새 인증흐름과 서버상태가 일치해야 합니다. 이 도구는 외부 배포를 수행하지 않습니다.
 
 
-최종프런트완료후 `npm run build` 성공, `output/netlify/sehwa-buddha-academy-20260923T102104Z.zip` 생성(33,066,184bytes·46files). SHA-256은 `c15d00141be2de200fe2bb0396f10a491c4baef05e9acc6da55377dcbd9ce8a9`이며 같은 basename의 manifest.json에 파일목록·검사결과를 저장했습니다. ZIP은 로컬준비물이고 이 운영담당작업에서 배포하지 않았습니다.
+수동 배포 준비 단계에서 `npm run build` 성공 후 `output/netlify/sehwa-buddha-academy-20260923T102104Z.zip`을 생성했습니다(33,066,184bytes·46files). SHA-256은 `c15d00141be2de200fe2bb0396f10a491c4baef05e9acc6da55377dcbd9ce8a9`이며 같은 basename의 manifest.json에 파일목록·검사결과를 저장했습니다. 이 ZIP은 당시 로컬 준비물이며 실제 운영 게시에는 이후 GitHub 연결 빌드를 사용했습니다. 현재 배포 버전은 위 커밋과 deploy ID를 기준으로 확인합니다.
 
 DB전환 직전19:21KST에 추가로 `test_artifacts/backups/select-2026-09-23T10-21-47.534Z-4564de57-0748-4e5d-ad3b-10b33cbe8d5d.json`을 확보했습니다.10테이블79행의 독립PGlite복원과 모든선택열일치 검증통과, SHA-256 `723c7c8dcbbd734e77479add98bf61aaec9cec7e90eeb6de0c94b423ec53edd7`. SMTP미설정으로미발송이며 동일한선택백업범위제한이적용됩니다.
 
@@ -103,3 +130,21 @@ DB전환 직전19:21KST에 추가로 `test_artifacts/backups/select-2026-09-23T1
 `db_backup_restore_select.mjs`는 레거시와001~003적용스키마를 구분합니다. 신규프로필은 공개테이블 `site_announcements`와 사용자동의·로그인별칭·Auth식별자컬럼을 검증합니다. 격리PGlite에만 최소플랫폼테이블을 만들고 FK검사용Auth UUID식별자행을 넣습니다. 이는Auth계정·암호·세션을복원하는것이아닙니다. 격리데이터삽입중 USER트리거만일시중단하고 다시활성화하여 동의시각·공지생성/수정/게시기간·신청버전을보존하고SMS작업생성을막습니다. 내부FK·CHECK·UNIQUE검사는유지합니다. private파생테이블이나실제Storage객체는복원범위가아닙니다.
 
 2026-09-23 19:42KST 운영읽기전용백업 `test_artifacts/backups/select-2026-09-23T10-42-56.830Z-e63dbc2a-2ea8-441e-84bd-d7da80221bf0.json`의11테이블79행 전체선택열일치복원PASS, SHA-256 `b6f6e8a5749cf1c4e12b23831cd13e0bba9a35ee0ff6612f12557dcf0ad28cf9`. 기존10테이블79행백업도회귀복원PASS입니다. 운영테스트19항목에서AuthUUID·legacy동의·텍스트/이미지공지시각·신청version7보존·SMS작업0을확인했습니다. 이메일은SMTP미설정으로미발송입니다.
+
+최신 SELECT 백업은 2026-09-23 20:18 KST의 `test_artifacts/backups/select-2026-09-23T11-18-26.278Z-275adf37-4102-4819-b9a4-60a69ed1e229.json`입니다. 11테이블79행 내부 저장과 격리 복원 검증이 PASS였으며 이메일 결과는 `email=not-configured`입니다. 다음 Windows 백업 예약은 2026-09-24 03:00 KST이고 보관 기간은7일입니다. 이 결과도 공개 테이블의 선택 데이터 복원 범위이며 전체 Auth·Storage·DB 복원을 뜻하지 않습니다.
+
+
+### Git 연결 후 빌드 환경 확인
+
+첫 20:16 KST 빌드는 Netlify 프로젝트 환경변수가 비어 있어 정적 파일은 게시됐으나 강좌·공지 연결이 실패했습니다. 변수 두 개를 실제 생성해 All scopes·모든 배포 context 설정을 확인하고, 20:28 KST에 캐시 없는 재배포를 수행했습니다. 운영 main 모듈은 `index-Dl04Jvmk.js`, SHA-256 `146f9dfa8cb972aa184f122f286e9ca4bd36509b2d66aecf529bd6f14c8c5902`로 로컬 정상 빌드와 일치합니다. 증거는 `test_artifacts/netlify/env-redeploy-verification.json`입니다.
+
+실제 Chrome 운영 화면에서 강좌 표시, 공지 오류 소멸, 음원 클릭 재생·일시정지, 회원가입 필수 동의 기본 해제·제출 비활성·동의 내용 펼침을 확인했습니다. 운영 접근권한 검사 `node --env-file=.env scripts/check_live_security.mjs`도 20:29 KST에10/10 통과했습니다. 실제 신규 회원·신청·질문 생성이나 문자 발송은 이 점검에서 수행하지 않았습니다.
+
+
+### 행사 시각과 로컬 검증
+
+기본 행사는 `src/config/openingCeremony.js`에서 2026-10-01 18:30 KST로 정하며 60초 전부터 보입니다. Vite의 `VITE_OPENING_START_AT`을 바꾸면 노출 시각도 그보다1분 전으로 이동합니다. 일반 방문자가 행사 전 미리 표시할 수 있는 URL·저장소 옵션은 없습니다. 로컬 검증은 `node scripts/test_opening_ceremony.mjs --serve` 후 출력된 localhost 주소에서 시간별 버튼으로 수행합니다. 공개 사이트의 시각을 바꾸는 기능이 아닙니다.
+
+production 빌드는 Supabase 공개 URL/anon 변수가 없으면 변수명만 포함한 오류로 중단합니다. 서버 비밀값을 VITE 변수에 넣어 오류를 우회하면 안 됩니다.
+
+테스트 문자 번호는 **01080287565만 허용**하며, 운영 관리자 번호01047020283으로 시험 문자를 보내지 않습니다.

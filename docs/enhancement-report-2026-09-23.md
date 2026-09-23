@@ -2,27 +2,27 @@
 
 ## 범위와 현재 환경
 
-React 18 / Vite 6 SPA, native fetch 기반 Supabase REST, PostgreSQL 및 Storage 구조입니다. 실제 운영 호스팅은 Netlify Drop이며 Vercel 설정도 저장소에 남아 있습니다. 작업 시작 당시 운영 DB는 레거시 스키마였고, 이번 작업에서 Supabase Auth 전환과 개선 마이그레이션001/002/003을 적용했습니다. 서비스 키는 서버 전용으로 유지합니다.
+React 18 / Vite 6 SPA, native fetch 기반 Supabase REST, PostgreSQL 및 Storage 구조입니다. 실제 운영 호스팅은 GitHub 저장소와 연결된 Netlify이며 Vercel 설정도 저장소에 남아 있습니다. 작업 시작 당시 운영 DB는 레거시 스키마였고, 이번 작업에서 Supabase Auth 전환과 개선 마이그레이션001/002/003을 적용했습니다. 서비스 키는 서버 전용으로 유지합니다.
 
 백엔드(Astra/high), 프런트엔드(Sol/medium), 운영·성능(Astra/high)을 분담하고 총괄이 공통 API·Context·페이지 연결과 통합 검증을 수행했습니다. 파일 소유권을 분리하고 기존 미추적 문서와 output 산출물은 보존했습니다. 후속 독립 검토에서 공지 업로드 경합, 외부 승인 갱신, 질문 링크 필터 충돌, PDF 하단 잘림을 확인하여 수정·검증했습니다.
 
-운영 변경은 사용자가 허용했으며 선행 조건인 SELECT 백업과 격리 복원을 수행했습니다. 사용자가 Supabase와 Netlify에 로그인한 뒤, 대상 프로젝트 `buddha-academy`와 기존 Netlify 프로젝트 `sehwa-buddha-academy`를 확인했습니다. 운영 사이트는 `https://xn--2j1bkkm2t5tbj2hx7go2ry0o.com/`입니다. 세 SQL 마이그레이션을 한 트랜잭션으로 적용했고 lms-auth/lms-sms Edge Function을 배포했습니다. Windows 일일 백업 작업도 실제 설치했습니다. 프런트 업로드와 관리자 설정의 최종 상태는 아래 배포 기록을 따릅니다.
+운영 변경은 사용자가 허용했으며 선행 조건인 SELECT 백업과 격리 복원을 수행했습니다. 사용자가 Supabase와 Netlify에 로그인한 뒤, 대상 프로젝트 `buddha-academy`와 기존 Netlify 프로젝트 `sehwa-buddha-academy`를 확인했습니다. 운영 사이트는 `https://xn--2j1bkkm2t5tbj2hx7go2ry0o.com/`입니다. 세 SQL 마이그레이션을 한 트랜잭션으로 적용했고 lms-auth/lms-sms Edge Function을 배포했습니다. Windows 일일 백업 작업도 실제 설치했습니다. 프런트는 2026-09-23 20:28 KST에 운영 게시되었으며 관리자 설정은 사용자 입력 대기입니다. 상세 상태는 아래 배포 기록을 따릅니다.
 
 ## 기능별 상태
 
 | 요구사항 | 구현 및 검증 | 운영에서 남은 단계 |
 |---|---|---|
-| 1 신청 완료 문구 | 강좌 상세·내 강의실 신청 팝업에 신청 결과, 농협 계좌, 금액, 매일 10~11시·18~19시 승인 안내. 기존 즉시 승인 문구 수정. 실제 UI 검증 | 프런트 배포 |
-| 2 개인정보 동의 | 기본 해제, 펼침 안내, 프런트/서버 true·버전 검증, DB 서버 시각. 기존5명 backfill 실제 적용, 운영 비동의 가입400 확인 | 프런트 배포 |
+| 1 신청 완료 문구 | 강좌 상세·내 강의실 신청 팝업에 신청 결과, 농협 계좌, 금액, 매일 10~11시·18~19시 승인 안내. 기존 즉시 승인 문구 수정. 실제 UI 검증·운영 프런트 게시 | 운영 사용자 신청 흐름 확인 |
+| 2 개인정보 동의 | 기본 해제, 펼침 안내, 프런트/서버 true·버전 검증, DB 서버 시각. 기존5명 backfill 실제 적용, 운영 비동의 가입400 확인·프런트 게시 | 실제 가입 흐름 확인 |
 | 3 관리자 변경 | adsba 별칭, immutable 회원 ID/FK·역할 유지, Supabase Auth 비밀번호 저장. 최근 백업 확인·변경·로그인·역할검증 도구 및 사용자 직접 입력 화면. 모의8개·실제 로컬 폼 검증 | 사용자 새 비밀번호 직접 입력·제출 대기 |
-| 4 문자 | 신청 회원/관리자, 질문 관리자, 답변 작성회원의 4가지 이벤트. 질문 내용·확인 링크 포함, DB outbox·중복키·lease·결과기록·재처리 RPC. 기본 mock | SOLAPI 인증·등록 발신번호·worker 스케줄·실수신 검증 |
-| 5 오픈식 | 2026-10-01 18:30 KST 기준 300초 타임라인, 커팅·단계 안내, 별도 리허설 조작, 동작 줄이기 | 사이트 배포 및 실제 행사 리허설. 기기 시계 기준, 진행자 방송 서버는 아님 |
-| 6 캐릭터 음원 | 단일 Audio, preload none, 클릭 재생·정지·오류 상태. 첨부 원본 기반 public/audio 파일과 선택적 기존 클라우드 경로 | 최종 프런트 배포. 실제 모바일 기기/Safari는 별도 확인 |
+| 4 문자 | 신청 회원/관리자, 질문 관리자, 답변 작성회원의 4가지 이벤트. 질문 내용·확인 링크 포함, DB outbox·중복키·lease·결과기록·재처리 RPC. 기본 mock | SOLAPI 두 키 저장·발신번호 활성화 확인. API 인증·worker 스케줄·실수신 검증은 남음 |
+| 5 오픈식 | 2026-10-01 18:29 KST부터 노출, 18:30 시작·300초. 1분 대기·커팅5초 카운트다운, 축하 효과·개인 화면 연꽃 반응. 시간 경계7개 및 모바일 실제 브라우저 검증 | 행사 당일 관계자 리허설 필요. 기기 시계 기준, 진행자 방송 서버는 아님 |
+| 6 캐릭터 음원 | 단일 Audio, preload none, 클릭 재생·정지·오류 상태. 첨부 원본 기반 public/audio 파일과 선택적 기존 클라우드 경로 | 운영 게시·MP3 HEAD200 확인. 실제 모바일 기기/Safari는 별도 확인 |
 | 7 자격증 | 승인된 logo.png, 세로 A4 자격증, 기존 정보·발급·인쇄/PDF 저장 경로 유지 | 실제 프린터 출력은 미실행 |
-| 8 일일 백업 | 매일03:00 KST·7일 보관 예약 등록, 평문 SELECT·ACL·SMTP 첨부/결과, 실제 내부 저장·선택 열 복원 검증 | SMTP 환경 설정 및 실제 메일 수신. PC 켜짐·사용자 로그인 필요 |
-| 9 다음 강의 | 이전 차시 진도>=80. 화면·진도 RPC·영상 Storage 권한 일치. 79.99/80/80.01 격리 검증, 운영 SQL 적용 | 프런트 배포. 수료·시험·자격증100% 기준 유지 |
+| 8 일일 백업 | 매일03:00 KST·7일 보관 예약 등록, 평문 SELECT·ACL·SMTP 첨부/결과, 실제 내부 저장·선택 열 복원 검증 | SMTP 앱 비밀번호 사용자 입력·실제 메일 수신. PC 켜짐·사용자 로그인 필요 |
+| 9 다음 강의 | 이전 차시 진도>=80. 화면·진도 RPC·영상 Storage 권한 일치. 79.99/80/80.01 격리 검증, 운영 SQL 적용 | 운영 프런트 게시 완료. 수료·시험·자격증100% 기준 유지 |
 | 10 로딩 | 경로별 코드 분리, 외부 폰트 비차단, 공개 페이지 인증 대기 제거, 30초 캐시·갱신으로 중복조회 감소 | 실제 CDN·운영 DB 환경 측정 필요. 아래 성능 보고 참조 |
-| 11 공지 | 관리자 이미지/텍스트 CRUD·노출기간·공개여부·이미지 링크, KST 오늘 숨김·닫기·모바일, RLS·업로드 제한. 운영 테이블·버킷 정책 적용 | 프런트 배포 및 실제 관리자 공지 작성 검증 |
+| 11 공지 | 관리자 이미지/텍스트 CRUD·노출기간·공개여부·이미지 링크, KST 오늘 숨김·닫기·모바일, RLS·업로드 제한. 운영 테이블·버킷 정책 적용 | 운영 프런트 게시 완료. 실제 관리자 공지 작성 검증 필요 |
 
 ## DB 변경과 적용·복구
 
@@ -48,9 +48,9 @@ React 18 / Vite 6 SPA, native fetch 기반 Supabase REST, PostgreSQL 및 Storage
 비밀이 없는 설정 예제는 [config/enhancements.env.example](../config/enhancements.env.example)에 있습니다.
 
 - Supabase: SQL/Edge 배포 가능한 관리 로그인 또는 `SUPABASE_ACCESS_TOKEN`, 서버 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `LMS_ALLOWED_ORIGINS`.
-- SMS: `LMS_SMS_PROVIDER=solapi`, `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `LMS_SMS_WORKER_SECRET`, `LMS_SMS_SENDER`, `LMS_SMS_ADMIN_PHONE=01047020283`, `LMS_SITE_URL`. 발신번호 등록 여부는 미확인입니다. SOLAPI를 선택한 구현이며 사용 중인 업체는 발견되지 않았습니다.
-- Email: `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_USER`, `SMTP_PASSWORD`; `BACKUP_EMAIL_TO` 기본 tntn211@naver.com. 비밀은 호스트 환경/비밀 저장소에서 주입합니다.
-- 사이트: 운영 호스팅 배포 계정. 승인된 행사 시각·기존 로고·첨부 음원 자료는 확보되었습니다.
+- SMS: `LMS_SMS_PROVIDER=solapi`, `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `LMS_SMS_WORKER_SECRET`, `LMS_SMS_SENDER`, `LMS_SMS_ADMIN_PHONE=01047020283`, `LMS_SITE_URL`. 두 SOLAPI 키는 운영 Supabase Secrets에 저장했고 발신번호 `01080287565`의 활성화 상태를 확인했습니다. 관리자 수신번호는 `01047020283`을 유지합니다. 키 값은 코드·문서에 기록하지 않으며 SMS cron과 실발송은 아직 미완료입니다.
+- Email: `SMTP_HOST=smtp.naver.com`, `SMTP_PORT=465`, 발신·수신·사용자명은 `tntn211@naver.com`으로 비밀 아닌 설정을 저장했습니다. `SMTP_PASSWORD`는 새 로컬 입력창에서 사용자 입력을 기다리고 있으며 실제 수신은 미검증입니다. 비밀은 호스트 환경/비밀 저장소에서 주입하고 예시에 남기지 않습니다.
+- 사이트: Netlify에 GitHub `KimSuMin123/bul` 연결 완료, production branch `feat/minhyeok`, `npm run build` → `dist`. Netlify 환경 변수에는 `VITE_SUPABASE_URL`과 `VITE_SUPABASE_ANON_KEY`만 설정했습니다. 승인된 행사 시각·기존 로고·첨부 음원 자료는 확보되었습니다.
 
 실제 문자 연동 전에는 기존 브라우저 알림을 유지합니다. 사용자가 말한 pwd는 알림 대체 목적임을 확인했습니다. 실제 SMS 수신·재시도 검증이 끝나면 notificationService의 알림 호출·폴링·권한 UI·SW 알림 이벤트 제거가 가능합니다. 앱 설치 기능(manifest)까지 삭제하는 범위는 이번 요청으로 확정하지 않았습니다.
 
@@ -98,16 +98,30 @@ React 18 / Vite 6 SPA, native fetch 기반 Supabase REST, PostgreSQL 및 Storage
 
 메인 JS는557,346→268,523bytes(51.8% 감소), gzip131,079→84,597bytes(35.5% 감소)입니다. 제한 모바일의 이미 방문한 화면 사이 이동은5~52ms였습니다. 일부 일반 조건 수치는 변동·새 기능 비용으로 증가했으므로 모든 페이지의 표시 속도가 개선됐다고 주장하지 않습니다.
 
-**제한 모바일 첫 방문은 모든 측정 페이지에서1초 목표 미달입니다.** 남은 공통 비용은 SPA JavaScript 다운로드·실행과 초기 API 응답 대기입니다. 소개·관리자는 추가 코드도 큽니다. 다음 개선은 공개 페이지 사전 렌더링, 소개/관리자 내부 패널 추가 분할, CDN 압축·캐시 헤더 적용, 실제 Supabase 쿼리·응답 시간 측정 순서입니다. 운영 배포 후 실제 네트워크에서 원인별 시간을 다시 확인해야 합니다. 상세 JS/API 횟수와 최초·이동 구분은 [전체 성능 비교표](../test_artifacts/performance/comparison.md)에 있습니다.
+**제한 모바일 첫 방문은 모든 측정 페이지에서1초 목표 미달입니다.** 남은 공통 비용은 SPA JavaScript 다운로드·실행과 초기 API 응답 대기입니다. 소개·관리자는 추가 코드도 큽니다. CDN 보안·캐시 헤더는 이번 운영 게시 후 확인했습니다. 다음 개선은 공개 페이지 사전 렌더링, 소개/관리자 내부 패널 추가 분할, 실제 Supabase 쿼리·응답 시간 측정입니다. 운영 배포 후 실제 네트워크에서 원인별 시간을 다시 확인해야 합니다. 상세 JS/API 횟수와 최초·이동 구분은 [전체 성능 비교표](../test_artifacts/performance/comparison.md)에 있습니다.
 
-문자/이메일 실수신·실제 프린터 출력은 수행하지 않았습니다. Windows 예약은 설치됐지만 SMTP 미설정으로 시험 실행은 내부 저장 성공과 함께 실패 코드1을 반환했습니다. 다음 예약 시각은2026-09-24 03:00 KST이며, 메일 환경 설정 뒤 재실행하여 수신 확인해야 합니다.
+문자/이메일 실수신·실제 프린터 출력은 수행하지 않았습니다. Windows 예약은 설치됐지만 SMTP 앱 비밀번호 미설정으로 시험 실행은 내부 저장 성공과 함께 실패 코드1을 반환했습니다. 다음 예약 시각은2026-09-24 03:00 KST이며, 메일 환경 설정 뒤 재실행하여 수신 확인해야 합니다.
 
 ### 운영 적용 기록
 
 - DB 적용 후 실제 SQL 확인: 회원5명, 관리자1명, 수강권8개, 강의60개 유지. 기존5명 동의 backfill 기록,20개 테이블 RLS 활성, 문자 대기0개, 강의 버킷 비공개 전환 확인.
 - lms-auth 실제 CORS: 운영 origin OPTIONS204, 미허용 origin403. Edge 자체 토큰 검증 방식으로 배포했습니다.
-- lms-sms는 SOLAPI 모드와 관리자 수신번호·사이트 URL까지 설정했습니다. API 인증/등록 발신번호가 없어 스케줄을 활성화하지 않았습니다. 설정 부족 시 큐를 소비하기 전에503으로 중단하도록 구현돼 있습니다.
-- 최종 Netlify ZIP은 `output/netlify/sehwa-buddha-academy-20260923T102104Z.zip`입니다. 서버 비밀 미포함·필수 파일·ZIP CRC 검증을 통과했습니다. 최종 운영 빌드 main JS는269,613bytes(gzip85,032)로, 앞의 fixture 성능 측정 빌드와 환경값·최종 자격증 수정 차이가 있습니다.
-- Netlify 파일 업로드는 브라우저 확장의 파일 접근 거절(`Not allowed`)로 미완료입니다. 확장 설정 페이지 자동 열기도 브라우저 URL 보안 정책에 차단됐습니다. 사용자에게 파일 URL 접근 허용 또는 위 ZIP 직접 업로드를 요청했습니다. 9월20일 기존 배포가 아직 게시 상태이므로 새 프런트 게시 전 기존 로그인·수강 화면은 제한될 수 있습니다.
-- 관리자 변경은 사용자 직접 비밀번호 입력·제출을 기다리고 있으며 아직 완료로 표시하지 않습니다. `scripts/admin_bootstrap_local.mjs`는 최근 복원 검증 백업을 확인하고 원래 ID·역할을 보존한 채 Auth 연결과 adsba 로그인·관리자 RPC까지 검증합니다. 입력값을 파일·로그에 저장하지 않습니다. 일회성 입력 서버는15분 뒤 만료됩니다.
-- 전환 후 새 백업: `test_artifacts/backups/select-2026-09-23T10-42-56.830Z-e63dbc2a-2ea8-441e-84bd-d7da80221bf0.json`, SHA-256 `b6f6e8a5749cf1c4e12b23831cd13e0bba9a35ee0ff6612f12557dcf0ad28cf9`. 전체 Auth/Storage 복원본을 의미하지 않습니다.
+- lms-sms는 SOLAPI 모드, 관리자 수신번호 `01047020283`, 발신번호 `01080287565`, 사이트 URL을 설정했습니다. SOLAPI API 키·비밀의 운영 Supabase Secrets 저장과 사업자 측 발신번호 활성화 상태를 확인했습니다. SOLAPI 화면에서 잔액300원·일일 잔여50건을 확인했으나 실제 API 인증·문자 실수신은 미검증이며 SMS 스케줄은 활성화하지 않았습니다. 운영 SQL 조회에서 발송 대기열0건과 pg_cron/pg_net 미설치 상태를 확인했습니다. 설정 부족 시 큐를 소비하기 전에503으로 중단하도록 구현돼 있습니다.
+- 수동 배포 준비 단계의 Netlify ZIP은 `output/netlify/sehwa-buddha-academy-20260923T102104Z.zip`입니다. 서버 비밀 미포함·필수 파일·ZIP CRC 검증을 통과했습니다. 최종 운영 빌드 main JS는269,613bytes(gzip85,032)로, 앞의 fixture 성능 측정 빌드와 환경값·최종 자격증 수정 차이가 있습니다.
+- 수동 ZIP 업로드는 브라우저 확장 파일 접근 제한으로 완료하지 않았으나, 이후 GitHub `KimSuMin123/bul` 연결로 운영 배포를 완료했습니다. 2026-09-23 20:28 KST에 커밋 `289bb05`가 Published 상태가 되었고 deploy ID는 `6ab3b7f933e4b1d280146acf`입니다. 운영 HTTP200, OG v4 이미지 SHA-256 원본 일치, MP3 HEAD200(29,141,829bytes), 보안·캐시 헤더를 `test_artifacts/netlify/http-verification.json`에서 확인했습니다. 이는 정적 배포 검증이며 관리자 로그인·전체 운영 사용자 흐름 검증을 대체하지 않습니다.
+- 관리자 변경은 새 로컬 입력창에서 사용자 직접 비밀번호 입력·제출을 기다리고 있으며 아직 완료로 표시하지 않습니다. `scripts/admin_bootstrap_local.mjs`는 최근 복원 검증 백업을 확인하고 원래 ID·역할을 보존한 채 Auth 연결과 adsba 로그인·관리자 RPC까지 검증합니다. 입력값을 파일·로그에 저장하지 않습니다. 일회성 입력 서버는15분 뒤 만료됩니다.
+- 최신 SELECT 백업: `test_artifacts/backups/select-2026-09-23T11-18-26.278Z-275adf37-4102-4819-b9a4-60a69ed1e229.json`(20:18 KST), 11테이블79행 내부 저장·격리 복원 PASS, `email=not-configured`. 다음 예약은 2026-09-24 03:00 KST, 보관 기간7일입니다. 전체 Auth/Storage/DB 복원본을 의미하지 않습니다.
+
+
+### 20:28 KST 연결 설정 보정 및 운영 검증
+
+첫 Git 빌드의 공개 연결값 누락을 실제 화면에서 발견하여 Netlify 환경변수를 생성하고 재배포했습니다. 이후 운영 main JS가 정상 로컬 빌드와 SHA-256까지 같음을 확인했습니다(`test_artifacts/netlify/env-redeploy-verification.json`). 강좌·공지 연결, 음원 재생/일시정지, 가입 동의 기본 해제/내용 펼침/가입 버튼 비활성을 운영 Chrome에서 확인했고, 서버 접근권한10개도 다시 통과했습니다. 전체 회원·신청·Q&A 저장과 실제 SMS/SMTP 발송을 검증한 것은 아닙니다.
+
+
+### 후속 행사·테스트 수신번호 변경
+
+사용자 요청으로 개원식은 한국 시간 2026-10-01 18:29 이전에는 전체가 숨겨지며 공개 미리보기 버튼도 노출하지 않습니다. 18:29부터 1분 카운트다운, 18:30~18:35 기존 5분 진행, 18:32:55부터 커팅5초 카운트다운, 18:33 리본 커팅·축하 효과를 보여 줍니다. 축하 연꽃은 각 방문자의 화면 내 반응이며 다른 방문자에게 전송하지 않습니다.
+
+`node scripts/test_opening_ceremony.mjs`의 정책·React SSR7개를 통과했습니다. CUA Chrome에서 390×844 모바일 화면, 각 시간 경계, 열린 화면의 자동 노출, 반복 클릭 시 연꽃1개, 종료 안내와 반응 보존을 확인했습니다. 가로 폭375px에서 scrollWidth도375px입니다. 근거는 `test_artifacts/ceremony-fixture/cua-verification.json`이며 로컬 시각 제어 fixture 검증입니다. 운영 기기 시계는 변경하지 않았습니다. 동작 줄이기 CSS는 검토했으며 OS 설정 전환은 수행하지 않았습니다.
+
+테스트 문자 수신자는 사용자 지정 **010-8028-7565 한 번호로 제한**합니다. 운영 관리자 수신번호010-4702-0283과 구분합니다. 운영 일반 대기열을 시험 호출로 소비하지 않도록 격리된 테스트 경로를 적용·검증한 후 시험합니다.

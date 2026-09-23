@@ -2,8 +2,12 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { createVideoUploadMiddleware } from './src/server/videoUploader.js';
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
+  if (command === 'build' && mode === 'production') {
+    const missing = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'].filter(name => !env[name]?.trim());
+    if (missing.length) throw new Error(`Production build requires ${missing.join(', ')}.`);
+  }
   return {
   plugins: [
     react(),
