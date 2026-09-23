@@ -159,4 +159,19 @@ Windows 예약을 별도로 읽기 검증했습니다. 정확한 이름은 `LMS-
 
 그 후 예약 작업과 같은 PowerShell runner를 한 번 더 실행하여21:41 KST에 `exit0`, `status=saved`, `email=sent`를 확인했습니다. 최신 백업은 `test_artifacts/backups/select-2026-09-23T12-41-51.263Z-52c4735d-2b84-440a-b7e7-1987c205c5ea.json`, 공개11테이블79행입니다. 동일 파일의 격리 복원도11테이블79행 PASS이며 파일 옆 `.restore-report.json`에 결과를 보관했습니다. SMTP 인증과 발송 접수는 성공했고 메일535 문제는 해결됐습니다. 받은편지함의 실제 도착은 직접 확인하지 않았으므로 사용자 확인이 별도로 필요합니다.
 
-관리자 `adsba` 변경 완료, 문자401 미해결·임시 설정 원복·SMS 스케줄 미가동 상태는 그대로입니다. 일일 백업03:00 KST·7일 보관과 PC 켜짐·사용자 로그인 조건도 유지합니다. 메일 성공을 문자 성공으로 표시하지 않습니다.
+관리자 `adsba` 변경 완료, 문자401 미해결·임시 설정 원복·SMS 스케줄 미가동 상태는 그대로입니다. 이 시점에는 일일 백업03:00 KST·7일 보관과 PC 켜짐·사용자 로그인 조건을 유지했습니다. 아래 후속 Netlify 이전이 현재 상태입니다. 메일 성공을 문자 성공으로 표시하지 않습니다.
+
+### 22:23 KST Netlify 백업 이전·관리자 로그인 재검증
+
+- 변경 전21:58 KST 최신 SELECT 백업11테이블79행과 격리 복원을 확인했습니다. 파일은 `test_artifacts/backups/select-2026-09-23T12-58-04.826Z-ebb59835-4b9f-4db1-89e9-733b5dba70cb.json`입니다.
+- 사용자가 `adsba` 로그인 오류를 보고하여 운영 연결을 다시 확인했습니다. `users.id=admin`, `login_id=adsba`, admin 역할과 Auth 연결은 정상입니다. 기존 회원 ID는 관계 보존을 위해 유지하며 `password=NULL`은 Supabase Auth 전환 후 정상입니다. 사용자가 일회성 폼에서 새 비밀번호를 직접 제출했고 anon 인증 경로 로그인·관리자 RPC 검증을 통과했습니다.22:02 KST 후속 REST 확인도 모두 true였고 이후 실제 브라우저의 `#admin` CMS 진입을 확인했습니다. 과거 입력과의 비밀번호 불일치 원인 자체는 추정하지 않습니다.
+- 관리자 회원목록 API에 `loginId`를 추가하고 화면·검색·모달에 로그인 별칭을 표시했습니다. 숫자가 없는 검색어가 전화번호의 빈 문자열과 일치해 모든 회원을 보여 주던 문제도 수정했습니다. 삭제·권한·비밀번호 변경 API는 기존 불변 ID를 유지합니다.
+- 기능 커밋 `319798b`, 운영 배포 `6ab3d082625ba6a0acfe815c`를 확인했습니다. 운영 메인·관리자 JS 해시가 로컬 빌드와 같습니다. 최초 배포는 공개 설정을 secret으로 함께 등록해 비밀 검사 오탐으로 중단됐습니다. 공개 주소·메일 설정5개만 검사 예외로 지정한 후 재배포에서 비밀 검사 통과를 확인했습니다. 서버 키·SMTP 앱 비밀번호와 전체 비밀 검사는 유지합니다.
+- `daily-db-backup`은 운영 Scheduled 표시, cron `0 18 * * *`, 다음2026-09-24 03:00 GMT+9를 확인했습니다. 공개 URL GET·POST는 모두403으로 실행이 차단됐습니다.
+- 22:16 KST Netlify **Run now** 실제 실행:7,372.27ms, `status=saved`, `email=sent`, `storageVerified=true`,11테이블79행. 수신처는 `tntn211@naver.com`, 저장소는 private site-wide Blobs `lms-private-select-backups`, 보관 기간7일입니다. SMTP 접수 성공이며 받은편지함 도착은 직접 열어 확인하지 않았습니다.
+- 실제 저장 파일 `snapshots/2026-09-23/5185e880-a00e-4212-9e09-c80350579ae7.json`을 관리자 Blobs 화면에서 열어 로컬로 전달했습니다. SHA-256 `a768269fc458b13837ec1706b214e9624cc77ab04dfe9489b7d7c3056b73b027` 일치를 확인하고 격리 복원11테이블79행 PASS를 확인했습니다. 로컬 파일은 `test_artifacts/backups/netlify-2026-09-23-5185e880-a00e-4212-9e09-c80350579ae7.json`입니다.
+- 검증 완료 후22:22 KST Windows `LMS-Daily-SELECT-Backup`을 Disabled로 전환했습니다. 복구용 기존 설정은 `test_artifacts/deployment/windows-backup-task-before-cloud.xml`에 보관했습니다. PC가 꺼져 있어도 Netlify 예약은 동작하도록 설정됐으며 첫03:00 자동 실행은 아직 관찰하지 않았습니다.
+- 22:24 KST 같은 날짜의 **Run now**를 다시 실행하여 `status=skipped`, `reason=already-attempted-today`,492.46ms를 확인했습니다. 실제 운영에서도 같은 날 중복 백업 메일 발송을 건너뛰었습니다.
+- 최종 로컬 검증: 클라우드 백업 모의21개, 기존 운영 회귀19개, Auth13개·SQL/RLS15개, API88개, 관리자 화면 회귀40개 통과, production build 성공. 실제 백업 복원·공개 함수 접근 차단은 위와 별도로 운영에서 검증했습니다.
+
+이번 작업은 DB 스키마를 변경하지 않았습니다. 백업 중단·재처리·로컬 예약 복구는 [Netlify 백업 안내](cloud-backup.md)를 따릅니다. 요청한 SELECT 결과 형식이므로 Auth 자격증명·Storage 객체·DDL을 포함하는 전체 복구본은 아닙니다. SMTP 장애나 시간 부족으로 오래된 파일 정리가 미뤄질 수 있습니다. SMS 인증401·시험 원복 상태는 이번 작업에서 변경하지 않았습니다.

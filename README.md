@@ -14,17 +14,17 @@ npm run build
 
 ## 운영 상태 — 2026-09-23
 
-Netlify 프로젝트 `sehwa-buddha-academy`는 GitHub `KimSuMin123/bul`의 `feat/minhyeok` 브랜치에 연결되어 있습니다. 빌드 명령은 `npm run build`, 게시 디렉터리는 `dist`입니다. 공개 Supabase URL·anon 환경 변수만 Netlify에 설정했습니다.
+Netlify 프로젝트 `sehwa-buddha-academy`는 GitHub `KimSuMin123/bul`의 `feat/minhyeok` 브랜치에 연결되어 있습니다. 빌드 명령은 `npm run build`, 게시 디렉터리는 `dist`, Node 버전은22입니다. 프런트 공개 연결값과 별도로 백업용 서버 키·SMTP 앱 비밀번호를 Production 전용 비밀 환경변수에 저장했습니다.
 
-마지막으로 운영 게시를 확인한 문서 커밋 `d61fd69`는 21:16 KST에 Published 상태가 되었습니다(deploy ID `6ab3c30271289d0008db263c`). 기능 번들은 20:49 KST에 게시한 `b8edab0`와 동일합니다. 운영 `index-DOKtdqdE.js`·`index-CrzWf1ed.css`는 로컬 `dist`와 해시가 같으며 원형 로딩 표시 코드가 포함되어 있습니다. 개원식은 10월 1일 18:29부터 표시되고 18:30~18:35에 진행됩니다. 원형 로딩과 개원식 변경은 유지합니다. 후속 문서 커밋 `1e624af`는 push했지만 그 Netlify 배포 상태는 확인하지 않았습니다.
+운영 기능 커밋 `319798b`를 배포했습니다(deploy ID `6ab3d082625ba6a0acfe815c`). 운영 메인·관리자 JS의 SHA-256이 로컬 `dist`와 일치합니다. 관리자 목록·검색·관련 모달에 로그인 별칭을 표시하고 내부 데이터 연결용 회원 ID는 유지합니다. 개원식은10월1일18:29부터 표시되고18:30~18:35에 진행되며 원형 로딩도 유지합니다.
 
 문자 시험 경로는 사용자 승인 후 일시 적용했지만 함수 인증이 401로 거절됐습니다. 로컬 키의 REST 조회는 200이었고 프로젝트 현재 키의 관리 화면 시험도 401이었습니다. 정확한 인증 거절 원인은 미확정이며 합성 테스트 작업도 생성하지 않았고 실제 SMS 발송은 0건입니다. 사용자 요청에 따라 원래 DB claim 함수·ACL과 원본 LIVE Edge 코드를 복원했고 테스트 RPC와 `LMS_SMS_TEST_PHONE`을 제거한 것을 확인했습니다. 운영 outbox·발송 시도·테스트 작업은 모두 0건입니다. 발신번호와 SOLAPI 설정은 유지합니다. 근거는 `test_artifacts/deployment/sms-rollback/production-verification.json`입니다.
 
-관리자 변경은 완료했습니다. 사용자 제출 후 helper가 `status=verified`, `changesApplied=true`, `verificationSession=signed-out`을 반환했습니다. 추가 REST 확인으로 유일한 관리자의 원래 canonical ID·admin 역할 유지, Auth 연결 및 `adsba` 별칭을 확인했습니다. 검증 세션은 로그아웃했으며 근거는 `test_artifacts/deployment/admin-verified.json`입니다.
+관리자 `adsba`의 비밀번호를 사용자 직접 입력으로 다시 설정한 뒤 로그인·관리자 권한 검증을 통과했습니다. 사용자 브라우저가 실제 `#admin` CMS 화면에 진입한 것도 확인했습니다. 기존 `users.id=admin`과 관련 데이터는 유지하고 `login_id=adsba`로 로그인합니다. `users.password=NULL`은 비밀번호를 Supabase Auth에서 관리하는 정상 상태입니다. 비밀번호는 파일·로그에 저장하지 않았으며 근거는 `test_artifacts/deployment/admin-verified.json`입니다.
 
 메일 SMTP535 인증 문제는 해결했습니다. 네이버 계정 일치를 확인하고 비활성화돼 있던 POP3/SMTP를 사용자가 직접 켠 뒤, 21:41 KST의 백업 실행이 `exit0`, `status=saved`, `email=sent`로 끝났습니다. SMTP 인증과 발송 접수는 성공했으며 받은편지함의 실수신은 직접 확인하지 않아 사용자 확인이 별도로 필요합니다. 문자 함수의 HTTP401 오류는 여전히 미해결이고 임시 시험 설정 원복·스케줄 미가동·실제 SMS0건 상태를 유지합니다. 기존 브라우저 알림(PWD)도 유지합니다.
 
-일일 SELECT 백업 작업 `LMS-Daily-SELECT-Backup`은 활성화되어 있으며 매일03:00 KST·7일 보관으로 설정되어 있습니다. 21:41 KST에 예약 작업과 같은 PowerShell runner를 다시 한 번 실행하여 공개11테이블79행 내부 저장과 SMTP 발송 접수를 확인했습니다. 최신 파일은 `test_artifacts/backups/select-2026-09-23T12-41-51.263Z-52c4735d-2b84-440a-b7e7-1987c205c5ea.json`이며 메일 결과는 `sent`입니다. 같은 파일의 격리 복원도11테이블79행 PASS이며 인접한 `.restore-report.json`에 결과를 보관했습니다. PC가 켜져 있고 현재 사용자가 로그인한 상태여야 하며 절전 자동 깨우기는 꺼져 있습니다. 예약 검사 근거는 `test_artifacts/scheduled-task-verification.json`입니다. SELECT 백업은 전체 Auth·Storage·DB 복원본이 아닙니다.
+일일 SELECT 백업은 Netlify `daily-db-backup` Scheduled Function으로 이전했습니다. 매일03:00 KST·7일 보관·`tntn211@naver.com` 첨부 전송 후 private Blobs에 저장하며 PC 전원과 무관합니다.22:16 KST 실제 클라우드 실행은7.37초, 공개11테이블79행, `email=sent`, `storageVerified=true`였습니다. Blobs의 동일 SHA-256 파일을 로컬에 가져와 격리 복원11테이블79행 PASS를 확인했습니다. 이후 기존 Windows `LMS-Daily-SELECT-Backup`은 설정 XML을 보관하고 Disabled로 전환했습니다. 다음 예약은2026-09-24 03:00 KST이며 그 야간 실행 자체는 아직 관찰하지 않았습니다. SELECT 백업은 전체 Auth·Storage·DB 복원본이 아닙니다. 운영·재처리·복구 절차는 [클라우드 백업 안내](docs/cloud-backup.md), 근거는 `test_artifacts/deployment/netlify-cloud-backup-verification.json`입니다.
 
 ## 상세 문서
 

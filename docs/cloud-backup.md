@@ -25,6 +25,10 @@ Netlify `sehwa-buddha-academy` 환경 변수에 아래 값을 **Production 컨�
 | `BACKUP_EMAIL_TO` | `tntn211@naver.com` |
 | `BACKUP_RETENTION_DAYS` | `7`(기본값);1~365 정수로 변경 가능, 잘못된 값이면 실행 중단 |
 
+Secret 표시를 권장하는 실제 자격증명은 `SUPABASE_SERVICE_ROLE_KEY`와 `SMTP_PASSWORD` 두 변수입니다. URL·서버명·메일 주소·포트·보관일·활성화 값은 공개 설정이며 일반 환경 변수로 등록할 수 있습니다. 현재 운영에는 초기 import 때10개 변수를 모두 secret으로 등록했습니다. 그 결과 커밋 `319798b` 배포에서 공개 URL·메일 주소 등이 저장소 문서와 일치하여 비밀 검사 오탐으로 빌드가 중단됐습니다. 서버 키·SMTP 비밀번호의 실제 유출은 로컬 staged 파일과 dist 검사에서 발견되지 않았습니다.
+
+기존 secret 표시를 변경할 수 없어 Production 컨텍스트에 `SECRETS_SCAN_OMIT_KEYS=SUPABASE_URL,SMTP_HOST,SMTP_FROM,SMTP_USER,BACKUP_EMAIL_TO`를 설정했습니다. 예외는 이미 공개된 설정5개에만 적용하며 **서버 키·SMTP 비밀번호와 전체 비밀 검사는 계속 유지**합니다. `SECRETS_SCAN_ENABLED=false`나 전체 경로 제외는 사용하지 않습니다. 이 설정은 오탐을 해소하기 위한 것이며 재배포·실제 함수 실행 성공을 뜻하지 않습니다. [Netlify 비밀 검사 설정](https://docs.netlify.com/build/environment-variables/secrets-controller/).
+
 Blobs 연결은 Netlify 함수의 자동 인증 문맥을 사용하므로 별도 Blobs 토큰이나 호출용 비밀은 필요하지 않습니다. `netlify.toml`은 Node22를 사용하며 설치된 `@netlify/blobs`의 최소 Node22.12 조건을 충족해야 합니다. 함수 런타임은 기본적으로 빌드 Node 버전을 따릅니다. [런타임 설정](https://docs.netlify.com/build/functions/configuration/#nodejs-version-for-runtime).
 
 SMTP는 인증서 검증을 유지하고 연결·대기 시간을 제한합니다. 파일 경로나 URL을 첨부로 읽지 않고 메모리의 JSON만 사용하며 SMTP debug 로그를 켜지 않습니다. SMTP `sent`는 서버의 수신자 접수 결과이며 받은편지함 도착 증명이 아닙니다. [Nodemailer SMTP](https://nodemailer.com/smtp), [네이버 SMTP 설정](https://help.naver.com/service/30029/contents/21341?lang=ko&osType=PC).
