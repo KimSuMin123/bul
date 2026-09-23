@@ -125,3 +125,12 @@ React 18 / Vite 6 SPA, native fetch 기반 Supabase REST, PostgreSQL 및 Storage
 `node scripts/test_opening_ceremony.mjs`의 정책·React SSR7개를 통과했습니다. CUA Chrome에서 390×844 모바일 화면, 각 시간 경계, 열린 화면의 자동 노출, 반복 클릭 시 연꽃1개, 종료 안내와 반응 보존을 확인했습니다. 가로 폭375px에서 scrollWidth도375px입니다. 근거는 `test_artifacts/ceremony-fixture/cua-verification.json`이며 로컬 시각 제어 fixture 검증입니다. 운영 기기 시계는 변경하지 않았습니다. 동작 줄이기 CSS는 검토했으며 OS 설정 전환은 수행하지 않았습니다.
 
 테스트 문자 수신자는 사용자 지정 **010-8028-7565 한 번호로 제한**합니다. 운영 관리자 수신번호010-4702-0283과 구분합니다. 운영 일반 대기열을 시험 호출로 소비하지 않도록 격리된 테스트 경로를 적용·검증한 후 시험합니다.
+
+
+### 원형 로딩 표시와 후속 SMS 검증 준비
+
+일반·관리자 페이지의 Suspense 대기 화면을 공통 원형 로딩 표시로 변경했습니다. 44px 원형 회전과 스크린리더 전용 상태 문구를 실제 CUA 화면에서 확인했고 production build도 통과했습니다. 고정 지연은 추가하지 않았습니다. 모션 감소 설정에서는 회전을 중지합니다. 행사 변경 커밋28ec5aa는20:42 KST에 Netlify Published(deploy6ab3bb1ba8f45c0008f13bb6) 되었으며 운영 홈에서 행사 영역이 숨겨진 것을 확인했습니다.
+
+시험 문자 경로는 지정UUID1개·service-role 인증·01080287565의 환경/SQL/발송 직전 검사로 일반 큐와 분리했습니다. 새004 SQL과 Edge 번들은 준비됐고 모의·PGlite 검사10개를 통과했습니다. `LMS_SMS_TEST_PHONE`은 운영 Secrets에 저장했으나 자동 승인 검토가 운영 SQL의 함수·권한 변경을 거부하여 구체적 사용자 승인 대기입니다. 004와 새 Edge 시험 경로는 아직 운영에 적용하지 않았고 실제 문자는0건입니다.
+
+최신20:43 KST SELECT 백업은 `select-2026-09-23T11-43-05.893Z-2881c779-e210-46f4-a8a3-d0434bef585f.json`입니다.11테이블79행 저장·격리 복원 PASS이며 SMTP 미설정으로 이메일은 발송되지 않았습니다. 관리자 변경과 SMTP 앱 비밀번호 입력도 아직 완료되지 않았습니다.

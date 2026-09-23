@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ConflictModal from './components/common/ConflictModal';
+import PageLoadingIndicator from './components/common/PageLoadingIndicator';
 
 import HomePage from './pages/HomePage';
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
@@ -203,7 +204,7 @@ export default function App() {
               <button className="btn btn-secondary btn-sm" onClick={() => refreshData()}>다시 불러오기</button>
             </div>
           )}
-          <React.Suspense fallback={<div role="status" style={{ padding: '32px' }}>화면을 불러오는 중입니다...</div>}>
+          <React.Suspense fallback={<PageLoadingIndicator />}>
           {currentView === 'about' && (
             <AboutPage 
               initialTab={aboutTab} 
@@ -254,12 +255,7 @@ export default function App() {
           )}
 
           {currentView === 'admin' && (
-            <React.Suspense fallback={
-              <div style={{ padding: '120px 20px', textAlign: 'center', minHeight: '60vh' }}>
-                <Loader2 className="animate-spin" size={36} color="var(--color-sage)" style={{ margin: '0 auto 16px auto' }} />
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '14.5px' }}>관리자 대시보드를 불러오는 중입니다...</p>
-              </div>
-            }>
+            <React.Suspense fallback={<PageLoadingIndicator label="관리자 대시보드를 불러오는 중입니다..." />}>
               {isAdmin || (currentUser?.role === 'admin') ? (
                 <AdminDashboardPage />
               ) : (

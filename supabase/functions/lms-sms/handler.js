@@ -1,4 +1,7 @@
 export const APPROVAL_NOTICE = '입금 확인 및 수강 승인은 매일 오전 10시~11시, 오후 6시~7시에 진행됩니다.';
+// Explicitly authorized operator-test recipient; configuration must also agree.
+export const OPERATOR_TEST_PHONE = '01080287565';
+const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const byteLength = text => new TextEncoder().encode(text).length;
 function fitMessage(prefix, content, suffix) {
  const budget=1900-byteLength(prefix+suffix);
@@ -29,7 +32,7 @@ async function equalSecret(a,b) {
  for(let i=0;i<x.length;i++) difference|=x[i]^y[i];
  return difference===0;
 }
-export function createSmsHandler({url,serviceKey,workerSecret,provider='mock',apiKey,apiSecret,sender,adminPhone,siteUrl='',fetch:request=globalThis.fetch}) {
+export function createSmsHandler({url,serviceKey,workerSecret,provider='mock',apiKey,apiSecret,sender,adminPhone,testPhone,siteUrl='',fetch:request=globalThis.fetch}) {
  let siteOrigin='';
  try { const parsed=new URL(siteUrl); if(parsed.protocol==='https:' && parsed.origin===siteUrl.replace(/\/$/,'') && !parsed.username && !parsed.password && siteUrl.length<=300) siteOrigin=parsed.origin; } catch { /* Invalid config is rejected before claiming. */ }
  const respond=(body,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
@@ -38,9 +41,12 @@ export function createSmsHandler({url,serviceKey,workerSecret,provider='mock',ap
   if(!response.ok) throw new Error('database_unavailable');
   return response.json();
  }
- async function send(job) {
+ const validTestJob=(job,id)=>job?.id===id&&job.event_key===`operator_test:${id}`&&job.kind==='enrollment_student'&&job.payload?.phone===testPhone&&testPhone===OPERATOR_TEST_PHONE;
+ async function send(job,testId) {
+  // Defense in depth immediately before a provider request, including its route.
+  if(testId&&!validTestJob(job,testId))throw new Error('invalid_test_job');
   if(provider==='mock') return {status:'mock',code:'mock_no_delivery',providerId:null};
-  const to=job.kind.endsWith('_admin')?adminPhone:job.payload.phone;
+  const to=testId?testPhone:job.kind.endsWith('_admin')?adminPhone:job.payload.phone;
   if(!/^\d{9,15}$/.test(to||'')) return {status:'failed',code:'invalid_recipient',providerId:null};
   let response;
   try {
@@ -61,17 +67,37 @@ export function createSmsHandler({url,serviceKey,workerSecret,provider='mock',ap
  return async req=>{
   if(req.method!=='POST') return respond({error:'POST required'},405);
   const token=req.headers.get('Authorization')?.match(/^Bearer (.+)$/i)?.[1];
-  if(!await equalSecret(token,workerSecret) && !await equalSecret(token,serviceKey)) return respond({error:'Unauthorized'},401);
+  const serviceAuthorized=await equalSecret(token,serviceKey);
+  if(!serviceAuthorized && !await equalSecret(token,workerSecret)) return respond({error:'Unauthorized'},401);
+  let input;
+  try{
+   const text=await req.text();if(byteLength(text)>2048)return respond({error:'Request too large'},413);
+   if(text.trim()&&!/^application\/json(?:;|$)/i.test(req.headers.get('Content-Type')||''))return respond({error:'JSON required'},400);
+   input=text.trim()?JSON.parse(text):{};
+   if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('invalid_request');
+  }catch{return respond({error:'Invalid request'},400);}
+  const operatorTest=input.action==='operator_test';
+  if(operatorTest){
+   if(!serviceAuthorized)return respond({error:'Operator authorization required'},403);
+   if(Object.keys(input).some(key=>!['action','job_id'].includes(key))||typeof input.job_id!=='string'||!uuidPattern.test(input.job_id))return respond({error:'Invalid test request'},400);
+   input.job_id=input.job_id.toLowerCase();
+   if(testPhone!==OPERATOR_TEST_PHONE)return respond({error:'SMS test configuration unavailable'},503);
+  }else if(Object.keys(input).length)return respond({error:'Unsupported request'},400);
   if(!url || !serviceKey || !['mock','solapi'].includes(provider)) return respond({error:'SMS configuration unavailable'},503);
   // Validate all required production settings before claiming any durable work.
   if(provider==='solapi' && (!apiKey || !apiSecret || !siteOrigin || !/^\d{9,15}$/.test(sender||'') || !/^\d{9,15}$/.test(adminPhone||''))) return respond({error:'SMS configuration unavailable'},503);
   try {
-   // Five sequential jobs stay within the SQL five-minute lease even at timeouts.
-   const jobs=await rpc('lms_claim_sms',{p_limit:5});
+   // 15s claim + 3 * (20s provider + 15s finish) = 120s, below Edge's 150s idle limit.
+   const jobs=operatorTest?await rpc('lms_claim_sms_test',{p_id:input.job_id,p_phone:testPhone}):await rpc('lms_claim_sms',{p_limit:3});
+   if(!Array.isArray(jobs)||jobs.length>(operatorTest?1:3))throw new Error('invalid_claim');
+   if(operatorTest){
+    if(!jobs.length)return respond({error:'Test job unavailable'},409);
+    if(!validTestJob(jobs[0],input.job_id))throw new Error('invalid_test_job');
+   }else if(jobs.some(job=>String(job.event_key||'').startsWith('operator_test:')))throw new Error('unexpected_test_job');
    const totals={processed:0,accepted:0,mock:0,retry:0,failed:0,uncertain:0};
    for(const job of jobs) {
     let result;
-    try { result=await send(job); } catch { result={status:'failed',code:'invalid_payload',providerId:null}; }
+    try { result=await send(job,operatorTest?input.job_id:undefined); } catch { result={status:'failed',code:'invalid_payload',providerId:null}; }
     const saved=await rpc('lms_finish_sms',{p_id:job.id,p_lease_token:job.lease_token,p_status:result.status,p_code:result.code,p_provider_id:result.providerId});
     if(!saved) throw new Error('lease_lost');
     totals.processed++; totals[result.status]++;
