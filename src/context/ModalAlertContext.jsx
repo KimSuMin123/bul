@@ -27,6 +27,7 @@ export function ModalAlertProvider({ children }) {
 
   const queueRef = useRef([]);
   const confirmBtnRef = useRef(null);
+  const dialogRef = useRef(null);
 
   // Auto-detect title and type from message content if not provided
   const detectMeta = (message, explicitType, explicitTitle, isConfirm) => {
@@ -153,7 +154,16 @@ export function ModalAlertProvider({ children }) {
     processNext();
   };
 
-  // Keyboard shortcut listener (Enter, Escape) & Auto focus
+  // Restore the opener only when the entire dialog queue closes.
+  useEffect(() => {
+    if (!modalState.isOpen) return;
+    const opener = document.activeElement;
+    return () => {
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [modalState.isOpen]);
+
+  // Keep keyboard focus in the current dialog. Enter uses native button behavior.
   useEffect(() => {
     if (!modalState.isOpen) return;
 
@@ -165,25 +175,49 @@ export function ModalAlertProvider({ children }) {
     }, 50);
 
     const handleKeyDown = (e) => {
+      if (e.defaultPrevented) return;
       if (e.key === 'Escape') {
         e.preventDefault();
+        e.stopPropagation();
         if (modalState.isConfirm) {
           handleCancel();
         } else {
           handleConfirm();
         }
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        handleConfirm();
+      } else if (e.key === 'Tab') {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+        const focusable = [...dialog.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+          .filter(element => element.getClientRects().length > 0);
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (!first) {
+          e.preventDefault();
+          dialog.focus();
+        } else if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    const handleFocusIn = (e) => {
+      if (dialogRef.current && !dialogRef.current.contains(e.target)) {
+        confirmBtnRef.current?.focus();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('focusin', handleFocusIn);
     return () => {
       clearTimeout(timer);
       window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('focusin', handleFocusIn);
     };
-  }, [modalState.isOpen, modalState.isConfirm]);
+  }, [modalState]);
 
   // Hook global window.alert and window.confirm to ALWAYS open this custom modal
   useEffect(() => {
@@ -251,6 +285,8 @@ export function ModalAlertProvider({ children }) {
       {/* Global Custom Alert / Confirm Modal Dialog */}
       {modalState.isOpen && (
         <div 
+          ref={dialogRef}
+          tabIndex={-1}
           className="modal-backdrop alert-modal-backdrop"
           onClick={(e) => {
             // Click outside backdrop to dismiss if not a strict confirm

@@ -1,336 +1,117 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getStored, setStored, removeStored, STORAGE_KEYS, initStorage } from '../services/storage';
-import { generateMemberNumber } from '../services/certService';
-import { remoteDb, isExternalDbConfigured, verifyPassword, hashPassword } from '../services/apiClient';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { removeStored, STORAGE_KEYS, initStorage } from '../services/storage';
+import { remoteDb } from '../services/apiClient';
+import { clearAuthSession, getAuthSession, signOutSession } from '../services/authSession';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(() => {
-    return getStored(STORAGE_KEYS.CURRENT_USER);
-  });
+  const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [sessionConflict, setSessionConflict] = useState(false);
+  const authVersion = useRef(0);
+  const userRef = useRef(null);
+  userRef.current = currentUser;
 
-  // Fetch users from Supabase Cloud DB
   const refreshUsers = useCallback(async () => {
-    if (!isExternalDbConfigured) return [];
-    try {
-      const remoteUsers = await remoteDb.getUsers();
-      if (Array.isArray(remoteUsers)) {
-        setUsers(remoteUsers);
-        return remoteUsers;
-      }
-    } catch (e) {
-      console.warn('Supabase users fetch warning:', e);
-    }
-    return [];
+    if (userRef.current?.role !== 'admin') return [];
+    const version = authVersion.current;
+    const rows = await remoteDb.getUsers();
+    if (version === authVersion.current) setUsers(rows);
+    return rows;
   }, []);
 
   useEffect(() => {
-    // 1. Purge legacy local database tables (keep only current user session ticket)
     initStorage();
-
-    // 2. Validate current stored session without blocking non-admin visitors
-    async function initAuth() {
-      try {
-        const storedUser = getStored(STORAGE_KEYS.CURRENT_USER);
-        if (storedUser) {
-          setCurrentUser(storedUser);
-          // If stored user is admin, fetch user list in background
-          if (storedUser.role === 'admin') {
-            refreshUsers().catch(() => {});
-          }
-        }
-      } catch (err) {
-        console.warn('Auth initialization error:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    initAuth();
-
-    // Single device / Concurrent login detection via BroadcastChannel
-    let authChannel;
-    try {
-      authChannel = new BroadcastChannel('buddha_auth_session_channel');
-      authChannel.onmessage = (event) => {
-        const { type, userId, sessionToken } = event.data;
-        if (type === 'NEW_LOGIN') {
-          const activeUser = getStored(STORAGE_KEYS.CURRENT_USER);
-          if (activeUser && activeUser.id === userId && activeUser.activeSessionToken !== sessionToken) {
-            setSessionConflict(true);
-            // Invalidate current session
-            setCurrentUser(null);
-            removeStored(STORAGE_KEYS.CURRENT_USER);
-          }
-        }
-      };
-    } catch (e) {
-      console.warn('BroadcastChannel not supported', e);
-    }
-
-    // Reactive listener for session updates without page reload
-    const handleAuthSync = () => {
-      const stored = getStored(STORAGE_KEYS.CURRENT_USER);
-      setCurrentUser(stored);
-      if (stored?.role === 'admin') {
-        refreshUsers().catch(() => {});
-      }
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('buddha_sync_update', handleAuthSync);
-    }
-
-    return () => {
-      if (authChannel) authChannel.close();
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('buddha_sync_update', handleAuthSync);
-      }
-    };
-  }, [refreshUsers]);
-
-  // Check ID availability
-  const checkIdAvailable = async (id) => {
-    const cleanId = id.trim().toLowerCase();
-    const currentList = users.length > 0 ? users : (await refreshUsers()) || [];
-    return !currentList.some(u => u.id && u.id.toLowerCase() === cleanId);
-  };
-
-  // Check Phone availability (prevent duplicate sign up)
-  const checkPhoneAvailable = async (phone) => {
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    const currentList = users.length > 0 ? users : (await refreshUsers()) || [];
-    return !currentList.some(u => u.phone && u.phone.replace(/[^0-9]/g, '') === cleanPhone);
-  };
-
-  // Register New Member (100% Supabase Direct)
-  const register = async ({ id, password, name, birthDate, phone }) => {
-    const cleanId = id.trim();
-    if (!cleanId) throw new Error('아이디를 입력해 주세요.');
-
-    // Ensure latest users loaded
-    const latestUsers = (await refreshUsers()) || users;
-    if (latestUsers.some(u => u.id.toLowerCase() === cleanId.toLowerCase())) {
-      throw new Error('이미 사용 중인 아이디입니다.');
-    }
-
-    // Password validation: 8+ chars, letters, numbers, special symbols
-    const hasLetters = /[A-Za-z]/.test(password || '');
-    const hasNumbers = /\d/.test(password || '');
-    const hasSpecial = /[@$!%*#?&~^_\-+=\[\]{}();:'",.<>\/\\|`~]/.test(password || '');
-
-    if (!password || password.length < 8 || !hasLetters || !hasNumbers || !hasSpecial) {
-      throw new Error('비밀번호는 영문, 숫자, 기호를 모두 포함하여 8자 이상이어야 합니다.');
-    }
-
-    if (!name.trim()) throw new Error('이름을 입력해 주세요.');
-    if (!birthDate) throw new Error('생년월일을 선택해 주세요.');
-
-    const cleanPhone = phone.trim();
-    if (latestUsers.some(u => u.phone && u.phone.replace(/[^0-9]/g, '') === cleanPhone.replace(/[^0-9]/g, ''))) {
-      throw new Error('해당 휴대전화 번호로 이미 가입된 계정이 존재합니다. (1인 1계정 원칙)');
-    }
-
-    const memberNo = generateMemberNumber(latestUsers.length);
-    const newUser = {
-      id: cleanId,
-      password,
-      name: name.trim(),
-      birthDate,
-      phone: cleanPhone,
-      memberNo,
-      role: 'student',
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-
-    // Save directly to Supabase Cloud DB
-    const res = await remoteDb.insertUser(newUser);
-    if (!res && isExternalDbConfigured) {
-      throw new Error('클라우드 데이터베이스에 회원 등록을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.');
-    }
-
-    await refreshUsers();
-    return newUser;
-  };
-
-  // Login (Secure Authentication via Single Record Check & Web Crypto)
-  const login = async (id, password) => {
-    const cleanId = id.trim();
-    let authUser = null;
-
-    if (isExternalDbConfigured) {
-      authUser = await remoteDb.authenticateUser(cleanId, password);
-    } else {
-      const latestUsers = (await refreshUsers()) || users;
-      const found = latestUsers.find(u => u.id.toLowerCase() === cleanId.toLowerCase());
-      if (found && await verifyPassword(password, found.password)) {
-        authUser = { ...found };
-        delete authUser.password;
-      }
-    }
-
-    if (!authUser) {
-      throw new Error('아이디 또는 비밀번호가 일치하지 않습니다.');
-    }
-
-    // Generate unique session token for single device restriction
-    const sessionToken = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const sessionUser = { ...authUser, activeSessionToken: sessionToken };
-    delete sessionUser.password; // Double check: Never store password in session state
-
-    // Store ONLY the session ticket in browser storage for refresh persistence
-    setStored(STORAGE_KEYS.CURRENT_USER, sessionUser);
-    setCurrentUser(sessionUser);
-    setSessionConflict(false);
-
-    // Broadcast new login to invalidate older sessions
-    try {
-      const channel = new BroadcastChannel('buddha_auth_session_channel');
-      channel.postMessage({ type: 'NEW_LOGIN', userId: authUser.id, sessionToken });
-      channel.close();
-    } catch (e) {}
-
-    return sessionUser;
-  };
-
-  // Logout (Clear session ticket & wipe storage)
-  const logout = () => {
-    setCurrentUser(null);
+    // Cached profile fields are never evidence of identity or administrator access.
     removeStored(STORAGE_KEYS.CURRENT_USER);
-  };
-
-  // Find / Reset Password (100% Supabase Direct)
-  const resetPassword = async ({ id, name, phone, newPassword }) => {
-    const cleanId = id.trim();
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    const latestUsers = (await refreshUsers()) || users;
-    
-    const user = latestUsers.find(
-      u => u.id.toLowerCase() === cleanId.toLowerCase() && 
-           u.name.trim() === name.trim() && 
-           u.phone && u.phone.replace(/[^0-9]/g, '') === cleanPhone
-    );
-
-    if (!user) {
-      throw new Error('입력하신 회원 정보와 일치하는 계정을 찾을 수 없습니다.');
-    }
-
-    const hasLetters = /[A-Za-z]/.test(newPassword || '');
-    const hasNumbers = /\d/.test(newPassword || '');
-    const hasSpecial = /[@$!%*#?&~^_\-+=\[\]{}();:'",.<>\/\\|`~]/.test(newPassword || '');
-
-    if (!newPassword || newPassword.length < 8 || !hasLetters || !hasNumbers || !hasSpecial) {
-      throw new Error('새 비밀번호는 영문, 숫자, 기호를 모두 포함하여 8자 이상이어야 합니다.');
-    }
-
-    await remoteDb.updateUserPassword(user.id, newPassword);
-    await refreshUsers();
-    return true;
-  };
-
-  // Admin: Arbitrarily register user (100% Supabase Direct)
-  const adminRegisterUser = async ({ id, password, name, birthDate, phone, role = 'student', memberNo }) => {
-    const cleanId = id?.trim();
-    if (!cleanId) throw new Error('아이디를 입력해 주세요.');
-
-    const latestUsers = (await refreshUsers()) || users;
-    if (latestUsers.some(u => u.id.toLowerCase() === cleanId.toLowerCase())) {
-      throw new Error('이미 등록되어 사용 중인 아이디입니다.');
-    }
-
-    if (!password || password.trim().length < 4) {
-      throw new Error('비밀번호는 최소 4자 이상이어야 합니다.');
-    }
-
-    if (!name || !name.trim()) throw new Error('이름(또는 법명)을 입력해 주세요.');
-    if (!birthDate) throw new Error('생년월일을 선택해 주세요.');
-
-    const cleanPhone = phone?.trim();
-    if (!cleanPhone) throw new Error('휴대전화 번호를 입력해 주세요.');
-    if (latestUsers.some(u => u.phone && u.phone.replace(/[^0-9]/g, '') === cleanPhone.replace(/[^0-9]/g, ''))) {
-      throw new Error('해당 휴대전화 번호로 이미 가입된 계정이 존재합니다. (1인 1계정 원칙)');
-    }
-
-    const assignedMemberNo = memberNo?.trim() || generateMemberNumber(latestUsers.length);
-    const newUser = {
-      id: cleanId,
-      password: password.trim(),
-      name: name.trim(),
-      birthDate,
-      phone: cleanPhone,
-      memberNo: assignedMemberNo,
-      role: role || 'student',
-      createdAt: new Date().toISOString().split('T')[0]
+    const version = ++authVersion.current;
+    remoteDb.getCurrentUser().then(user => {
+      if (version !== authVersion.current) return;
+      if (!user) clearAuthSession();
+      setCurrentUser(user);
+    }).catch(() => {
+      if (version === authVersion.current) {
+        clearAuthSession();
+        setError('로그인 세션을 확인하지 못했습니다. 다시 로그인해 주세요.');
+      }
+    }).finally(() => { if (version === authVersion.current) setLoading(false); });
+    const expired = () => {
+      authVersion.current++;
+      setCurrentUser(null);
+      setUsers([]);
+      setLoading(false);
+      setError('로그인이 만료되었습니다. 다시 로그인해 주세요.');
     };
+    window.addEventListener('buddha_auth_expired', expired);
+    return () => { authVersion.current++; window.removeEventListener('buddha_auth_expired', expired); };
+  }, []);
 
-    await remoteDb.insertUser(newUser);
-    await refreshUsers();
-    return newUser;
-  };
+  useEffect(() => {
+    if (currentUser?.role === 'admin') refreshUsers().catch(() => setError('회원 목록을 불러오지 못했습니다. 다시 시도해 주세요.'));
+    else setUsers([]);
+  }, [currentUser?.id, currentUser?.role, refreshUsers]);
 
-  // Admin: Delete user (100% Supabase Direct Cascade)
-  const adminDeleteUser = async (userId) => {
-    if (userId === 'admin') {
-      throw new Error('최고관리자(admin) 계정은 안전을 위해 삭제할 수 없습니다.');
-    }
-    if (currentUser && currentUser.id === userId) {
-      throw new Error('현재 로그인 중인 본인 관리자 계정은 삭제할 수 없습니다.');
-    }
-
-    await remoteDb.deleteUser(userId);
-    await refreshUsers();
-    return true;
-  };
-
-  // Admin: Reset any user password (100% Supabase Direct)
-  const adminResetPassword = async (userId, newPassword) => {
-    if (!newPassword || newPassword.trim().length < 4) {
-      throw new Error('새 비밀번호는 최소 4자 이상이어야 합니다.');
-    }
-
-    await remoteDb.updateUserPassword(userId, newPassword.trim());
-    await refreshUsers();
-    return true;
-  };
-
-  const clearConflictAlert = () => {
+  const login = async (id, password) => {
+    const version = ++authVersion.current;
+    const user = await remoteDb.authenticateUser(id.trim(), password);
+    if (version !== authVersion.current) return null;
+    setCurrentUser({ ...user, activeSessionToken: getAuthSession()?.access_token });
     setSessionConflict(false);
+    setError(null);
+    setLoading(false);
+    return user;
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        currentUser,
-        users,
-        loading,
-        sessionConflict,
-        clearConflictAlert,
-        refreshUsers,
-        login,
-        logout,
-        register,
-        adminRegisterUser,
-        adminDeleteUser,
-        adminResetPassword,
-        checkIdAvailable,
-        checkPhoneAvailable,
-        resetPassword,
-        isAdmin: currentUser?.role === 'admin' || currentUser?.id === 'admin'
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const logout = () => {
+    authVersion.current++;
+    setCurrentUser(null);
+    setUsers([]);
+    setError(null);
+    removeStored(STORAGE_KEYS.CURRENT_USER);
+    void signOutSession().catch(() => setError('이 기기에서는 로그아웃했습니다. 서버 연결을 확인해 주세요.'));
+  };
+  const checkIdAvailable = async id => (await remoteDb.checkAvailability({ id: id.trim() })).idAvailable === true;
+  const checkPhoneAvailable = async phone => (await remoteDb.checkAvailability({ phone: phone.replace(/[^0-9]/g, '') })).phoneAvailable === true;
+  const validateMember = ({ id, password, name, birthDate, phone }) => {
+    if (!id?.trim() || !name?.trim() || !birthDate || !phone?.trim()) throw new Error('회원 정보를 모두 입력해 주세요.');
+    if (!password || password.length < 8 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      throw new Error('비밀번호는 영문, 숫자, 기호를 포함하여 8자 이상이어야 합니다.');
+    }
+  };
+  const register = async fields => {
+    validateMember(fields);
+    return remoteDb.insertUser({ ...fields, id: fields.id.trim(), role: 'student' });
+  };
+  const adminRegisterUser = async fields => {
+    validateMember(fields);
+    const version = authVersion.current;
+    const user = await remoteDb.insertUser({ ...fields, id: fields.id.trim() }, true);
+    if (version === authVersion.current) setUsers(prev => [...prev.filter(existing => existing.id !== user.id), user]);
+    return user;
+  };
+  const adminDeleteUser = async userId => {
+    const version = authVersion.current;
+    await remoteDb.deleteUser(userId);
+    if (version === authVersion.current) setUsers(prev => prev.filter(user => user.id !== userId));
+    return true;
+  };
+  const adminResetPassword = async (userId, password) => {
+    await remoteDb.updateUserPassword(userId, password);
+    return true;
+  };
+  const resetPassword = async () => { throw new Error('교학처에 본인 확인 후 비밀번호 초기화를 요청해 주세요.'); };
+
+  return <AuthContext.Provider value={{ currentUser, users, loading, error, sessionConflict,
+    clearConflictAlert: () => setSessionConflict(false), refreshUsers, login, logout, register,
+    adminRegisterUser, adminDeleteUser, adminResetPassword, checkIdAvailable, checkPhoneAvailable,
+    resetPassword, isAdmin: currentUser?.role === 'admin' }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }

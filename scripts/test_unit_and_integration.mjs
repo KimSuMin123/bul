@@ -135,22 +135,27 @@ test('certService - verifyCertificate matching & case insensitivity', () => {
 // 2. UNIT TESTS: examService
 // ==============================================================================
 test('examService - getExamPool & selectRandomQuestions', () => {
-  const pool = getExamPool('course-ritual-8-11');
-  assert.ok(Array.isArray(pool));
-  assert.ok(pool.length >= 20, 'Exam question pool should have at least 20 questions');
+  // Production question banks live on the server; there is no client fallback.
+  assert.deepEqual(getExamPool('course-ritual-8-11'), []);
+  const pool = Array.from({ length: 20 }, (_, index) => ({
+    id: `fixture-question-${index + 1}`, question: `Fixture ${index + 1}`,
+    options: ['A', 'B', 'C', 'D'], correctAnswer: 2,
+  }));
 
   // Exact 20 questions
   const selected20 = selectRandomQuestions(pool, 20);
   assert.equal(selected20.length, 20);
+  assert.equal(new Set(selected20.map(question => question.id)).size, 20);
+  assert.deepEqual(new Set(selected20.map(question => question.id)), new Set(pool.map(question => question.id)));
 
   // Edge case: Requesting more questions than pool length
   const smallPool = [{ id: 1 }, { id: 2 }, { id: 3 }];
   const selectedAll = selectRandomQuestions(smallPool, 10);
   assert.equal(selectedAll.length, 3);
 
-  // Edge case: Empty pool -> Gracefully falls back to PRESET 20 questions
+  // Empty input must stay empty instead of supplying a bundled answer bank.
   const emptySelected = selectRandomQuestions([], 20);
-  assert.equal(emptySelected.length, 20);
+  assert.equal(emptySelected.length, 0);
 });
 
 test('examService - evaluateExam scoring & pass/fail threshold', () => {

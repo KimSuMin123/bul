@@ -4,6 +4,7 @@ import {
   CheckCircle2, FastForward, Clock, X
 } from 'lucide-react';
 import { useCourse } from '../../context/CourseContext';
+import { getLectureVideoUrl } from '../../services/mediaStorage.js';
 
 const PLAYBACK_RATES = [0.8, 1.0, 1.2, 1.25, 1.5];
 
@@ -35,12 +36,34 @@ export default function VideoPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [mediaSource, setMediaSource] = useState(null);
+  const [mediaError, setMediaError] = useState(null);
+  const [mediaRetry, setMediaRetry] = useState(0);
+  const mediaScope = `${userId}:${lecture?.id}:${lecture?.videoUrl || ''}`;
+  const saveInFlightRef = useRef(null);
+  const saveScopeRef = useRef('');
+  const updateProgressRef = useRef(updateProgress);
+  updateProgressRef.current = updateProgress;
+  saveScopeRef.current = `${userId}:${lecture?.id}`;
   const [controlsTimeout, setControlsTimeout] = useState(null);
   const controlsTimeoutRef = useRef(null);
   const dismissedResumeRef = useRef({});
   const lastSavedSecRef = useRef(0);
   const lastTimeRef = useRef(0);
   const cumulativeWatchedRef = useRef(0);
+
+  useEffect(() => {
+    let active = true;
+    setMediaError(null);
+    setMediaSource(null);
+    getLectureVideoUrl(lecture?.videoUrl).then(url => {
+      if (active) setMediaSource({ scope: mediaScope, url });
+    }).catch(error => {
+      if (active) setMediaError(error.message || '영상을 불러오지 못했습니다. 다시 시도해 주세요.');
+    });
+    return () => { active = false; };
+  }, [mediaScope, mediaRetry]);
 
   // Sync fullscreen change events (native & webkit)
   useEffect(() => {
@@ -94,6 +117,11 @@ export default function VideoPlayer({
 
   // Clean up controls debounce timer on unmount
   useEffect(() => {
+    saveScopeRef.current = `${userId}:${lecture?.id}`;
+    return () => { saveScopeRef.current = ''; };
+  }, [userId, lecture?.id]);
+
+  useEffect(() => {
     return () => {
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
@@ -106,6 +134,7 @@ export default function VideoPlayer({
     if (!lecture?.id || !userId) return;
 
     lastSavedSecRef.current = 0;
+    setSaveError(null);
 
     // Only prompt resume once per lecture session
     if (!dismissedResumeRef.current[lecture.id]) {
@@ -171,6 +200,28 @@ export default function VideoPlayer({
     }
   };
 
+  // Serialize writes so a delayed periodic save cannot overwrite the final position.
+  const savePosition = async (seconds, total) => {
+    const saveScope = `${userId}:${lecture.id}`;
+    const previous = saveInFlightRef.current;
+    const task = (async () => {
+      if (previous) await previous.catch(() => {});
+      if (saveScopeRef.current !== saveScope) return null;
+      return updateProgressRef.current(userId, lecture.id, seconds, total);
+    })();
+    saveInFlightRef.current = task;
+    try {
+      const saved = await task;
+      if (saveScopeRef.current === saveScope) setSaveError(null);
+      return saved;
+    } catch {
+      if (saveScopeRef.current === saveScope) setSaveError('진도를 저장하지 못했습니다. 연결을 확인한 뒤 다시 저장해 주세요.');
+      return null;
+    } finally {
+      if (saveInFlightRef.current === task) saveInFlightRef.current = null;
+    }
+  };
+
   // Progress Update
   const handleTimeUpdate = () => {
     if (!videoRef.current) return;
@@ -180,9 +231,9 @@ export default function VideoPlayer({
     setDuration(dur);
 
     // Save progress every ~5 seconds only when actively playing
-    if (!videoRef.current.paused && Math.abs(curr - lastSavedSecRef.current) >= 5) {
+    if (!videoRef.current.paused && !saveInFlightRef.current && Math.abs(curr - lastSavedSecRef.current) >= 5) {
       lastSavedSecRef.current = curr;
-      updateProgress(userId, lecture.id, curr, dur);
+      void savePosition(curr, dur);
     }
 
     if (onCurrentTimeChange) {
@@ -198,11 +249,13 @@ export default function VideoPlayer({
   };
 
   // Video Ended
-  const handleEnded = () => {
+  const handleEnded = async () => {
     setIsPlaying(false);
-    updateProgress(userId, lecture.id, duration || lecture.durationSeconds, duration || lecture.durationSeconds);
-    setJustCompleted(true);
-    if (onEnded) {
+    const saveScope = `${userId}:${lecture.id}`;
+    const saved = await savePosition(duration || lecture.durationSeconds, duration || lecture.durationSeconds);
+    if (!saved || saveScopeRef.current !== saveScope) return;
+    setJustCompleted(Boolean(saved.completed));
+    if (saved.completed && onEnded) {
       onEnded();
     }
   };
@@ -390,7 +443,7 @@ export default function VideoPlayer({
       <video
         ref={videoRef}
         className="player-video"
-        src={lecture?.videoUrl || ''}
+        src={mediaSource?.scope === mediaScope ? mediaSource.url || undefined : undefined}
         poster={lecture?.thumbnail || undefined}
         preload="metadata"
         onTimeUpdate={handleTimeUpdate}
@@ -402,15 +455,43 @@ export default function VideoPlayer({
         onCanPlay={() => setIsBuffering(false)}
         onSeeking={() => setIsBuffering(true)}
         onSeeked={() => setIsBuffering(false)}
+        onError={() => {
+          setIsPlaying(false);
+          setIsBuffering(false);
+          if (lecture?.videoUrl) setMediaError('영상을 불러오지 못했습니다. 연결을 확인하고 다시 불러와 주세요.');
+        }}
         onPlay={() => {
           setIsPlaying(true);
           setIsBuffering(false);
           setResumeNotice(null);
           if (lecture?.id) dismissedResumeRef.current[lecture.id] = true;
+          // Start the server clock before the first periodic heartbeat.
+          lastSavedSecRef.current = videoRef.current?.currentTime || 0;
+          void savePosition(lastSavedSecRef.current, duration || lecture.durationSeconds);
         }}
-        onPause={() => setIsPlaying(false)}
+        onPause={() => {
+          setIsPlaying(false);
+          if (videoRef.current && !videoRef.current.ended) void savePosition(videoRef.current.currentTime, duration || lecture.durationSeconds);
+        }}
         playsInline
       />
+
+      {mediaError && (
+        <div role="alert" style={{ position: 'absolute', top: '50%', left: '12px', right: '12px', zIndex: 25, padding: '16px', background: '#fff7ed', color: '#7c2d12', borderRadius: '8px' }}>
+          <span>{mediaError}</span>
+          <button className="btn btn-sm" onClick={() => setMediaRetry(value => value + 1)}>영상 다시 불러오기</button>
+        </div>
+      )}
+
+      {saveError && (
+        <div role="alert" style={{ position: 'absolute', top: '12px', left: '12px', right: '12px', zIndex: 25, padding: '12px', background: '#fff7ed', color: '#7c2d12', borderRadius: '8px' }}>
+          <span>{saveError}</span>
+          <button className="btn btn-sm" onClick={() => {
+            if (videoRef.current?.ended) void handleEnded();
+            else void savePosition(videoRef.current?.currentTime || currentTime, duration || lecture.durationSeconds);
+          }}>다시 저장</button>
+        </div>
+      )}
 
       {/* Buffering Indicator Overlay */}
       {isBuffering && (
