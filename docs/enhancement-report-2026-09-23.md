@@ -6,7 +6,7 @@ React 18 / Vite 6 SPA, native fetch 기반 Supabase REST, PostgreSQL 및 Storage
 
 백엔드(Astra/high), 프런트엔드(Sol/medium), 운영·성능(Astra/high)을 분담하고 총괄이 공통 API·Context·페이지 연결과 통합 검증을 수행했습니다. 파일 소유권을 분리하고 기존 미추적 문서와 output 산출물은 보존했습니다. 후속 독립 검토에서 공지 업로드 경합, 외부 승인 갱신, 질문 링크 필터 충돌, PDF 하단 잘림을 확인하여 수정·검증했습니다.
 
-운영 변경은 사용자가 허용했으며 선행 조건인 SELECT 백업과 격리 복원을 수행했습니다. 사용자가 Supabase와 Netlify에 로그인한 뒤, 대상 프로젝트 `buddha-academy`와 기존 Netlify 프로젝트 `sehwa-buddha-academy`를 확인했습니다. 운영 사이트는 `https://xn--2j1bkkm2t5tbj2hx7go2ry0o.com/`입니다. 세 SQL 마이그레이션을 한 트랜잭션으로 적용했고 lms-auth/lms-sms Edge Function을 배포했습니다. Windows 일일 백업 작업도 실제 설치했습니다. 최신 문서 커밋 `d61fd69`는 2026-09-23 21:16 KST에 운영 게시되었으며 기능 번들은 기존과 동일합니다. 관리자 변경과 최신 SELECT 백업·복원은 완료했습니다. 메일은 SMTP535 인증 오류로 미완료이며 문자 HTTP401 오류와는 별개입니다. 상세 상태는 아래 배포 기록을 따릅니다.
+운영 변경은 사용자가 허용했으며 선행 조건인 SELECT 백업과 격리 복원을 수행했습니다. 사용자가 Supabase와 Netlify에 로그인한 뒤, 대상 프로젝트 `buddha-academy`와 기존 Netlify 프로젝트 `sehwa-buddha-academy`를 확인했습니다. 운영 사이트는 `https://xn--2j1bkkm2t5tbj2hx7go2ry0o.com/`입니다. 세 SQL 마이그레이션을 한 트랜잭션으로 적용했고 lms-auth/lms-sms Edge Function을 배포했습니다. Windows 일일 백업 작업도 실제 설치했습니다. 마지막으로 운영 게시를 확인한 문서 커밋 `d61fd69`는 2026-09-23 21:16 KST에 운영 게시되었으며 기능 번들은 기존과 동일합니다. 관리자 변경은 완료했습니다. 최신21:41 KST SELECT 백업은 내부 저장·SMTP 인증·발송 접수에 성공했고 같은11테이블79행 파일의 격리 복원도 PASS입니다. 메일 SMTP535 문제는 해결됐으며 받은편지함 실수신은 사용자 확인이 필요합니다. 문자 HTTP401 오류는 별개로 미해결입니다. 후속 문서 커밋 `1e624af`는 push했지만 그 Netlify 게시 상태는 확인하지 않았습니다. 상세 상태는 아래 배포 기록을 따릅니다.
 
 ## 기능별 상태
 
@@ -19,7 +19,7 @@ React 18 / Vite 6 SPA, native fetch 기반 Supabase REST, PostgreSQL 및 Storage
 | 5 오픈식 | 2026-10-01 18:29 KST부터 노출, 18:30 시작·300초. 1분 대기·커팅5초 카운트다운, 축하 효과·개인 화면 연꽃 반응. 시간 경계7개 및 모바일 실제 브라우저 검증 | 행사 당일 관계자 리허설 필요. 기기 시계 기준, 진행자 방송 서버는 아님 |
 | 6 캐릭터 음원 | 단일 Audio, preload none, 클릭 재생·정지·오류 상태. 첨부 원본 기반 public/audio 파일과 선택적 기존 클라우드 경로 | 운영 게시·MP3 HEAD200 확인. 실제 모바일 기기/Safari는 별도 확인 |
 | 7 자격증 | 승인된 logo.png, 세로 A4 자격증, 기존 정보·발급·인쇄/PDF 저장 경로 유지 | 실제 프린터 출력은 미실행 |
-| 8 일일 백업 | 매일03:00 KST·7일 보관 예약 등록, 평문 SELECT·ACL·SMTP 첨부/결과, 실제 내부 저장·선택 열 복원 검증 | 내부 저장·복원 완료. 메일 SMTP535 인증 해결·실수신 확인 필요. PC 켜짐·사용자 로그인 필요 |
+| 8 일일 백업 | 매일03:00 KST·7일 보관 예약 등록, 평문 SELECT·ACL·SMTP 첨부/결과, 실제 내부 저장·선택 열 복원 검증 | 21:41 내부 저장·SMTP 발송 접수·11테이블79행 격리 복원 PASS. 받은편지함 실수신은 사용자 확인 필요. PC 켜짐·사용자 로그인 필요 |
 | 9 다음 강의 | 이전 차시 진도>=80. 화면·진도 RPC·영상 Storage 권한 일치. 79.99/80/80.01 격리 검증, 운영 SQL 적용 | 운영 프런트 게시 완료. 수료·시험·자격증100% 기준 유지 |
 | 10 로딩 | 경로별 코드 분리, 외부 폰트 비차단, 공개 페이지 인증 대기 제거, 30초 캐시·갱신으로 중복조회 감소, 공통 원형 로딩 표시 운영 게시 | 실제 CDN·운영 DB 환경 측정 필요. 아래 성능 보고 참조 |
 | 11 공지 | 관리자 이미지/텍스트 CRUD·노출기간·공개여부·이미지 링크, KST 오늘 숨김·닫기·모바일, RLS·업로드 제한. 운영 테이블·버킷 정책 적용 | 운영 프런트 게시 완료. 실제 관리자 공지 작성 검증 필요 |
@@ -49,7 +49,7 @@ React 18 / Vite 6 SPA, native fetch 기반 Supabase REST, PostgreSQL 및 Storage
 
 - Supabase: SQL/Edge 배포 가능한 관리 로그인 또는 `SUPABASE_ACCESS_TOKEN`, 서버 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `LMS_ALLOWED_ORIGINS`.
 - SMS: `LMS_SMS_PROVIDER=solapi`, `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `LMS_SMS_WORKER_SECRET`, `LMS_SMS_SENDER`, `LMS_SMS_ADMIN_PHONE=01047020283`, `LMS_SITE_URL`. 두 SOLAPI 키는 운영 Supabase Secrets에 저장했고 발신번호 `01080287565`의 활성화 상태를 확인했습니다. 관리자 수신번호는 `01047020283`을 유지합니다. 키 값은 코드·문서에 기록하지 않으며 SMS cron과 실발송은 아직 미완료입니다.
-- Email: `SMTP_HOST=smtp.naver.com`, `SMTP_PORT=465`, 발신·수신·사용자명은 `tntn211@naver.com`으로 비밀 아닌 설정을 저장했습니다. `SMTP_PASSWORD`는 사용자 제출로 저장됐으나 실제 메일 발송이 실패했고 별도 로그인 진단에서 `SMTPAuthenticationError 535`를 확인했습니다. 네이버2단계 인증용 앱 비밀번호·SMTP 사용 설정을 확인하도록 요청하고 새 일회성 입력창에서 재입력을 기다립니다. 실제 수신은 미검증입니다. 비밀은 호스트 환경/비밀 저장소에서 주입하고 예시에 남기지 않습니다.
+- Email: `SMTP_HOST=smtp.naver.com`, `SMTP_PORT=465`, 발신·수신·사용자명은 `tntn211@naver.com`으로 비밀 아닌 설정을 저장했습니다. `SMTP_PASSWORD`는 사용자 제출로 저장됐습니다. 초기 SMTP535 오류는 네이버 POP3/SMTP를 사용자가 켠 뒤 해결되어21:41 KST 실제 백업의 SMTP 인증·발송 접수가 성공했습니다. 받은편지함 실수신은 직접 확인하지 않아 사용자 확인이 별도로 필요합니다. 비밀은 호스트 환경/비밀 저장소에서 주입하고 예시에 남기지 않습니다.
 - 사이트: Netlify에 GitHub `KimSuMin123/bul` 연결 완료, production branch `feat/minhyeok`, `npm run build` → `dist`. Netlify 환경 변수에는 `VITE_SUPABASE_URL`과 `VITE_SUPABASE_ANON_KEY`만 설정했습니다. 승인된 행사 시각·기존 로고·첨부 음원 자료는 확보되었습니다.
 
 실제 문자 연동 전에는 기존 브라우저 알림을 유지합니다. 사용자가 말한 pwd는 알림 대체 목적임을 확인했습니다. 실제 SMS 수신·재시도 검증이 끝나면 notificationService의 알림 호출·폴링·권한 UI·SW 알림 이벤트 제거가 가능합니다. 앱 설치 기능(manifest)까지 삭제하는 범위는 이번 요청으로 확정하지 않았습니다.
@@ -100,7 +100,7 @@ React 18 / Vite 6 SPA, native fetch 기반 Supabase REST, PostgreSQL 및 Storage
 
 **제한 모바일 첫 방문은 모든 측정 페이지에서1초 목표 미달입니다.** 남은 공통 비용은 SPA JavaScript 다운로드·실행과 초기 API 응답 대기입니다. 소개·관리자는 추가 코드도 큽니다. CDN 보안·캐시 헤더는 이번 운영 게시 후 확인했습니다. 다음 개선은 공개 페이지 사전 렌더링, 소개/관리자 내부 패널 추가 분할, 실제 Supabase 쿼리·응답 시간 측정입니다. 운영 배포 후 실제 네트워크에서 원인별 시간을 다시 확인해야 합니다. 상세 JS/API 횟수와 최초·이동 구분은 [전체 성능 비교표](../test_artifacts/performance/comparison.md)에 있습니다.
 
-문자/이메일 실수신·실제 프린터 출력은 확인하지 못했습니다. Windows 예약은 설치되어 있고, 21:23 KST에 같은 PowerShell runner를 한 번 실행하여 내부 저장·격리 복원은 성공했지만 이메일은 실패했습니다. 별도 로그인만 진단한 결과 SMTP535 인증 오류였으며 추가 메일은 보내지 않았습니다. 다음 예약 시각은2026-09-24 03:00 KST이며 메일 인증 해결 뒤 실제 수신 확인이 필요합니다.
+문자/이메일 실수신·실제 프린터 출력은 확인하지 못했습니다. Windows 예약은 설치되어 있고, 21:23 KST에 같은 PowerShell runner를 한 번 실행하여 내부 저장·격리 복원은 성공했지만 이메일은 실패했습니다. 별도 로그인만 진단한 결과 SMTP535 인증 오류였으며 추가 메일은 보내지 않았습니다. 이는 당시 실패 기록이며21:41 KST에는 SMTP 인증·발송 접수가 성공했습니다. 다음 예약 시각은2026-09-24 03:00 KST이며 받은편지함 실수신은 사용자 확인이 필요합니다.
 
 ### 운영 적용 기록
 
@@ -139,15 +139,24 @@ React 18 / Vite 6 SPA, native fetch 기반 Supabase REST, PostgreSQL 및 Storage
 
 원본 LIVE Edge 코드를 복원 배포한 뒤 다시 로드한 운영 Code 편집기의 전체 복사본을 사전 확보본과 비교했습니다. 문자열 전체가 동일하며 6,943characters·FNV `0f4c84ba`이고 `operator_test` 경로는 없었습니다. 기준 파일은 `test_artifacts/deployment/sms-rollback/live-before-index.ts`입니다. 새로 읽은 Secrets 목록에서 `LMS_SMS_TEST_PHONE` 제거와 기존 발신번호·SOLAPI 설정 유지를 확인했습니다. 이 원복 검증 근거는 `test_artifacts/deployment/sms-rollback/production-verification.json`입니다. SMS 스케줄러는 미가동이며 실제 수신은 미검증입니다. 기존 브라우저 알림(PWD)은 유지합니다.
 
-이번 문자 변경 전 20:43 KST SELECT 백업은 `test_artifacts/backups/select-2026-09-23T11-43-05.893Z-2881c779-e210-46f4-a8a3-d0434bef585f.json`입니다. 11테이블79행 저장·격리 복원 PASS이며 SMTP 미설정으로 이메일은 발송되지 않았습니다. 이는 SMTP 설정 전의 기록이며 현재 상태는 아래21:23 KST 후속 검증을 따릅니다.
+이번 문자 변경 전 20:43 KST SELECT 백업은 `test_artifacts/backups/select-2026-09-23T11-43-05.893Z-2881c779-e210-46f4-a8a3-d0434bef585f.json`입니다. 11테이블79행 저장·격리 복원 PASS이며 SMTP 미설정으로 이메일은 발송되지 않았습니다. 이는 SMTP 설정 전의 기록이며 현재 상태는 아래21:41 KST 후속 검증을 따릅니다.
 
 
-### 21:23 KST 관리자 완료·최신 백업·메일 인증 결과
+### 21:23 KST 관리자 완료·백업·당시 메일 인증 오류
 
-최신 문서 커밋 `d61fd69`는 21:16 KST에 Netlify Published 상태가 되었습니다(deploy ID `6ab3c30271289d0008db263c`). 기능 번들은 앞서 검증한 원형 로딩·개원식 버전과 동일하며 이번 상태 갱신에서 제품 소스는 바꾸지 않았습니다.
+마지막으로 운영 게시를 확인한 문서 커밋 `d61fd69`는 21:16 KST에 Netlify Published 상태가 되었습니다(deploy ID `6ab3c30271289d0008db263c`). 기능 번들은 앞서 검증한 원형 로딩·개원식 버전과 동일하며 이번 상태 갱신에서 제품 소스는 바꾸지 않았습니다.
 
 관리자 helper의 변경·로그인·권한 검증은 완료됐고 검증 세션도 로그아웃했습니다. 후속 REST 확인에서 유일한 관리자 canonical ID 유지, admin 역할, Auth 연결, `adsba` 별칭이 모두 확인됐습니다. 사용자 관리자 입력 대기는 해소됐습니다.
 
-SMTP helper는 `status=saved`, `mailSent=false`를 반환하여 입력한 앱 비밀번호를 기존 ignored `.env`에 저장했습니다. 이후 예약 작업과 같은 PowerShell runner를 한 번 실행했습니다. 최신 파일 `test_artifacts/backups/select-2026-09-23T12-23-53.387Z-464c397e-b8df-468d-9db0-6867fc1bd52f.json`의 공개11테이블79행 내부 저장과 격리 복원은 PASS였지만 이메일 결과는 `failed`였습니다. 별도 SMTP 로그인만 진단한 결과 `SMTPAuthenticationError 535`였으며 그 진단에서 추가 메일은 보내지 않았습니다. 현재 문제는 설정 누락(`not-configured`)이 아닌 메일 인증 거절입니다. 네이버2단계 인증용 앱 비밀번호와 SMTP 사용 설정 확인을 요청하고 새 일회성 입력창에서 재입력을 기다립니다. SMTP535와 문자 함수의 HTTP401을 혼동하지 않으며, 두 인증 문제 모두 해결로 표시하지 않습니다.
+SMTP helper는 `status=saved`, `mailSent=false`를 반환하여 입력한 앱 비밀번호를 기존 ignored `.env`에 저장했습니다. 이후 예약 작업과 같은 PowerShell runner를 한 번 실행했습니다. 당시 파일 `test_artifacts/backups/select-2026-09-23T12-23-53.387Z-464c397e-b8df-468d-9db0-6867fc1bd52f.json`의 공개11테이블79행 내부 저장과 격리 복원은 PASS였지만 이메일 결과는 `failed`였습니다. 별도 SMTP 로그인만 진단한 결과 `SMTPAuthenticationError 535`였으며 그 진단에서 추가 메일은 보내지 않았습니다. 당시 문제는 설정 누락(`not-configured`)이 아닌 메일 인증 거절이었습니다. 이후21:41 KST에는 아래와 같이 SMTP 인증 문제가 해결됐습니다. 문자 함수 HTTP401은 여전히 미해결입니다.
 
 Windows 예약을 별도로 읽기 검증했습니다. 정확한 이름은 `LMS-Daily-SELECT-Backup`, 활성화·Ready, 매일03:00 KST·7일 보관, 다음 실행은2026-09-24 03:00 KST입니다. 작업은 `powershell.exe`로 `C:\dev\bul\scripts\db_backup_run.ps1`을 실행하며 작업 폴더는 `C:\dev\bul`입니다. runner는 `C:\dev\bul\.env`를 읽어 Node의 `scripts/db_backup_select.mjs`를 실행하고 `test_artifacts/backups`에 저장합니다. SMTP 필수 설정 존재 여부는 true이고 실제 인증 성공을 뜻하지 않습니다. 실행 계정 SID가 현재 사용자와 일치하며 Interactive 로그인 조건, 절전 자동 깨우기 꺼짐, 실행 가능 시 누락분 시작, 중복 실행 무시, 최대1시간으로 설정돼 있습니다. PC가 켜져 있고 해당 사용자가 로그인해 있어야 합니다. 예약 검사의 이전 LastTaskResult1은18:53 시험 실행 기록이며 이번21:23 직접 runner 실행 결과와 구분합니다. 근거는 `test_artifacts/scheduled-task-verification.json`입니다.
+
+
+### 21:41 KST SMTP 인증 해결·백업 발송 접수 성공
+
+새 앱 비밀번호를 저장한 뒤21:38 KST에도 SMTP535가 발생했습니다. CUA에서 네이버 앱 비밀번호 발급 계정이 `tntn211`과 일치하고 POP3/SMTP 및 IMAP/SMTP가 모두 꺼져 있음을 확인했습니다. 사용자가 직접 POP3/SMTP를 '사용함'으로 저장했고 다시 로드한 화면의 접근성 트리에서 사용함=1을 확인했습니다.
+
+그 후 예약 작업과 같은 PowerShell runner를 한 번 더 실행하여21:41 KST에 `exit0`, `status=saved`, `email=sent`를 확인했습니다. 최신 백업은 `test_artifacts/backups/select-2026-09-23T12-41-51.263Z-52c4735d-2b84-440a-b7e7-1987c205c5ea.json`, 공개11테이블79행입니다. 동일 파일의 격리 복원도11테이블79행 PASS이며 파일 옆 `.restore-report.json`에 결과를 보관했습니다. SMTP 인증과 발송 접수는 성공했고 메일535 문제는 해결됐습니다. 받은편지함의 실제 도착은 직접 확인하지 않았으므로 사용자 확인이 별도로 필요합니다.
+
+관리자 `adsba` 변경 완료, 문자401 미해결·임시 설정 원복·SMS 스케줄 미가동 상태는 그대로입니다. 일일 백업03:00 KST·7일 보관과 PC 켜짐·사용자 로그인 조건도 유지합니다. 메일 성공을 문자 성공으로 표시하지 않습니다.
