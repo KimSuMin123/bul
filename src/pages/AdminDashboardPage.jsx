@@ -6,7 +6,7 @@ import {
   Loader2, Play, ExternalLink, AlertCircle, RefreshCw, X, Info,
   Image as ImageIcon, Upload, Sparkles, CheckCircle2, FileText,
   UserPlus, KeyRound, Eye, EyeOff, Copy, CheckCheck, UserCheck,
-  Bell, BellOff, Download, Smartphone, Volume2
+  Bell, BellOff, Download, Smartphone, Volume2, Filter
 } from 'lucide-react';
 import { useCourse } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
@@ -1242,6 +1242,97 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
     showAlert(`기부금 영수증 발행 대장 엑셀(CSV) 추출이 완료되었습니다!\n\n• 파일명: ${filename}\n• 총 등재 인원: ${exportRows.length}명 (1전화번호 1행 엄격 누적)\n• 한글 및 금액이 엑셀에서 바로 열립니다.`, { type: 'success', title: '엑셀 추출 완료' });
   };
 
+  // Unified records for Donation Management Page
+  const allDonationOverviewRecords = useMemo(() => {
+    return [
+      ...pendingEnrollments.map(enr => {
+        const student = allUsers.find(u => u.id === enr.userId);
+        const course = courses.find(c => c.id === enr.courseId);
+        const studentPhone = student?.phone || '';
+        const receipt = findReceiptByPhoneOrUser(donationReceipts, studentPhone, enr.userId);
+        return {
+          id: enr.id,
+          rawItem: enr,
+          itemType: 'pending',
+          type: '대면수납 대기',
+          date: enr.enrolledAt || '접수대기',
+          studentName: student ? student.name : enr.userId,
+          studentPhone,
+          userId: enr.userId,
+          courseId: enr.courseId,
+          courseTitle: course ? course.title : enr.courseId,
+          amount: course ? course.price : 50000,
+          manager: '교학처 접수',
+          methodMemo: '대면 수납 승인 대기',
+          donationReceiptIssued: Boolean(receipt),
+          donationTotalAmount: receipt ? receipt.totalAmount : 0,
+          receipt
+        };
+      }),
+      ...fullPaymentRecords.map(pay => {
+        const student = allUsers.find(u => u.id === pay.userId);
+        const course = courses.find(c => c.id === pay.courseId);
+        const studentPhone = student?.phone || '';
+        const receipt = findReceiptByPhoneOrUser(donationReceipts, studentPhone, pay.userId);
+        return {
+          id: pay.id,
+          rawItem: pay,
+          itemType: 'paid',
+          type: '수납완료',
+          date: pay.paidAt || '2026-01-01',
+          studentName: student ? student.name : pay.userId,
+          studentPhone,
+          userId: pay.userId,
+          courseId: pay.courseId,
+          courseTitle: course ? course.title : pay.courseId,
+          amount: pay.amount || (course ? course.price : 50000),
+          manager: pay.manager || '교학처 관리자',
+          methodMemo: pay.methodMemo || '대면 수납',
+          donationReceiptIssued: Boolean(pay.donationReceiptIssued || receipt),
+          donationTotalAmount: receipt ? receipt.totalAmount : 0,
+          receipt
+        };
+      })
+    ];
+  }, [pendingEnrollments, fullPaymentRecords, allUsers, courses, donationReceipts]);
+
+  // Unissued records strictly excluding anyone who has already received a receipt
+  const unissuedDonationRecords = useMemo(() => {
+    return allDonationOverviewRecords.filter(item => !item.donationReceiptIssued);
+  }, [allDonationOverviewRecords]);
+
+  // Filtered by donationSearchQuery
+  const filteredUnissuedDonationRecords = useMemo(() => {
+    if (!donationSearchQuery.trim()) return unissuedDonationRecords;
+    const q = donationSearchQuery.trim().toLowerCase();
+    return unissuedDonationRecords.filter(item =>
+      (item.studentName && item.studentName.toLowerCase().includes(q)) ||
+      (item.studentPhone && item.studentPhone.includes(q)) ||
+      (item.userId && item.userId.toLowerCase().includes(q)) ||
+      (item.courseTitle && item.courseTitle.toLowerCase().includes(q))
+    );
+  }, [unissuedDonationRecords, donationSearchQuery]);
+
+  const filteredAllDonationOverviewRecords = useMemo(() => {
+    if (!donationSearchQuery.trim()) return allDonationOverviewRecords;
+    const q = donationSearchQuery.trim().toLowerCase();
+    return allDonationOverviewRecords.filter(item =>
+      (item.studentName && item.studentName.toLowerCase().includes(q)) ||
+      (item.studentPhone && item.studentPhone.includes(q)) ||
+      (item.userId && item.userId.toLowerCase().includes(q)) ||
+      (item.courseTitle && item.courseTitle.toLowerCase().includes(q))
+    );
+  }, [allDonationOverviewRecords, donationSearchQuery]);
+
+  // Dynamic Excel Export for Donation Page
+  const handleExportFilteredDonationPageExcel = () => {
+    if (donationFilter === 'issued') {
+      handleExportDonationLedgerExcel();
+    } else {
+      handleExportFilteredPaymentsExcel();
+    }
+  };
+
   // Handle Sequential Lock Toggle
   const handleToggleSequential = (courseId, currentVal) => {
     updateCourseSettings(courseId, { sequentialUnlock: !currentVal });
@@ -1515,7 +1606,12 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               alignItems: 'center',
               gap: '6px'
             }}
-            onClick={() => setActiveTab('donation')}
+            onClick={() => {
+              setActiveTab('donation');
+              if (donationFilter === 'all') {
+                setDonationFilter('issued');
+              }
+            }}
           >
             <FileText size={15} color={activeTab === 'donation' ? '#059669' : undefined} />
             <span>기부금 영수증 ({donationReceipts.length})</span>
@@ -1814,77 +1910,204 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             </div>
 
             {/* 기부영수증 필터 탭 바 및 엑셀(CSV) 추출 툴바 */}
-            <div className="card" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', backgroundColor: 'var(--color-surface-warm)', border: '1px solid var(--color-border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--color-charcoal)' }}>📋 기부영수증 필터:</span>
-                <div style={{ display: 'inline-flex', borderRadius: '8px', border: '1px solid var(--color-border)', overflow: 'hidden', backgroundColor: '#FFFFFF', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <div
+              className="card"
+              style={{
+                padding: '16px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '14px',
+                backgroundColor: '#F8FAFC',
+                border: '2px solid var(--color-sage)',
+                borderRadius: '12px',
+                boxShadow: '0 4px 14px rgba(31, 58, 51, 0.08)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <span
+                    style={{
+                      backgroundColor: 'var(--color-sage)',
+                      color: '#FFFFFF',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <Filter size={13} />
+                    필터 선택
+                  </span>
+                  <span style={{ fontSize: '14.5px', fontWeight: 800, color: 'var(--color-charcoal)' }}>
+                    기부영수증 필터:
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    borderRadius: '10px',
+                    border: '2px solid var(--color-sage)',
+                    overflow: 'hidden',
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.06)'
+                  }}
+                >
                   <button
                     type="button"
                     style={{
-                      padding: '8px 14px',
-                      fontSize: '13px',
-                      fontWeight: donationFilter === 'all' ? 700 : 500,
+                      padding: '9px 16px',
+                      fontSize: '13.5px',
+                      fontWeight: donationFilter === 'all' ? 800 : 600,
                       backgroundColor: donationFilter === 'all' ? 'var(--color-sage)' : '#FFFFFF',
                       color: donationFilter === 'all' ? '#FFFFFF' : 'var(--color-text-main)',
                       border: 'none',
                       cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
                       transition: 'all 0.15s ease'
                     }}
                     onClick={() => setDonationFilter('all')}
                   >
-                    전체 ({pendingEnrollments.length + fullPaymentRecords.length}건)
+                    <span>전체보기</span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        padding: '1px 6px',
+                        borderRadius: '10px',
+                        backgroundColor: donationFilter === 'all' ? 'rgba(0,0,0,0.2)' : '#F1F5F9',
+                        color: donationFilter === 'all' ? '#FFFFFF' : '#475569',
+                        fontWeight: 700
+                      }}
+                    >
+                      {pendingEnrollments.length + fullPaymentRecords.length}건
+                    </span>
                   </button>
+
                   <button
                     type="button"
                     style={{
-                      padding: '8px 14px',
-                      fontSize: '13px',
-                      fontWeight: donationFilter === 'unissued' ? 700 : 500,
+                      padding: '9px 16px',
+                      fontSize: '13.5px',
+                      fontWeight: donationFilter === 'unissued' ? 800 : 600,
                       backgroundColor: donationFilter === 'unissued' ? '#D97706' : '#FFFFFF',
                       color: donationFilter === 'unissued' ? '#FFFFFF' : 'var(--color-text-main)',
-                      borderLeft: '1px solid var(--color-border)',
-                      borderRight: '1px solid var(--color-border)',
+                      borderLeft: '1.5px solid #CBD5E1',
+                      borderRight: '1.5px solid #CBD5E1',
                       cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
                       transition: 'all 0.15s ease'
                     }}
                     onClick={() => setDonationFilter('unissued')}
                   >
-                    미발행 (기발행자 제외)
+                    <Clock size={14} />
+                    <span>미발행 건만 보기 (기발행자 제외)</span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        padding: '1px 6px',
+                        borderRadius: '10px',
+                        backgroundColor: donationFilter === 'unissued' ? '#78350F' : '#FEF3C7',
+                        color: donationFilter === 'unissued' ? '#FDE68A' : '#92400E',
+                        fontWeight: 700
+                      }}
+                    >
+                      {unissuedDonationRecords.length}건
+                    </span>
                   </button>
+
                   <button
                     type="button"
                     style={{
-                      padding: '8px 14px',
-                      fontSize: '13px',
-                      fontWeight: donationFilter === 'issued' ? 700 : 500,
+                      padding: '9px 16px',
+                      fontSize: '13.5px',
+                      fontWeight: donationFilter === 'issued' ? 800 : 600,
                       backgroundColor: donationFilter === 'issued' ? '#059669' : '#FFFFFF',
                       color: donationFilter === 'issued' ? '#FFFFFF' : 'var(--color-text-main)',
                       border: 'none',
                       cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
                       transition: 'all 0.15s ease'
                     }}
                     onClick={() => setDonationFilter('issued')}
                   >
-                    기발행 완료
+                    <FileText size={14} />
+                    <span>기발행 완료</span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        padding: '1px 6px',
+                        borderRadius: '10px',
+                        backgroundColor: donationFilter === 'issued' ? '#064E3B' : '#ECFDF5',
+                        color: donationFilter === 'issued' ? '#A7F3D0' : '#047857',
+                        fontWeight: 700
+                      }}
+                    >
+                      {allDonationOverviewRecords.length - unissuedDonationRecords.length}건
+                    </span>
                   </button>
                 </div>
               </div>
 
-              {/* 3가지 조건별 실시간 엑셀 추출 버튼 */}
-              <button
-                type="button"
-                className="btn btn-sm"
-                style={{ backgroundColor: '#1E293B', color: '#FFFFFF', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-                onClick={handleExportFilteredPaymentsExcel}
-                title="현재 선택된 필터 조건의 명단을 엑셀(CSV) 파일로 다운로드합니다."
-              >
-                <Download size={15} />
-                <span>
-                  {donationFilter === 'all' && '전체 엑셀(CSV) 다운로드'}
-                  {donationFilter === 'unissued' && '미발행(제외) 엑셀 다운로드'}
-                  {donationFilter === 'issued' && '기발행 엑셀 다운로드'}
-                </span>
-              </button>
+              {/* 우측 액션 그룹: 전용 대장 바로가기 + 엑셀 추출 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderColor: '#059669',
+                    color: '#065F46',
+                    backgroundColor: '#ECFDF5'
+                  }}
+                  onClick={() => {
+                    setActiveTab('donation');
+                    setDonationFilter('issued');
+                  }}
+                  title="1전화번호 1행 누적 관리 기부금 영수증 전용 대장 페이지로 이동합니다."
+                >
+                  <FileText size={14} color="#059669" />
+                  <span>🧾 기부 영수증 전용 대장 이동</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  style={{
+                    backgroundColor: '#1E293B',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}
+                  onClick={handleExportFilteredPaymentsExcel}
+                  title="현재 선택된 필터 조건의 명단을 엑셀(CSV) 파일로 다운로드합니다."
+                >
+                  <Download size={15} />
+                  <span>
+                    {donationFilter === 'all' && '전체 엑셀(CSV) 다운로드'}
+                    {donationFilter === 'unissued' && `미발행(제외) 엑셀 다운로드 (${unissuedDonationRecords.length}건)`}
+                    {donationFilter === 'issued' && '기발행 엑셀 다운로드'}
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* SECTION 1: 대면 수납 대기 (납부전) 목록 */}
@@ -2282,8 +2505,187 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               </div>
             </div>
 
-            {/* Filter & Real-time Search Toolbar */}
-            <div className="card" style={{ padding: '16px 20px', background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+            {/* ★ 핵심: 기부영수증 3종 필터 및 동적 엑셀 추출 툴바 */}
+            <div
+              className="card"
+              style={{
+                padding: '16px 20px',
+                background: 'linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%)',
+                border: '2px solid #059669',
+                borderRadius: '12px',
+                boxShadow: '0 4px 14px rgba(5, 150, 105, 0.1)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '14px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <span
+                    style={{
+                      backgroundColor: '#059669',
+                      color: '#FFFFFF',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <Filter size={13} />
+                    필터 선택
+                  </span>
+                  <span style={{ fontSize: '14.5px', fontWeight: 800, color: '#064E3B' }}>
+                    조회 조건:
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    borderRadius: '10px',
+                    border: '2px solid #059669',
+                    overflow: 'hidden',
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.06)'
+                  }}
+                >
+                  <button
+                    type="button"
+                    style={{
+                      padding: '9px 16px',
+                      fontSize: '13.5px',
+                      fontWeight: donationFilter === 'issued' ? 800 : 600,
+                      backgroundColor: donationFilter === 'issued' ? '#059669' : '#FFFFFF',
+                      color: donationFilter === 'issued' ? '#FFFFFF' : '#334155',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '7px',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onClick={() => setDonationFilter('issued')}
+                  >
+                    <FileText size={15} />
+                    <span>기발행 대장 (1전번 1행)</span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        padding: '1px 6px',
+                        borderRadius: '10px',
+                        backgroundColor: donationFilter === 'issued' ? '#064E3B' : '#ECFDF5',
+                        color: donationFilter === 'issued' ? '#A7F3D0' : '#047857',
+                        fontWeight: 700
+                      }}
+                    >
+                      {donationReceipts.length}명
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    style={{
+                      padding: '9px 16px',
+                      fontSize: '13.5px',
+                      fontWeight: donationFilter === 'unissued' ? 800 : 600,
+                      backgroundColor: donationFilter === 'unissued' ? '#D97706' : '#FFFFFF',
+                      color: donationFilter === 'unissued' ? '#FFFFFF' : '#334155',
+                      borderLeft: '1.5px solid #CBD5E1',
+                      borderRight: '1.5px solid #CBD5E1',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '7px',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onClick={() => setDonationFilter('unissued')}
+                  >
+                    <Clock size={15} />
+                    <span>미발행 건만 보기 (기발행자 제외)</span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        padding: '1px 6px',
+                        borderRadius: '10px',
+                        backgroundColor: donationFilter === 'unissued' ? '#78350F' : '#FEF3C7',
+                        color: donationFilter === 'unissued' ? '#FDE68A' : '#92400E',
+                        fontWeight: 700
+                      }}
+                    >
+                      {unissuedDonationRecords.length}건
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    style={{
+                      padding: '9px 16px',
+                      fontSize: '13.5px',
+                      fontWeight: donationFilter === 'all' ? 800 : 600,
+                      backgroundColor: donationFilter === 'all' ? '#1E293B' : '#FFFFFF',
+                      color: donationFilter === 'all' ? '#FFFFFF' : '#334155',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '7px',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onClick={() => setDonationFilter('all')}
+                  >
+                    <CheckCircle2 size={15} />
+                    <span>전체 수납/기부 현황</span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        padding: '1px 6px',
+                        borderRadius: '10px',
+                        backgroundColor: donationFilter === 'all' ? '#0F172A' : '#F1F5F9',
+                        color: donationFilter === 'all' ? '#CBD5E1' : '#475569',
+                        fontWeight: 700
+                      }}
+                    >
+                      {allDonationOverviewRecords.length}건
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Dynamic Excel Download Button according to the active filter */}
+              <button
+                type="button"
+                className="btn btn-sm"
+                style={{
+                  backgroundColor: '#1E293B',
+                  color: '#FFFFFF',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '9px 16px',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                  fontSize: '13px'
+                }}
+                onClick={handleExportFilteredDonationPageExcel}
+                title="현재 선택된 필터 조건의 명단을 엑셀(CSV) 파일로 다운로드합니다."
+              >
+                <Download size={15} />
+                <span>
+                  {donationFilter === 'issued' && `기발행 대장 엑셀 다운로드 (${donationReceipts.length}명)`}
+                  {donationFilter === 'unissued' && `미발행(기발행자제외) 엑셀 다운로드 (${unissuedDonationRecords.length}건)`}
+                  {donationFilter === 'all' && `전체 수납/기부 엑셀 다운로드 (${allDonationOverviewRecords.length}건)`}
+                </span>
+              </button>
+            </div>
+
+            {/* Filter Status Guide Banner & Real-time Search */}
+            <div className="card" style={{ padding: '14px 20px', background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '280px' }}>
                   <div style={{ position: 'relative', width: '100%', maxWidth: '380px' }}>
@@ -2307,108 +2709,319 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     )}
                   </div>
                   <span style={{ fontSize: '13px', color: '#64748B', fontWeight: 600 }}>
-                    검색 결과: <strong style={{ color: '#065F46' }}>{filteredDonationReceipts.length}명</strong> / 전체 {donationReceipts.length}명
+                    검색 결과:{' '}
+                    <strong style={{ color: '#065F46' }}>
+                      {donationFilter === 'issued' && `${filteredDonationReceipts.length}명`}
+                      {donationFilter === 'unissued' && `${filteredUnissuedDonationRecords.length}건`}
+                      {donationFilter === 'all' && `${filteredAllDonationOverviewRecords.length}건`}
+                    </strong>
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '12.5px', color: '#64748B' }}>
-                    💡 2건 이상의 수납도 전화번호가 동일하면 1개의 행으로 합산됩니다.
+                  <span style={{ fontSize: '12.5px', color: '#475569', fontWeight: 500 }}>
+                    {donationFilter === 'issued' && '💡 기발행 대장: 동일 학인의 복수 수납은 1행에 금액만 누적 가산됩니다.'}
+                    {donationFilter === 'unissued' && '💡 미발행 건: 이미 영수증을 1회 이상 발급받은 학인은 본 목록에서 엄격히 제외됩니다.'}
+                    {donationFilter === 'all' && '💡 전체 보기: 대면 수납 신청 및 영수증 발급 상태를 종합 조회합니다.'}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Main Donation Ledger Table */}
-            <div className="card" style={{ overflowX: 'auto', border: '1.5px solid #A7F3D0', padding: 0 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#ECFDF5', borderBottom: '1.5px solid #A7F3D0' }}>
-                    <th style={{ padding: '14px 16px', color: '#065F46', width: '50px' }}>순번</th>
-                    <th style={{ padding: '14px 16px', color: '#065F46' }}>학인 성명</th>
-                    <th style={{ padding: '14px 16px', color: '#065F46' }}>연락처</th>
-                    <th style={{ padding: '14px 16px', color: '#065F46' }}>아이디</th>
-                    <th style={{ padding: '14px 16px', color: '#065F46', textAlign: 'right' }}>누적 기부액</th>
-                    <th style={{ padding: '14px 16px', color: '#065F46', textAlign: 'center' }}>누적 건수</th>
-                    <th style={{ padding: '14px 16px', color: '#065F46' }}>최근 발행일</th>
-                    <th style={{ padding: '14px 16px', color: '#065F46' }}>최초 등록일</th>
-                    <th style={{ padding: '14px 16px', color: '#065F46', textAlign: 'center', width: '130px' }}>영수 확인서</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredDonationReceipts.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} style={{ textAlign: 'center', padding: '60px 20px', color: '#64748B' }}>
-                        <FileText size={40} style={{ color: '#10B981', opacity: 0.7, margin: '0 auto 12px auto' }} />
-                        <h4 style={{ fontWeight: 700, color: 'var(--color-charcoal)', margin: '0 0 6px 0', fontSize: '16px' }}>
-                          {donationSearchQuery ? '검색어와 일치하는 기부금 영수증 발급자가 없습니다.' : '현재 등록된 기부금 영수증 발행 대장이 비어있습니다.'}
-                        </h4>
-                        <p style={{ fontSize: '13px', color: '#64748B', maxWidth: '520px', margin: '0 auto 16px auto', lineHeight: '1.6' }}>
-                          교학처 대면 수납 장부에서 수강생 신청 내역을 <strong>[수납 승인 + 기부 영수증 발행]</strong> 하시면
-                          이곳 대장에 1전화번호 1행으로 자동 등록 및 금액 누적 합산됩니다.
-                        </p>
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => setActiveTab('payment')}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                        >
-                          <CreditCard size={14} />
-                          <span>교학처 대면 수납 장부 바로가기</span>
-                        </button>
-                      </td>
+            {/* TAB-VIEW 1: 기발행 대장 (1전화번호 1행 엄격 누적) */}
+            {donationFilter === 'issued' && (
+              <div className="card" style={{ overflowX: 'auto', border: '1.5px solid #A7F3D0', padding: 0 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#ECFDF5', borderBottom: '1.5px solid #A7F3D0' }}>
+                      <th style={{ padding: '14px 16px', color: '#065F46', width: '50px' }}>순번</th>
+                      <th style={{ padding: '14px 16px', color: '#065F46' }}>학인 성명</th>
+                      <th style={{ padding: '14px 16px', color: '#065F46' }}>연락처</th>
+                      <th style={{ padding: '14px 16px', color: '#065F46' }}>아이디</th>
+                      <th style={{ padding: '14px 16px', color: '#065F46', textAlign: 'right' }}>누적 기부액</th>
+                      <th style={{ padding: '14px 16px', color: '#065F46', textAlign: 'center' }}>누적 건수</th>
+                      <th style={{ padding: '14px 16px', color: '#065F46' }}>최근 발행일</th>
+                      <th style={{ padding: '14px 16px', color: '#065F46' }}>최초 등록일</th>
+                      <th style={{ padding: '14px 16px', color: '#065F46', textAlign: 'center', width: '130px' }}>영수 확인서</th>
                     </tr>
-                  ) : (
-                    filteredDonationReceipts.map((rcpt, idx) => (
-                      <tr
-                        key={rcpt.id || rcpt.phone || idx}
-                        style={{
-                          borderBottom: '1px solid #E2E8F0',
-                          backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#FAFCFB'
-                        }}
-                      >
-                        <td style={{ padding: '14px 16px', color: '#64748B', fontWeight: 600 }}>{idx + 1}</td>
-                        <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-charcoal)' }}>
-                          {rcpt.name}
-                        </td>
-                        <td style={{ padding: '14px 16px', fontWeight: 600, color: '#1E293B' }}>
-                          ☎ {rcpt.phone}
-                        </td>
-                        <td style={{ padding: '14px 16px', color: '#64748B' }}>
-                          {rcpt.userId || '-'}
-                        </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 900, fontSize: '15px', color: '#047857' }}>
-                          {(rcpt.totalAmount || 0).toLocaleString()}원
-                        </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                          <span className="badge badge-sage" style={{ fontWeight: 800, fontSize: '12px', padding: '3px 8px' }}>
-                            {rcpt.donationCount || (rcpt.history ? rcpt.history.length : 1)}건 합산
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 16px', color: '#475569', fontWeight: 500 }}>
-                          {rcpt.lastIssuedAt || '-'}
-                        </td>
-                        <td style={{ padding: '14px 16px', color: '#94A3B8', fontSize: '12px' }}>
-                          {rcpt.createdAt || rcpt.lastIssuedAt || '-'}
-                        </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                  </thead>
+                  <tbody>
+                    {filteredDonationReceipts.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} style={{ textAlign: 'center', padding: '60px 20px', color: '#64748B' }}>
+                          <FileText size={40} style={{ color: '#10B981', opacity: 0.7, margin: '0 auto 12px auto' }} />
+                          <h4 style={{ fontWeight: 700, color: 'var(--color-charcoal)', margin: '0 0 6px 0', fontSize: '16px' }}>
+                            {donationSearchQuery ? '검색어와 일치하는 기부금 영수증 발급자가 없습니다.' : '현재 등록된 기부금 영수증 발행 대장이 비어있습니다.'}
+                          </h4>
+                          <p style={{ fontSize: '13px', color: '#64748B', maxWidth: '520px', margin: '0 auto 16px auto', lineHeight: '1.6' }}>
+                            교학처 대면 수납 장부에서 수강생 신청 내역을 <strong>[수납 승인 + 기부 영수증 발행]</strong> 하시면
+                            이곳 대장에 1전화번호 1행으로 자동 등록 및 금액 누적 합산됩니다.
+                          </p>
                           <button
                             type="button"
-                            className="btn btn-outline btn-sm"
-                            style={{ color: '#065F46', borderColor: '#059669', display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 700, padding: '4px 10px' }}
-                            onClick={() => setSelectedDonationReceipt(rcpt)}
-                            title="세화붓다아카데미 공식 기부금 영수 확인서를 열람하고 인쇄/PDF 출력합니다."
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setActiveTab('payment')}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                           >
-                            <FileText size={14} />
-                            <span>영수증 보기</span>
+                            <CreditCard size={14} />
+                            <span>교학처 대면 수납 장부 바로가기</span>
                           </button>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : (
+                      filteredDonationReceipts.map((rcpt, idx) => (
+                        <tr
+                          key={rcpt.id || rcpt.phone || idx}
+                          style={{
+                            borderBottom: '1px solid #E2E8F0',
+                            backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#FAFCFB'
+                          }}
+                        >
+                          <td style={{ padding: '14px 16px', color: '#64748B', fontWeight: 600 }}>{idx + 1}</td>
+                          <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-charcoal)' }}>
+                            {rcpt.name}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontWeight: 600, color: '#1E293B' }}>
+                            ☎ {rcpt.phone}
+                          </td>
+                          <td style={{ padding: '14px 16px', color: '#64748B' }}>
+                            {rcpt.userId || '-'}
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 900, fontSize: '15px', color: '#047857' }}>
+                            {(rcpt.totalAmount || 0).toLocaleString()}원
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                            <span className="badge badge-sage" style={{ fontWeight: 800, fontSize: '12px', padding: '3px 8px' }}>
+                              {rcpt.donationCount || (rcpt.history ? rcpt.history.length : 1)}건 합산
+                            </span>
+                          </td>
+                          <td style={{ padding: '14px 16px', color: '#475569', fontWeight: 500 }}>
+                            {rcpt.lastIssuedAt || '-'}
+                          </td>
+                          <td style={{ padding: '14px 16px', color: '#94A3B8', fontSize: '12px' }}>
+                            {rcpt.createdAt || rcpt.lastIssuedAt || '-'}
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              className="btn btn-outline btn-sm"
+                              style={{ color: '#065F46', borderColor: '#059669', display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 700, padding: '4px 10px' }}
+                              onClick={() => setSelectedDonationReceipt(rcpt)}
+                              title="세화붓다아카데미 공식 기부금 영수 확인서를 열람하고 인쇄/PDF 출력합니다."
+                            >
+                              <FileText size={14} />
+                              <span>영수증 보기</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* TAB-VIEW 2: 기부영수증 미발행 건만 보기 (기발행자 제외) */}
+            {donationFilter === 'unissued' && (
+              <div className="card" style={{ overflowX: 'auto', border: '1.5px solid #FDE68A', padding: 0 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#FFFBEB', borderBottom: '1.5px solid #FDE68A' }}>
+                      <th style={{ padding: '14px 16px', color: '#92400E', width: '50px' }}>순번</th>
+                      <th style={{ padding: '14px 16px', color: '#92400E' }}>구분</th>
+                      <th style={{ padding: '14px 16px', color: '#92400E' }}>신청/수납일</th>
+                      <th style={{ padding: '14px 16px', color: '#92400E' }}>학인 성명</th>
+                      <th style={{ padding: '14px 16px', color: '#92400E' }}>연락처</th>
+                      <th style={{ padding: '14px 16px', color: '#92400E' }}>아이디</th>
+                      <th style={{ padding: '14px 16px', color: '#92400E' }}>신청 강좌</th>
+                      <th style={{ padding: '14px 16px', color: '#92400E', textAlign: 'right' }}>수납 금액</th>
+                      <th style={{ padding: '14px 16px', color: '#92400E', textAlign: 'center', width: '160px' }}>기부영수증 발행 조치</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUnissuedDonationRecords.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} style={{ textAlign: 'center', padding: '60px 20px', color: '#64748B' }}>
+                          <CheckCircle2 size={40} style={{ color: '#059669', opacity: 0.7, margin: '0 auto 12px auto' }} />
+                          <h4 style={{ fontWeight: 700, color: 'var(--color-charcoal)', margin: '0 0 6px 0', fontSize: '16px' }}>
+                            {donationSearchQuery ? '검색 조건에 맞는 미발행 대상자가 없습니다.' : '현재 영수증 미발행 상태인 수납/신청 내역이 없습니다.'}
+                          </h4>
+                          <p style={{ fontSize: '13px', color: '#64748B', maxWidth: '480px', margin: '0 auto', lineHeight: '1.6' }}>
+                            모든 수강생의 기부금 영수증이 발행되었거나 기발행 완료되었습니다.
+                          </p>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredUnissuedDonationRecords.map((item, idx) => (
+                        <tr
+                          key={item.id || idx}
+                          style={{
+                            borderBottom: '1px solid #E2E8F0',
+                            backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#FFFDF5'
+                          }}
+                        >
+                          <td style={{ padding: '14px 16px', color: '#64748B', fontWeight: 600 }}>{idx + 1}</td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <span
+                              className={`badge ${item.itemType === 'paid' ? 'badge-success' : 'badge-amber'}`}
+                              style={{ fontSize: '11.5px', fontWeight: 700, padding: '2px 8px' }}
+                            >
+                              {item.type}
+                            </span>
+                          </td>
+                          <td style={{ padding: '14px 16px', color: '#64748B' }}>{item.date}</td>
+                          <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-charcoal)' }}>
+                            {item.studentName}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontWeight: 600, color: '#1E293B' }}>
+                            {item.studentPhone ? `☎ ${item.studentPhone}` : <span style={{ color: '#94A3B8' }}>미등록</span>}
+                          </td>
+                          <td style={{ padding: '14px 16px', color: '#64748B' }}>
+                            {item.userId}
+                          </td>
+                          <td style={{ padding: '14px 16px', color: '#334155', fontWeight: 500 }}>
+                            {item.courseTitle}
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 800, color: '#047857' }}>
+                            {(Number(item.amount) || 0).toLocaleString()}원
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              className="btn btn-sm"
+                              style={{
+                                backgroundColor: '#059669',
+                                color: '#FFFFFF',
+                                fontWeight: 700,
+                                fontSize: '12px',
+                                padding: '5px 12px',
+                                borderRadius: '6px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                boxShadow: '0 1px 3px rgba(5,150,105,0.2)'
+                              }}
+                              onClick={() => {
+                                if (item.itemType === 'pending') {
+                                  handleApprovePendingPayment(item.rawItem, true);
+                                } else {
+                                  handleIssueReceiptForPayment(item.rawItem);
+                                }
+                              }}
+                              title="해당 학인에게 기부금 영수증을 즉시 발행하고 대장에 1인 1행으로 누적 등재합니다."
+                            >
+                              <FileText size={13} />
+                              <span>+ 영수증 즉시 발행</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* TAB-VIEW 3: 전체 수납 및 기부영수증 통합 현황 */}
+            {donationFilter === 'all' && (
+              <div className="card" style={{ overflowX: 'auto', border: '1.5px solid #CBD5E1', padding: 0 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1.5px solid #CBD5E1' }}>
+                      <th style={{ padding: '14px 16px', color: '#334155', width: '50px' }}>순번</th>
+                      <th style={{ padding: '14px 16px', color: '#334155' }}>구분</th>
+                      <th style={{ padding: '14px 16px', color: '#334155' }}>일자</th>
+                      <th style={{ padding: '14px 16px', color: '#334155' }}>학인 성명</th>
+                      <th style={{ padding: '14px 16px', color: '#334155' }}>연락처</th>
+                      <th style={{ padding: '14px 16px', color: '#334155' }}>신청 강좌</th>
+                      <th style={{ padding: '14px 16px', color: '#334155', textAlign: 'right' }}>수납 금액</th>
+                      <th style={{ padding: '14px 16px', color: '#334155', textAlign: 'center' }}>기부영수증 상태</th>
+                      <th style={{ padding: '14px 16px', color: '#334155', textAlign: 'center', width: '140px' }}>확인 / 조치</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAllDonationOverviewRecords.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} style={{ textAlign: 'center', padding: '60px 20px', color: '#64748B' }}>
+                          <Info size={40} style={{ color: '#64748B', opacity: 0.6, margin: '0 auto 12px auto' }} />
+                          <h4 style={{ fontWeight: 700, color: 'var(--color-charcoal)', margin: '0 0 6px 0', fontSize: '16px' }}>
+                            검색 조건에 맞는 수납 및 영수증 내역이 없습니다.
+                          </h4>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredAllDonationOverviewRecords.map((item, idx) => (
+                        <tr
+                          key={item.id || idx}
+                          style={{
+                            borderBottom: '1px solid #E2E8F0',
+                            backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#FAFCFB'
+                          }}
+                        >
+                          <td style={{ padding: '14px 16px', color: '#64748B', fontWeight: 600 }}>{idx + 1}</td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <span className={`badge ${item.itemType === 'paid' ? 'badge-success' : 'badge-amber'}`} style={{ fontSize: '11px', padding: '2px 8px' }}>
+                              {item.type}
+                            </span>
+                          </td>
+                          <td style={{ padding: '14px 16px', color: '#64748B' }}>{item.date}</td>
+                          <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-charcoal)' }}>
+                            {item.studentName}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontWeight: 500, color: '#1E293B' }}>
+                            {item.studentPhone ? `☎ ${item.studentPhone}` : '-'}
+                          </td>
+                          <td style={{ padding: '14px 16px', color: '#334155' }}>
+                            {item.courseTitle}
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 800, color: '#047857' }}>
+                            {(Number(item.amount) || 0).toLocaleString()}원
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                            {item.donationReceiptIssued ? (
+                              <span className="badge badge-sage" style={{ fontWeight: 800, fontSize: '12px', padding: '3px 8px' }}>
+                                ✓ 발행완료 (누적 {(Number(item.donationTotalAmount) || 0).toLocaleString()}원)
+                              </span>
+                            ) : (
+                              <span className="badge badge-coral" style={{ fontWeight: 700, fontSize: '12px', padding: '3px 8px' }}>
+                                ○ 미발행
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                            {item.donationReceiptIssued ? (
+                              <button
+                                type="button"
+                                className="btn btn-outline btn-sm"
+                                style={{ color: '#065F46', borderColor: '#059669', fontSize: '12px', padding: '3px 8px' }}
+                                onClick={() => setSelectedDonationReceipt(item.receipt || { name: item.studentName, phone: item.studentPhone, totalAmount: item.amount, lastIssuedAt: item.date })}
+                              >
+                                영수증 보기
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn btn-sm"
+                                style={{ backgroundColor: '#059669', color: '#FFFFFF', fontSize: '12px', padding: '3px 8px' }}
+                                onClick={() => {
+                                  if (item.itemType === 'pending') {
+                                    handleApprovePendingPayment(item.rawItem, true);
+                                  } else {
+                                    handleIssueReceiptForPayment(item.rawItem);
+                                  }
+                                }}
+                              >
+                                + 즉시 발행
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
