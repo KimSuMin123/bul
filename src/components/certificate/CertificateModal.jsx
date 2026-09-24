@@ -51,7 +51,7 @@ export default function CertificateModal({ certificate: rawCert, onClose }) {
           <div className="cert-person">
             <div className="cert-person-fields">
               <p><span>자격종목</span><strong>{cert.certTypeFull || cert.certType || '—'}</strong></p>
-              <p><span>자격종목번호</span><strong>{cert.regOffice || ''}</strong></p>
+              <p><span>등록번호</span><strong>{cert.regOffice || ''}</strong></p>
             <p><span>성명</span><strong>{cert.studentName || '—'}</strong></p>
             <p><span>생년월일</span><strong>{cert.birthDate || '—'}</strong></p>
             </div></div>
