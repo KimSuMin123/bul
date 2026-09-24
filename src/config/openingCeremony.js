@@ -4,10 +4,10 @@ export const OPENING_VISIBLE_LEAD = 60;
 export const OPENING_CUT_AT = 90;
 
 export const OPENING_PHASES = [
-  { end: 15, title: '🔔 개원의 종소리', description: '세화붓다아카데미 개원을 알리는 장엄한 범종 소리와 함께 마음을 모읍니다.' },
+  { end: 15, title: '🔔 나모붓다야 범종의 시간', description: '지혜와 자비의 등불을 밝히는 나모붓다야(Namo Buddhaya), 장엄한 범종 소리와 함께 마음을 모읍니다.' },
   { end: 35, title: '🙏 인연의 서막', description: '온 누리에 지혜와 자비의 등불을 밝히는 첫걸음을 함께해 주셔서 감사합니다.' },
   { end: 55, title: '📜 법음의 향기', description: '정통 불교 의례와 실천을 잇는 불교의례해설사·법사 배움의 전당이 열립니다.' },
-  { end: 75, title: '🪷 함께 모은 원력', description: '전국 각지에서 동시 접속하신 모든 학인분들과 함께 합장하며 축원을 올립니다.' },
+  { end: 75, title: '🪷 나모붓다야 원력 결집', description: '전국 각지에서 동시 접속하신 모든 학인분들과 함께 나모붓다야를 염송하며 축원을 올립니다.' },
   { end: 85, title: '🎗️ 황금 리본 등장', description: '곧 리본 커팅식이 거행됩니다. 화면 앞에서 다섯부터 함께 카운트다운을 외쳐주세요!' },
   { end: 90, title: '✂️ 리본 커팅 카운트다운', description: '다섯부터 함께 세어 주세요. 새로운 배움의 문을 엽니다!' },
   { end: 115, title: '🎉 개원을 축하합니다!', description: '황금 리본이 열렸습니다! 지혜와 자비가 깃든 세화불학원의 역사적인 출범을 축하합니다!' },

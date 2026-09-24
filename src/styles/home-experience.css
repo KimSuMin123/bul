@@ -4,6 +4,148 @@
 .namo-audio-button img { width: 100%; max-height: 340px; object-fit: contain; mix-blend-mode: multiply; }
 .namo-audio-button:focus-visible, .announcement-popup button:focus-visible, .opening-ceremony button:focus-visible { outline: 3px solid #d49b4b; outline-offset: 3px; }
 .namo-audio p { font-size: 13px; margin-top: 8px; color: #475569; }
+/* Fullscreen Cinematic Namo Buddhaya Ceremony Stage */
+.opening-ceremony-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999;
+  background: radial-gradient(ellipse at center, #1E1B4B 0%, #0F172A 50%, #020617 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 20px 24px 20px;
+  box-sizing: border-box;
+  color: #F8FAFC;
+  animation: fullscreen-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes fullscreen-fade-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.fullscreen-header {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 155, 75, 0.3);
+  border-radius: 50px;
+  z-index: 10;
+}
+.fullscreen-title-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.fullscreen-title {
+  font-size: clamp(15px, 2.2vw, 18px);
+  font-weight: 800;
+  color: #FCD34D;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fullscreen-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-namo-audio-toggle {
+  background: linear-gradient(135deg, rgba(212, 155, 75, 0.3) 0%, rgba(184, 134, 11, 0.45) 100%);
+  border: 1.5px solid #F59E0B;
+  color: #FFFBEB;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 50px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+.btn-namo-audio-toggle:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.6) 0%, rgba(212, 155, 75, 0.8) 100%);
+  transform: translateY(-1px);
+}
+.btn-fullscreen-close {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #FCA5A5;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-fullscreen-close:hover {
+  background: #DC2626;
+  color: #FFFFFF;
+}
+
+.fullscreen-stage {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  min-height: 480px;
+  margin: 16px auto;
+  padding: 32px 24px;
+  background: rgba(30, 41, 59, 0.55);
+  border: 2px solid rgba(212, 155, 75, 0.4);
+  border-radius: 28px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 0 40px rgba(212, 155, 75, 0.1);
+  backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-align: center;
+  z-index: 5;
+}
+
+.namo-buddhaya-emblem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  z-index: 3;
+}
+.namo-buddhaya-emblem img {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.8)) drop-shadow(0 0 35px rgba(245, 158, 11, 0.5));
+  animation: emblem-float 3.5s ease-in-out infinite alternate;
+}
+@keyframes emblem-float {
+  0% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 16px rgba(251, 191, 36, 0.7)); }
+  100% { transform: translateY(-8px) scale(1.06); filter: drop-shadow(0 0 30px rgba(251, 191, 36, 1)); }
+}
+
+.fullscreen-footer {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 10;
+}
+
 .opening-ceremony { 
   max-width: 960px; 
   margin: 36px auto; 

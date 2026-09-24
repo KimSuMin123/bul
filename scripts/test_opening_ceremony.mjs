@@ -19,7 +19,7 @@ check('18:30:00 begins the existing five-minute timeline', () => {
   assert.equal(getOpeningTimeline(start - 1).before, true);
   assert.equal(getOpeningTimeline(start).before, false);
   assert.equal(getOpeningTimeline(start).elapsed, 0);
-  assert.equal(getOpeningTimeline(start).phase.title, '🔔 개원의 종소리');
+  assert.equal(getOpeningTimeline(start).phase.title, '🔔 나모붓다야 범종의 시간');
 });
 check('ribbon counts 5,4,3,2,1 before cutting at 90 seconds', () => {
   assert.equal(getOpeningTimeline(start + 84999).cutCountdown, null);
