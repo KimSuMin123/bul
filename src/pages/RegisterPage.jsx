@@ -99,14 +99,14 @@ export default function RegisterPage({ onNavigate }) {
   return (
     <div style={{ padding: '60px 0', minHeight: '80vh', display: 'flex', alignItems: 'center' }}>
       <div className="container" style={{ maxWidth: '480px' }}>
-        
+
         <div className="card" style={{ padding: '36px 32px' }}>
           <div style={{ textAlign: 'center', marginBottom: '28px' }}>
             <div style={{ marginBottom: '16px' }}>
-              <img 
-                src="/images/logo.png" 
-                alt="사단법인 세화불학원" 
-                style={{ height: '42px', width: 'auto', objectFit: 'contain' }} 
+              <img
+                src="/images/logo.png"
+                alt="사단법인 세화불학원"
+                style={{ height: '42px', width: 'auto', objectFit: 'contain' }}
               />
             </div>
             <h2 className="heading-1 font-serif" style={{ fontSize: '22px', marginBottom: '6px' }}>
@@ -119,12 +119,12 @@ export default function RegisterPage({ onNavigate }) {
 
           {/* Registration Success Overlay Banner */}
           {successResult && (
-            <div 
-              style={{ 
-                backgroundColor: 'var(--color-sage-subtle)', 
-                border: '1px solid var(--color-sage)', 
-                padding: '28px 20px', 
-                borderRadius: 'var(--radius-md)', 
+            <div
+              style={{
+                backgroundColor: 'var(--color-sage-subtle)',
+                border: '1px solid var(--color-sage)',
+                padding: '28px 20px',
+                borderRadius: 'var(--radius-md)',
                 textAlign: 'center',
                 marginBottom: '10px'
               }}
@@ -135,15 +135,14 @@ export default function RegisterPage({ onNavigate }) {
               </div>
               <p style={{ fontSize: '14px', color: 'var(--color-charcoal)', lineHeight: '1.7', marginBottom: '20px' }}>
                 <strong>{successResult.name}</strong> 님 환영합니다.<br />
-                발급된 회원번호(학번): <strong style={{ fontFamily: 'monospace', color: 'var(--color-sage)' }}>{successResult.memberNo}</strong><br />
                 등록하신 아이디: <strong>{successResult.id}</strong><br />
                 <span style={{ fontSize: '12.5px', color: 'var(--color-text-muted)' }}>
                   (등록하신 아이디와 비밀번호로 로그인하여 강의를 수강하실 수 있습니다.)
                 </span>
               </p>
 
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn btn-primary"
                 style={{ width: '100%', padding: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14.5px' }}
                 onClick={() => onNavigate('login')}
@@ -155,13 +154,13 @@ export default function RegisterPage({ onNavigate }) {
           )}
 
           {error && (
-            <div 
-              style={{ 
-                backgroundColor: 'var(--color-coral-subtle)', 
-                color: 'var(--color-coral)', 
-                padding: '10px 14px', 
-                borderRadius: 'var(--radius-sm)', 
-                fontSize: '13px', 
+            <div
+              style={{
+                backgroundColor: 'var(--color-coral-subtle)',
+                color: 'var(--color-coral)',
+                padding: '10px 14px',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '13px',
                 marginBottom: '18px',
                 border: '1px solid rgba(224, 109, 83, 0.2)'
               }}
@@ -179,17 +178,17 @@ export default function RegisterPage({ onNavigate }) {
                   {idChecked && <span style={{ color: 'var(--color-sage)', fontSize: '12px' }}>확인 완료</span>}
                 </label>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     name="id"
-                    className="form-input" 
+                    className="form-input"
                     placeholder="영문, 숫자 4자 이상"
                     value={formData.id}
                     onChange={handleChange}
-                    required 
+                    required
                   />
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="btn btn-secondary btn-sm"
                     onClick={handleCheckId}
                     style={{ minWidth: '90px' }}
@@ -212,55 +211,55 @@ export default function RegisterPage({ onNavigate }) {
                     영문, 숫자, 기호 모두 포함 (8자 이상)
                   </span>
                 </div>
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   name="password"
-                  className="form-input" 
+                  className="form-input"
                   placeholder="영문, 숫자, 기호를 모두 포함하여 8자 이상 입력"
                   value={formData.password}
                   onChange={handleChange}
-                  required 
+                  required
                 />
               </div>
 
               {/* 비밀번호 확인 */}
               <div className="form-group">
                 <label className="form-label">비밀번호 확인 *</label>
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   name="confirmPassword"
-                  className="form-input" 
+                  className="form-input"
                   placeholder="비밀번호를 다시 입력하세요"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  required 
+                  required
                 />
               </div>
 
               {/* 이름 */}
               <div className="form-group">
                 <label className="form-label">이름 *</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   name="name"
-                  className="form-input" 
+                  className="form-input"
                   placeholder="실명을 입력하세요 (수료증 발급 기준)"
                   value={formData.name}
                   onChange={handleChange}
-                  required 
+                  required
                 />
               </div>
 
               {/* 생년월일 */}
               <div className="form-group">
                 <label className="form-label">생년월일 *</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   name="birthDate"
-                  className="form-input" 
+                  className="form-input"
                   value={formData.birthDate}
                   onChange={handleChange}
-                  required 
+                  required
                 />
               </div>
 
@@ -270,22 +269,22 @@ export default function RegisterPage({ onNavigate }) {
                   <span>휴대전화 번호 *</span>
                   <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>중복 가입 방지</span>
                 </label>
-                <input 
-                  type="tel" 
+                <input
+                  type="tel"
                   name="phone"
-                  className="form-input" 
+                  className="form-input"
                   placeholder="010-1234-5678"
                   value={formData.phone}
                   onChange={handleChange}
-                  required 
+                  required
                 />
               </div>
 
               <PrivacyConsent checked={privacyConsent} onChange={setPrivacyConsent} disabled={isSubmitting} />
 
-              <button 
-                type="submit" 
-                className="btn btn-primary" 
+              <button
+                type="submit"
+                className="btn btn-primary"
                 style={{ width: '100%', padding: '12px', marginTop: '12px', opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
                 disabled={isSubmitting || !privacyConsent}
               >
@@ -298,8 +297,8 @@ export default function RegisterPage({ onNavigate }) {
           {!successResult && (
             <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '13.5px', color: 'var(--color-text-muted)' }}>
               이미 계정이 있으신가요?{' '}
-              <button 
-                className="btn-ghost" 
+              <button
+                className="btn-ghost"
                 style={{ color: 'var(--color-sage)', fontWeight: 600, padding: 0 }}
                 onClick={() => onNavigate('login')}
               >

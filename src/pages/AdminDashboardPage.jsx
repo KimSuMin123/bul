@@ -1951,7 +1951,6 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ backgroundColor: 'var(--color-surface-warm)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-charcoal)' }}>
-                    <th style={{ padding: '12px 16px' }}>회원 식별번호</th>
                     <th style={{ padding: '12px 16px' }}>성명 / 아이디</th>
                     <th style={{ padding: '12px 16px' }}>전화번호</th>
                     <th style={{ padding: '12px 16px' }}>생년월일</th>
@@ -1965,11 +1964,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                     return (
                       <tr key={user.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                        <td style={{ padding: '14px 16px' }}>
-                          <span className="badge badge-neutral" style={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                            {user.memberNo || 'BUDDHA-2026-SYS'}
-                          </span>
-                        </td>
+
                         <td style={{ padding: '14px 16px' }}>
                           <strong>{user.name}</strong>{' '}
                           <span style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>({user.loginId || user.id})</span>
