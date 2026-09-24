@@ -1,7 +1,7 @@
 // Version must match the server-side registration contract.
 export const PRIVACY_POLICY_VERSION = '2026-09-23';
 export const APPROVAL_SCHEDULE = '입금 확인 및 수강 승인은 매일 오전 10시~11시, 오후 6시~7시에 진행됩니다.';
-export const PAYMENT_ACCOUNT = '농협 301-0264-3664-41 (사단법인 세화불학원)';
+export const PAYMENT_ACCOUNT = '농협 301-0264-3664-41 ([사] 세화불학원)';
 export const NEXT_LECTURE_PROGRESS = 80;
 
 /** The next lesson opens at 80%; completion and certificates still require 100%. */

@@ -37,7 +37,7 @@ export default function CertificateModal({ certificate: rawCert, onClose }) {
           <p className="cert-statement">위 사람은 <strong>{cert.courseTitle || '해당 과정'}</strong>을 이수하고 자격 검정을 통과하여 <strong>{cert.certTypeFull || cert.certType || '해당 자격'}</strong>을 취득하였음을 증명합니다.</p>
           {cert.competency && <p className="cert-competency"><strong>직무 내용</strong><br />{cert.competency}</p>}
         </section>
-        <footer className="cert-footer"><p className="cert-date">{dateText(cert.issuedAt)}</p><div className="cert-issuer"><strong>{cert.issuingOrg || '사단법인 세화불학원'} {cert.representative || '이사장'}</strong><SealGraphic size={78} /></div><p className="cert-office">{cert.regOffice || ''}</p><p className="cert-check">발급고유코드 {cert.certNo || '—'} · 학적식별번호 {cert.memberNo || '—'}</p><p className="cert-legal">본 자격증은 자격기본법 제17조 제2항에 따른 등록민간자격입니다. 세화불학원 온라인 학사관리시스템에서 진위를 확인할 수 있습니다.</p></footer>
+        <footer className="cert-footer"><p className="cert-date">{dateText(cert.issuedAt)}</p><div className="cert-issuer"><strong>{cert.issuingOrg || '[사] 세화불학원'} {cert.representative || '이사장'}</strong><SealGraphic size={78} /></div><p className="cert-office">{cert.regOffice || ''}</p><p className="cert-check">발급고유코드 {cert.certNo || '—'} · 학적식별번호 {cert.memberNo || '—'}</p><p className="cert-legal">본 자격증은 자격기본법 제17조 제2항에 따른 등록민간자격입니다. 세화불학원 온라인 학사관리시스템에서 진위를 확인할 수 있습니다.</p></footer>
       </article>
     </div>
   </div>;

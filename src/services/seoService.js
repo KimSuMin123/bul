@@ -6,11 +6,11 @@
 const SEO_CONFIG = {
   home: {
     title: '사단법인 세화붓다아카데미 | 따라하는 불자에서 이끄는 불자로',
-    description: '예경에서 영산재까지, 순서와 뜻을 함께 익히는 불교 의례 자격과정. 나모붓다야 - 사단법인 세화불학원 부설 세화붓다아카데미 공식 온라인 교육원.'
+    description: '예경에서 영산재까지, 순서와 뜻을 함께 익히는 불교 의례 자격과정. 나모붓다야 - [사] 세화불학원 부설 세화붓다아카데미 공식 온라인 교육원.'
   },
   about: {
     title: 'About SBA (세화불학원 소개) | 세화붓다아카데미',
-    description: '사단법인 세화불학원의 설립목적, 신행헌장, 학회연혁, 정관, 조직활동 및 글로벌 미션을 안내합니다.'
+    description: '[사] 세화불학원의 설립목적, 신행헌장, 학회연혁, 정관, 조직활동 및 글로벌 미션을 안내합니다.'
   },
   courseDetail: {
     title: '강좌 상세 안내 | 세화붓다아카데미',
@@ -26,7 +26,7 @@ const SEO_CONFIG = {
   },
   verify: {
     title: '공식 수료증 진위 확인 | 세화붓다아카데미',
-    description: '사단법인 세화불학원이 발급한 정식 수료증의 진위 여부를 실시간으로 대조 검증합니다.'
+    description: '[사] 세화불학원이 발급한 정식 수료증의 진위 여부를 실시간으로 대조 검증합니다.'
   },
   login: {
     title: '로그인 | 세화붓다아카데미',
@@ -60,7 +60,7 @@ export function updatePageSEO(view, extraData = {}) {
 
   if (view === 'about' && extraData.tab && ABOUT_TAB_TITLES[extraData.tab]) {
     title = `${ABOUT_TAB_TITLES[extraData.tab]} | 세화붓다아카데미`;
-    desc = `사단법인 세화불학원(世花佛學院) ${ABOUT_TAB_TITLES[extraData.tab]} 안내. 불교의례의 정통성과 체계적인 현대 교육을 선도합니다.`;
+    desc = `[사] 세화불학원(世花佛學院) ${ABOUT_TAB_TITLES[extraData.tab]} 안내. 불교의례의 정통성과 체계적인 현대 교육을 선도합니다.`;
   } else if (view === 'courseDetail' && extraData.courseTitle) {
     title = `${extraData.courseTitle} | 세화붓다아카데미`;
     if (extraData.courseSubtitle) desc = extraData.courseSubtitle;

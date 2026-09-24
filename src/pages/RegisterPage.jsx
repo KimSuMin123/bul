@@ -105,7 +105,7 @@ export default function RegisterPage({ onNavigate }) {
             <div style={{ marginBottom: '16px' }}>
               <img
                 src="/images/logo.png"
-                alt="사단법인 세화불학원"
+                alt="[사] 세화불학원"
                 style={{ height: '42px', width: 'auto', objectFit: 'contain' }}
               />
             </div>

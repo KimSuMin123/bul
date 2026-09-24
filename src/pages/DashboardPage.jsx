@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { 
-  PlayCircle, Clock, Award, CheckCircle2, AlertCircle, 
+import {
+  PlayCircle, Clock, Award, CheckCircle2, AlertCircle,
   Calendar, BookOpen, ExternalLink, HelpCircle, ArrowRight,
   X, MapPin, Phone, CreditCard, Mail
 } from 'lucide-react';
@@ -14,8 +14,8 @@ import { APPROVAL_SCHEDULE, enrollmentConfirmation } from '../config/sitePolicy.
 export default function DashboardPage({ onNavigate, onStartLecture }) {
   const { currentUser } = useAuth();
   const { showAlert } = useModalAlert();
-  const { 
-    courses, lectures, enrollments, getCourseProgress, 
+  const {
+    courses, lectures, enrollments, getCourseProgress,
     progressList, claimCertificate, getCertificate,
     checkLecturesCompleted, isExamPassed, getExamResult,
     enrollStudent, updateProgress, refreshData, isLectureLocked
@@ -131,12 +131,12 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
   return (
     <div style={{ padding: '36px 0 60px 0' }}>
       <div className="container">
-        
+
         {/* Student Welcome Header */}
-        <div 
-          style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'flex-start',
             marginBottom: '28px',
             flexWrap: 'wrap',
@@ -157,9 +157,9 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {currentUser.role === 'admin' && (
-              <button 
-                className="btn btn-primary btn-sm" 
-                style={{ fontWeight: 700, padding: '8px 16px', background: 'var(--color-charcoal-dark)' }} 
+              <button
+                className="btn btn-primary btn-sm"
+                style={{ fontWeight: 700, padding: '8px 16px', background: 'var(--color-charcoal-dark)' }}
                 onClick={() => onNavigate('admin')}
               >
                 <Award size={15} />
@@ -177,14 +177,14 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
         {recentResumeLecture && (
           <div className="sticky-resume-bar">
             <div className="sticky-resume-info" style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
-              <div 
-                style={{ 
-                  width: '38px', 
-                  height: '38px', 
-                  borderRadius: '50%', 
-                  background: 'var(--color-amber)', 
-                  display: 'flex', 
-                  alignItems: 'center', 
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  background: 'var(--color-amber)',
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'center',
                   color: 'var(--color-charcoal-dark)',
                   flexShrink: 0
@@ -202,7 +202,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
               </div>
             </div>
 
-            <button 
+            <button
               className="btn btn-amber btn-sm sticky-resume-btn"
               style={{ fontWeight: 600, padding: '8px 18px', whiteSpace: 'nowrap' }}
               onClick={() => onStartLecture(recentResumeLecture.lecture.id)}
@@ -235,7 +235,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
               </p>
             </div>
           ) : (
-            <div 
+            <div
               className="courses-grid"
               style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '20px' }}
             >
@@ -256,7 +256,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                     {/* Card Header & Status */}
                     <div style={{ position: 'relative', height: '140px', overflow: 'hidden' }}>
                       <img src={course.thumbnail} alt={course.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      
+
                       {/* Status Tag */}
                       <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
                         {isFullyCompleted ? (
@@ -284,10 +284,10 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
 
                       {/* Remaining Days */}
                       {!isPending && (
-                        <div 
-                          style={{ 
-                            position: 'absolute', 
-                            bottom: '10px', 
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: '10px',
                             right: '12px',
                             background: 'rgba(30, 32, 34, 0.85)',
                             backdropFilter: 'blur(4px)',
@@ -363,7 +363,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                             <span>전 강좌 완강 및 자격 검정 합격 ({latestExam ? `${latestExam.score}점` : '합격'})</span>
                           </div>
                           <p style={{ margin: 0, fontSize: '12.5px', color: '#15803D', lineHeight: '1.5' }}>
-                            축하드립니다! 자격 검정 기준(60점)을 통과하여 사단법인 세화불학원 이사장 직인이 날인된 정식 수료증이 발급되었습니다.
+                            축하드립니다! 자격 검정 기준(60점)을 통과하여 [사] 세화불학원 이사장 직인이 날인된 정식 수료증이 발급되었습니다.
                           </p>
                         </div>
                       )}
@@ -372,15 +372,15 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                       <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {isPending ? (
                           <>
-                            <button 
-                              className="btn btn-primary btn-md" 
-                              style={{ 
-                                width: '100%', 
-                                fontWeight: 700, 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center', 
-                                gap: '8px', 
+                            <button
+                              className="btn btn-primary btn-md"
+                              style={{
+                                width: '100%',
+                                fontWeight: 700,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
                                 padding: '11px',
                                 background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
                                 boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
@@ -400,8 +400,8 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                               <PlayCircle size={16} />
                               <span>1~3강 무료 체험 수강하기 ▶</span>
                             </button>
-                            <button 
-                              className="btn btn-secondary btn-sm" 
+                            <button
+                              className="btn btn-secondary btn-sm"
                               style={{ width: '100%', fontWeight: 600, padding: '9px' }}
                               onClick={() => setShowPaymentInfoModal(true)}
                             >
@@ -412,14 +412,14 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                         ) : isFullyCompleted ? (
                           <>
                             {/* Prominent Certificate Button */}
-                            <button 
-                              className="btn btn-amber btn-lg" 
-                              style={{ 
-                                width: '100%', 
-                                backgroundColor: '#D49B4B', 
-                                borderColor: '#B8860B', 
-                                color: '#FFFFFF', 
-                                fontWeight: 800, 
+                            <button
+                              className="btn btn-amber btn-lg"
+                              style={{
+                                width: '100%',
+                                backgroundColor: '#D49B4B',
+                                borderColor: '#B8860B',
+                                color: '#FFFFFF',
+                                fontWeight: 800,
                                 fontSize: '15px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -442,8 +442,8 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                               >
                                 <span>📝 시험 결과 / 재응시</span>
                               </button>
-                              <button 
-                                className="btn btn-secondary btn-sm" 
+                              <button
+                                className="btn btn-secondary btn-sm"
                                 onClick={() => {
                                   const firstLec = lectures.find(l => l.courseId === course.id);
                                   if (firstLec) onStartLecture(firstLec.id);
@@ -456,11 +456,11 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                         ) : isLecturesDone && !hasPassedExam ? (
                           <>
                             {/* Exam Take Button */}
-                            <button 
-                              className="btn btn-primary btn-lg" 
-                              style={{ 
-                                width: '100%', 
-                                fontWeight: 800, 
+                            <button
+                              className="btn btn-primary btn-lg"
+                              style={{
+                                width: '100%',
+                                fontWeight: 800,
                                 fontSize: '15px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -475,8 +475,8 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                               <Award size={18} color="#FDE68A" />
                               <span>📝 자격 검정 시험 응시하기 (60점 이상 수료)</span>
                             </button>
-                            <button 
-                              className="btn btn-secondary btn-sm" 
+                            <button
+                              className="btn btn-secondary btn-sm"
                               style={{ width: '100%' }}
                               onClick={() => {
                                 const firstLec = lectures.find(l => l.courseId === course.id);
@@ -488,8 +488,8 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                             </button>
                           </>
                         ) : (
-                          <button 
-                            className="btn btn-primary btn-md" 
+                          <button
+                            className="btn btn-primary btn-md"
                             style={{ width: '100%', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px' }}
                             onClick={() => {
                               const sortedLecs = lectures
@@ -523,7 +523,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                 <h3 className="heading-3 font-serif" style={{ margin: 0 }}>수강 신청 가능한 강좌 ({notEnrolledCourses.length})</h3>
                 <span className="text-caption">원하시는 과정을 신청하시면 [대기상태]로 접수됩니다.</span>
               </div>
-              <div 
+              <div
                 className="courses-grid"
                 style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '16px' }}
               >
@@ -539,8 +539,8 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                         </div>
                       </div>
                     </div>
-                    <button 
-                      className="btn btn-secondary btn-sm" 
+                    <button
+                      className="btn btn-secondary btn-sm"
                       style={{ width: '100%', fontWeight: 600 }}
                       onClick={() => handleApplyCourseFromDashboard(c.id)}
                       disabled={applying}
@@ -581,16 +581,16 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
 
       {/* Certificate Modal */}
       {activeCert && (
-        <CertificateModal 
-          certificate={activeCert} 
-          onClose={() => setActiveCert(null)} 
+        <CertificateModal
+          certificate={activeCert}
+          onClose={() => setActiveCert(null)}
         />
       )}
 
       {/* Payment Info Modal */}
       {showPaymentInfoModal && (
-        <div 
-          className="modal-backdrop" 
+        <div
+          className="modal-backdrop"
           style={{ zIndex: 1000 }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowPaymentInfoModal(false); }}
         >
@@ -609,7 +609,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
 
             <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '16px', borderRadius: '8px', marginBottom: '20px' }}>
               <p style={{ margin: 0, fontSize: '13.5px', color: '#92400E', lineHeight: '1.6' }}>
-                사단법인 세화불학원은 학사 관리를 위해 <strong>교학처 대면 및 전용 계좌 수납</strong>을 진행하고 있습니다.
+                [사] 세화불학원은 학사 관리를 위해 <strong>교학처 대면 및 전용 계좌 수납</strong>을 진행하고 있습니다.
               </p>
             </div>
 
@@ -626,7 +626,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                 <CreditCard size={18} color="var(--color-sage)" style={{ flexShrink: 0, marginTop: '2px' }} />
                 <div>
                   <strong>수납 전용 계좌 (농협)</strong>
-                  <div style={{ color: 'var(--color-charcoal)', fontWeight: 600, marginTop: '2px' }}>농협 301-0264-3664-41 <span style={{ fontWeight: 400, color: '#64748B' }}>(사단법인 세화불학원)</span></div>
+                  <div style={{ color: 'var(--color-charcoal)', fontWeight: 600, marginTop: '2px' }}>농협 301-0264-3664-41 <span style={{ fontWeight: 400, color: '#64748B' }}>([사] 세화불학원)</span></div>
                   <div style={{ color: '#64748B', fontSize: '12px' }}>{APPROVAL_SCHEDULE}</div>
                   <div style={{ color: '#64748B', fontSize: '12px' }}>입금자명에 학인 성명을 기재해 주세요.</div>
                 </div>
@@ -641,8 +641,8 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
               </div>
             </div>
 
-            <button 
-              className="btn btn-primary" 
+            <button
+              className="btn btn-primary"
               style={{ width: '100%', padding: '12px', fontWeight: 700 }}
               onClick={() => setShowPaymentInfoModal(false)}
             >

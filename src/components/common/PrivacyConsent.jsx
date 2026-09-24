@@ -5,7 +5,7 @@ import { PRIVACY_POLICY_VERSION } from '../../config/sitePolicy.js';
 export function PrivacyNotice() {
   return <div style={{ fontSize: '13px', lineHeight: 1.8 }}>
     <p><strong>개인정보 수집·이용 동의</strong> (버전 {PRIVACY_POLICY_VERSION})</p>
-    <p>사단법인 세화불학원은 회원 관리와 교육 서비스 제공을 위해 다음 정보를 처리합니다.</p>
+    <p>[사] 세화불학원은 회원 관리와 교육 서비스 제공을 위해 다음 정보를 처리합니다.</p>
     <ul style={{ paddingLeft: '20px' }}>
       <li>수집 항목: 아이디, 비밀번호, 이름, 생년월일, 휴대전화번호, 동의 여부·일시·문서 버전</li>
       <li>이용 목적: 회원 식별과 로그인, 중복 가입 방지, 수강·학습 관리, 수료·자격증 발급, 신청 및 Q&amp;A에 관한 서비스 문자 안내</li>

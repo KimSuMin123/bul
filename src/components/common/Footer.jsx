@@ -36,7 +36,7 @@ export default function Footer() {
             <div style={{ marginBottom: '16px' }}>
               <img
                 src="/images/logo-white.png"
-                alt="사단법인 세화불학원"
+                alt="[사] 세화불학원"
                 style={{ height: '36px', maxWidth: '100%', objectFit: 'contain' }}
               />
             </div>
@@ -102,7 +102,7 @@ export default function Footer() {
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', fontSize: '13px', color: '#94A3B8' }}>
               <div>
-                <span style={{ color: '#FFFFFF', fontWeight: 600 }}>사단법인 세화불학원</span>
+                <span style={{ color: '#FFFFFF', fontWeight: 600 }}>[사] 세화불학원</span>
                 <span style={{ marginLeft: '8px', fontSize: '12px', color: '#CBD5E1' }}>법인고유번호: 777-82-00464</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
@@ -120,7 +120,7 @@ export default function Footer() {
 
               <div style={{ marginTop: '6px', padding: '10px 12px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <div style={{ fontSize: '11.5px', color: 'var(--color-amber)', fontWeight: 600, marginBottom: '2px' }}>회비 및 수납 계좌</div>
-                <div style={{ fontSize: '12.5px', color: '#F1F5F9', fontWeight: 500 }}>농협 301-0264-3664-41 <span style={{ color: '#94A3B8', fontSize: '11px', fontWeight: 400 }}>(사단법인 세화불학원)</span></div>
+                <div style={{ fontSize: '12.5px', color: '#F1F5F9', fontWeight: 500 }}>농협 301-0264-3664-41 <span style={{ color: '#94A3B8', fontSize: '11px', fontWeight: 400 }}>([사] 세화불학원)</span></div>
               </div>
             </div>
           </div>
@@ -142,7 +142,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div style={{ paddingTop: '20px', borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#64748B', flexWrap: 'wrap', gap: '10px' }}>
-          <div>© 2026 Sehwa Buddha Academy (사단법인 세화불학원). All rights reserved.</div>
+          <div>© 2026 Sehwa Buddha Academy ([사] 세화불학원). All rights reserved.</div>
         </div>
       </div>
     </footer>

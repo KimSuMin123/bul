@@ -20,7 +20,7 @@ export default function Navbar({ currentView, onNavigate }) {
   };
 
   return (
-    <header 
+    <header
       style={{
         position: 'sticky',
         top: 0,
@@ -31,28 +31,28 @@ export default function Navbar({ currentView, onNavigate }) {
       }}
     >
       <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '68px' }}>
-        
+
         {/* Brand Logo */}
-        <div 
-          onClick={() => handleNavClick('home')} 
+        <div
+          onClick={() => handleNavClick('home')}
           style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
         >
-          <img 
-            src="/images/logo.png" 
-            alt="사단법인 세화불학원" 
-            style={{ height: '40px', width: 'auto', objectFit: 'contain' }} 
+          <img
+            src="/images/logo.png"
+            alt="[사] 세화불학원"
+            style={{ height: '40px', width: 'auto', objectFit: 'contain' }}
           />
         </div>
 
         {/* Desktop Navigation Menus (Order: About SBA -> 강의 과정 -> 내 강의실) */}
         <nav className="desktop-nav-menu" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* 1. About SBA */}
-          <div 
+          <div
             style={{ position: 'relative' }}
             onMouseEnter={() => setAboutDropdownOpen(true)}
             onMouseLeave={() => setAboutDropdownOpen(false)}
           >
-            <button 
+            <button
               className={`btn ${currentView === 'about' ? 'btn-secondary' : 'btn-ghost'}`}
               onClick={() => handleNavClick('about', 'intro')}
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -62,7 +62,7 @@ export default function Navbar({ currentView, onNavigate }) {
               <ChevronDown size={13} style={{ opacity: 0.6, marginLeft: '2px' }} />
             </button>
             {aboutDropdownOpen && (
-              <div 
+              <div
                 style={{
                   position: 'absolute',
                   top: '100%',
@@ -132,7 +132,7 @@ export default function Navbar({ currentView, onNavigate }) {
           </div>
 
           {/* 2. 강의 과정 */}
-          <button 
+          <button
             className={`btn ${currentView === 'home' ? 'btn-secondary' : 'btn-ghost'}`}
             onClick={() => handleNavClick('home')}
           >
@@ -141,7 +141,7 @@ export default function Navbar({ currentView, onNavigate }) {
           </button>
 
           {/* 3. 내 강의실 */}
-          <button 
+          <button
             className={`btn ${currentView === 'dashboard' ? 'btn-secondary' : 'btn-ghost'}`}
             onClick={() => handleNavClick('dashboard')}
           >
@@ -150,7 +150,7 @@ export default function Navbar({ currentView, onNavigate }) {
           </button>
 
           {isAdmin && (
-            <button 
+            <button
               className={`btn ${currentView === 'admin' ? 'btn-primary' : 'btn-ghost'}`}
               style={currentView === 'admin' ? {} : { color: 'var(--color-sage)', fontWeight: 600 }}
               onClick={() => handleNavClick('admin')}
@@ -166,11 +166,11 @@ export default function Navbar({ currentView, onNavigate }) {
           {currentUser ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', whiteSpace: 'nowrap', flexShrink: 0 }}>
               {/* User Profile Capsule */}
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '8px', 
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
                   padding: '6px 12px',
                   backgroundColor: 'var(--color-surface-warm)',
                   borderRadius: 'var(--radius-full)',
@@ -205,7 +205,7 @@ export default function Navbar({ currentView, onNavigate }) {
         </div>
 
         {/* Mobile Hamburger Toggle Button */}
-        <button 
+        <button
           className="mobile-menu-toggle"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="메뉴 토글"
@@ -218,24 +218,24 @@ export default function Navbar({ currentView, onNavigate }) {
       {/* Mobile Navigation Drawer Backdrop & Drawer */}
       {mobileMenuOpen && (
         <>
-          <div 
-            className="mobile-nav-backdrop" 
+          <div
+            className="mobile-nav-backdrop"
             onClick={() => setMobileMenuOpen(false)}
           />
           <div className="mobile-nav-drawer">
             {/* Drawer Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)', marginBottom: '16px' }}>
               <div>
-                <img 
-                  src="/images/logo.png" 
-                  alt="세화불학원" 
-                  style={{ height: '30px', width: 'auto', objectFit: 'contain', marginBottom: '4px' }} 
+                <img
+                  src="/images/logo.png"
+                  alt="세화불학원"
+                  style={{ height: '30px', width: 'auto', objectFit: 'contain', marginBottom: '4px' }}
                 />
                 <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
                   온라인 원격 배움터
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setMobileMenuOpen(false)}
                 style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'var(--color-surface-warm)' }}
               >
@@ -278,7 +278,7 @@ export default function Navbar({ currentView, onNavigate }) {
 
             {/* Mobile Navigation Links */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-              <button 
+              <button
                 className={`btn ${currentView === 'about' ? 'btn-secondary' : 'btn-ghost'}`}
                 style={{ justifyContent: 'flex-start', padding: '12px 14px', fontSize: '15px' }}
                 onClick={() => handleNavClick('about', 'intro')}
@@ -287,7 +287,7 @@ export default function Navbar({ currentView, onNavigate }) {
                 <span>About SBA (학회 소개)</span>
               </button>
 
-              <button 
+              <button
                 className="btn btn-ghost"
                 style={{ justifyContent: 'flex-start', padding: '12px 14px', fontSize: '15px', color: '#00c73c', fontWeight: 600 }}
                 onClick={() => {
@@ -299,7 +299,7 @@ export default function Navbar({ currentView, onNavigate }) {
                 <span>Band 바로가기</span>
               </button>
 
-              <button 
+              <button
                 className={`btn ${currentView === 'home' ? 'btn-secondary' : 'btn-ghost'}`}
                 style={{ justifyContent: 'flex-start', padding: '12px 14px', fontSize: '15px' }}
                 onClick={() => handleNavClick('home')}
@@ -308,7 +308,7 @@ export default function Navbar({ currentView, onNavigate }) {
                 <span>강의 과정 둘러보기</span>
               </button>
 
-              <button 
+              <button
                 className={`btn ${currentView === 'dashboard' ? 'btn-secondary' : 'btn-ghost'}`}
                 style={{ justifyContent: 'flex-start', padding: '12px 14px', fontSize: '15px' }}
                 onClick={() => handleNavClick('dashboard')}
@@ -318,7 +318,7 @@ export default function Navbar({ currentView, onNavigate }) {
               </button>
 
               {isAdmin && (
-                <button 
+                <button
                   className={`btn ${currentView === 'admin' ? 'btn-primary' : 'btn-ghost'}`}
                   style={{ justifyContent: 'flex-start', padding: '12px 14px', fontSize: '15px', color: currentView === 'admin' ? '#fff' : 'var(--color-sage)', fontWeight: 600 }}
                   onClick={() => handleNavClick('admin')}
@@ -332,7 +332,7 @@ export default function Navbar({ currentView, onNavigate }) {
             {/* Bottom Logout for Logged-in User */}
             {currentUser && (
               <div style={{ paddingTop: '16px', borderTop: '1px solid var(--color-border)', marginTop: 'auto' }}>
-                <button 
+                <button
                   className="btn btn-ghost"
                   style={{ width: '100%', justifyContent: 'center', color: '#E53E3E', fontSize: '14px', padding: '10px' }}
                   onClick={handleLogout}

@@ -55,7 +55,7 @@ const sampleLink = `${SITE_URL}/#watch?id=intro-1&question=q-101`;
 const testMessages = [
   {
     type: '1. 수강신청 학생 알림 (enrollment_student)',
-    text: `[세화불학원] 김세현님, 불교입문 강좌 수강 신청이 접수되었습니다. 수강료 50,000원. 농협 301-0264-3664-41 (사단법인 세화불학원). ${APPROVAL_NOTICE}`
+    text: `[세화불학원] 김세현님, 불교입문 강좌 수강 신청이 접수되었습니다. 수강료 50,000원. 농협 301-0264-3664-41 ([사] 세화불학원). ${APPROVAL_NOTICE}`
   },
   {
     type: '2. 수강신청 관리자 알림 (enrollment_admin)',

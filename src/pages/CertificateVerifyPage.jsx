@@ -48,19 +48,19 @@ export default function CertificateVerifyPage({ onNavigate }) {
   return (
     <div style={{ padding: '60px 0 80px 0', minHeight: '80vh' }}>
       <div className="container" style={{ maxWidth: '680px' }}>
-        
+
         {/* Verification Header */}
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-          <div 
-            style={{ 
-              width: '52px', 
-              height: '52px', 
-              borderRadius: '50%', 
-              background: 'var(--color-amber-subtle)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              margin: '0 auto 16px auto' 
+          <div
+            style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: '50%',
+              background: 'var(--color-amber-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px auto'
             }}
           >
             <Award size={28} color="var(--color-amber-dark)" />
@@ -69,7 +69,7 @@ export default function CertificateVerifyPage({ onNavigate }) {
             수료증 진위 확인 시스템
           </h1>
           <p className="text-body" style={{ color: 'var(--color-text-muted)', fontSize: '15px' }}>
-            사단법인 세화불학원에서 정식 발급된 수료증의 진위 여부를 실시간으로 대외 검증합니다.
+            [사] 세화불학원에서 정식 발급된 수료증의 진위 여부를 실시간으로 대외 검증합니다.
           </p>
         </div>
 
@@ -77,10 +77,10 @@ export default function CertificateVerifyPage({ onNavigate }) {
         <div className="card" style={{ padding: '24px 28px', marginBottom: '28px' }}>
           <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px' }}>
             <div style={{ position: 'relative', flex: 1 }}>
-              <Search 
-                size={18} 
-                color="#94A3B8" 
-                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} 
+              <Search
+                size={18}
+                color="#94A3B8"
+                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
               />
               <input
                 type="text"
@@ -99,9 +99,9 @@ export default function CertificateVerifyPage({ onNavigate }) {
           {/* Sample quick button */}
           <div style={{ marginTop: '12px', fontSize: '12.5px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>예시 발급번호:</span>
-            <button 
-              type="button" 
-              className="btn-ghost" 
+            <button
+              type="button"
+              className="btn-ghost"
               style={{ color: 'var(--color-sage)', padding: 0, textDecoration: 'underline', fontSize: '12.5px' }}
               onClick={() => {
                 setSearchQuery('CERT-2026-00088');
@@ -118,24 +118,24 @@ export default function CertificateVerifyPage({ onNavigate }) {
         {hasSearched && (
           <div>
             {verifyResult ? (
-              <div 
-                className="card" 
-                style={{ 
-                  padding: '36px', 
-                  border: '2px solid var(--color-sage)', 
+              <div
+                className="card"
+                style={{
+                  padding: '36px',
+                  border: '2px solid var(--color-sage)',
                   boxShadow: 'var(--shadow-md)',
                   position: 'relative',
                   overflow: 'hidden'
                 }}
               >
                 {/* Official Verification Header Tag */}
-                <div 
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '10px', 
-                    backgroundColor: 'var(--color-sage-subtle)', 
-                    padding: '12px 18px', 
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    backgroundColor: 'var(--color-sage-subtle)',
+                    padding: '12px 18px',
                     borderRadius: 'var(--radius-sm)',
                     marginBottom: '24px',
                     border: '1px solid rgba(59,82,73,0.2)'
@@ -147,7 +147,7 @@ export default function CertificateVerifyPage({ onNavigate }) {
                       정상 발급된 사단법인 정식 수료증입니다
                     </strong>
                     <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                      사단법인 세화불학원 전산 학사시스템 및 발급 대장의 정본 기록과 100% 일치합니다.
+                      [사] 세화불학원 전산 학사시스템 및 발급 대장의 정본 기록과 100% 일치합니다.
                     </div>
                   </div>
                 </div>
@@ -214,18 +214,18 @@ export default function CertificateVerifyPage({ onNavigate }) {
                 </div>
 
                 {/* Authority & Seal Verification Footer */}
-                <div 
-                  style={{ 
-                    borderTop: '1px dashed var(--color-border-warm)', 
-                    paddingTop: '18px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between' 
+                <div
+                  style={{
+                    borderTop: '1px dashed var(--color-border-warm)',
+                    paddingTop: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
                   }}
                 >
                   <div>
                     <div style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', fontWeight: 800, color: 'var(--color-charcoal)' }}>
-                      사단법인 세화불학원 이사장
+                      [사] 세화불학원 이사장
                     </div>
                     <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
                       검증 확인 일시: {new Date().toLocaleDateString('ko-KR')} (전산 정본 대조필)
@@ -238,13 +238,13 @@ export default function CertificateVerifyPage({ onNavigate }) {
                 </div>
               </div>
             ) : (
-              <div 
-                className="card" 
-                style={{ 
-                  padding: '40px 24px', 
-                  textAlign: 'center', 
+              <div
+                className="card"
+                style={{
+                  padding: '40px 24px',
+                  textAlign: 'center',
                   backgroundColor: 'var(--color-coral-subtle)',
-                  border: '1px solid rgba(224, 109, 83, 0.25)' 
+                  border: '1px solid rgba(224, 109, 83, 0.25)'
                 }}
               >
                 <XCircle size={44} color="var(--color-coral)" style={{ margin: '0 auto 12px auto' }} />

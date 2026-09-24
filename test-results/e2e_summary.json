@@ -88,7 +88,7 @@
       "step": 10,
       "page": "수료증 발급",
       "interaction": "수료증 보기/발급 모달 팝업 오픈",
-      "expected": "사단법인 세화불학원 정식 수료증(A4 규격/직인) 렌더링",
+      "expected": "[사] 세화불학원 정식 수료증(A4 규격/직인) 렌더링",
       "actual": "정상 발급 확인",
       "passed": true,
       "screenshot": "step_10_certificate_modal_issued_20260920044516.png"

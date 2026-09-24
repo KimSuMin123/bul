@@ -4560,7 +4560,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               )}
 
               <p style={{ textAlign: 'center', fontSize: '13px', color: '#334155', lineHeight: '1.7', margin: '20px 0 24px 0' }}>
-                위 금액을 사단법인 세화불학원 부설 세화붓다아카데미<br />
+                위 금액을 [사] 세화불학원 부설 세화붓다아카데미<br />
                 불교의례 인재양성 및 교육기금으로 정히 영수함.
               </p>
 

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { ShieldAlert, X, PhoneCall, HelpCircle, ArrowRight } from 'lucide-react';
 
-export default function AccessDeniedModal({ 
-  isOpen, 
-  onClose, 
-  courseTitle = '해당 코스', 
+export default function AccessDeniedModal({
+  isOpen,
+  onClose,
+  courseTitle = '해당 코스',
   isPending = false,
   onStartTrial,
-  onNavigateCourses 
+  onNavigateCourses
 }) {
   const [showOfficeInfo, setShowOfficeInfo] = useState(false);
 
@@ -15,13 +15,13 @@ export default function AccessDeniedModal({
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div 
-        className="modal-card" 
+      <div
+        className="modal-card"
         style={{ maxWidth: '460px', padding: '32px 28px', textAlign: 'center' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <button 
-          className="btn-ghost" 
+        <button
+          className="btn-ghost"
           style={{ position: 'absolute', top: '16px', right: '16px', padding: '6px' }}
           onClick={onClose}
         >
@@ -29,14 +29,14 @@ export default function AccessDeniedModal({
         </button>
 
         {/* Coral Warning Icon Badge */}
-        <div 
-          style={{ 
-            width: '64px', 
-            height: '64px', 
-            borderRadius: '50%', 
-            backgroundColor: isPending ? 'rgba(16, 185, 129, 0.12)' : 'var(--color-coral-subtle)', 
-            display: 'flex', 
-            alignItems: 'center', 
+        <div
+          style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            backgroundColor: isPending ? 'rgba(16, 185, 129, 0.12)' : 'var(--color-coral-subtle)',
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto 20px auto'
           }}
@@ -47,7 +47,7 @@ export default function AccessDeniedModal({
         <h3 className="heading-2" style={{ marginBottom: '8px' }}>
           {isPending ? '수강 신청 접수 완료 안내' : '수강 권한 제한 안내'}
         </h3>
-        
+
         {/* Exact Specification Message */}
         {isPending ? (
           <>
@@ -73,11 +73,11 @@ export default function AccessDeniedModal({
         )}
 
         {showOfficeInfo ? (
-          <div 
-            style={{ 
-              background: 'var(--color-surface-warm)', 
-              borderRadius: 'var(--radius-sm)', 
-              padding: '16px', 
+          <div
+            style={{
+              background: 'var(--color-surface-warm)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '16px',
               textAlign: 'left',
               fontSize: '13.5px',
               marginBottom: '20px',
@@ -91,14 +91,14 @@ export default function AccessDeniedModal({
             <p style={{ color: 'var(--color-text-main)', margin: '3px 0' }}>• 대표 이메일: <strong>sehwaba@gmail.com</strong></p>
             <p style={{ color: 'var(--color-text-main)', margin: '3px 0' }}>• 운영 시간: 평일 09:00 ~ 17:00 (주말 및 공휴일 휴무)</p>
             <p style={{ color: 'var(--color-text-main)', margin: '3px 0' }}>• 방문 수납처: 서울 종로구 삼봉로 81, 613호 (수송동, 두산위브파빌리온)</p>
-            <p style={{ color: 'var(--color-text-main)', margin: '3px 0' }}>• 수납 전용 계좌: 농협 <strong>301-0264-3664-41</strong> (사단법인 세화불학원)</p>
+            <p style={{ color: 'var(--color-text-main)', margin: '3px 0' }}>• 수납 전용 계좌: 농협 <strong>301-0264-3664-41</strong> ([사] 세화불학원)</p>
           </div>
         ) : null}
 
         {/* Action Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {isPending && onStartTrial ? (
-            <button 
+            <button
               className="btn btn-primary"
               style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
               onClick={() => {
@@ -110,7 +110,7 @@ export default function AccessDeniedModal({
               <ArrowRight size={16} />
             </button>
           ) : (
-            <button 
+            <button
               className="btn btn-primary"
               style={{ width: '100%', padding: '12px' }}
               onClick={() => {
@@ -123,7 +123,7 @@ export default function AccessDeniedModal({
             </button>
           )}
 
-          <button 
+          <button
             className="btn btn-secondary"
             style={{ width: '100%', padding: '12px' }}
             onClick={() => setShowOfficeInfo(!showOfficeInfo)}

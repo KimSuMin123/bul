@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle, 
-  HelpCircle, 
-  Award, 
-  RotateCcw, 
-  ArrowLeft, 
-  ArrowRight, 
-  Send, 
-  X, 
-  BookOpen, 
+import {
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  HelpCircle,
+  Award,
+  RotateCcw,
+  ArrowLeft,
+  ArrowRight,
+  Send,
+  X,
+  BookOpen,
   Sparkles,
   Check,
   FileText
@@ -19,17 +19,17 @@ import { useCourse } from '../../context/CourseContext';
 import { useAuth } from '../../context/AuthContext';
 import { useModalAlert } from '../../context/ModalAlertContext';
 
-export default function CourseExamModal({ 
-  course, 
-  onClose, 
-  onOpenCertificate 
+export default function CourseExamModal({
+  course,
+  onClose,
+  onOpenCertificate
 }) {
   const { currentUser } = useAuth();
-  const { 
+  const {
     beginExam,
-    submitExam, 
+    submitExam,
     getExamResult,
-    isExamPassed 
+    isExamPassed
   } = useCourse();
   const { showConfirm, showAlert } = useModalAlert();
 
@@ -131,27 +131,27 @@ export default function CourseExamModal({
 
   return (
     <div className="modal-backdrop" style={{ zIndex: 9999, padding: '16px' }}>
-      <div 
-        className="modal-card" 
-        style={{ 
-          maxWidth: '860px', 
-          width: '100%', 
-          maxHeight: '94vh', 
-          padding: 0, 
-          display: 'flex', 
+      <div
+        className="modal-card"
+        style={{
+          maxWidth: '860px',
+          width: '100%',
+          maxHeight: '94vh',
+          padding: 0,
+          display: 'flex',
           flexDirection: 'column',
           borderRadius: '18px',
           overflow: 'hidden'
         }}
       >
         {/* Modal Top Bar */}
-        <div 
-          style={{ 
-            padding: '16px 24px', 
-            background: 'linear-gradient(135deg, #2A3832 0%, #1E2723 100%)', 
+        <div
+          style={{
+            padding: '16px 24px',
+            background: 'linear-gradient(135deg, #2A3832 0%, #1E2723 100%)',
             color: '#FFFFFF',
-            display: 'flex', 
-            justifyContent: 'space-between', 
+            display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
             borderBottom: '1px solid rgba(255,255,255,0.1)'
           }}
@@ -162,15 +162,15 @@ export default function CourseExamModal({
             </div>
             <div>
               <div style={{ fontSize: '11px', color: '#E0AE67', fontWeight: 600, letterSpacing: '0.05em' }}>
-                사단법인 세화불학원 수료 자격 평가
+                [사] 세화불학원 수료 자격 평가
               </div>
               <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700 }}>
                 {course.certTypeFull || course.title} 자격 평가 시험
               </h3>
             </div>
           </div>
-          <button 
-            className="alert-modal-close-btn" 
+          <button
+            className="alert-modal-close-btn"
             onClick={onClose}
             disabled={submitting || starting}
             style={{ position: 'static', background: 'rgba(255,255,255,0.15)', color: '#FFFFFF' }}
@@ -182,19 +182,19 @@ export default function CourseExamModal({
 
         {/* Modal Content Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
-          
+
           {/* 1. INTRO VIEW */}
           {viewState === 'intro' && (
             <div style={{ textAlign: 'center', padding: '10px 0 20px' }}>
-              <div 
-                style={{ 
-                  width: '74px', 
-                  height: '74px', 
-                  borderRadius: '50%', 
+              <div
+                style={{
+                  width: '74px',
+                  height: '74px',
+                  borderRadius: '50%',
                   background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   margin: '0 auto 16px',
                   boxShadow: '0 8px 20px rgba(212, 155, 75, 0.2)'
                 }}
@@ -207,16 +207,16 @@ export default function CourseExamModal({
               </h2>
               <p style={{ fontSize: '14.5px', color: '#64748B', maxWidth: '540px', margin: '0 auto 24px', lineHeight: '1.6' }}>
                 본 과정의 모든 강의를 성실히 이수하셨습니다. <br />
-                아래 평가 기준에 따라 시험을 통과하시면 사단법인 세화불학원 <strong>정식 수료증</strong>이 즉시 발급됩니다.
+                아래 평가 기준에 따라 시험을 통과하시면 [사] 세화불학원 <strong>정식 수료증</strong>이 즉시 발급됩니다.
               </p>
 
               {/* Exam Rules Card Grid */}
-              <div 
-                style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                  gap: '12px', 
-                  maxWidth: '680px', 
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '12px',
+                  maxWidth: '680px',
                   margin: '0 auto 28px',
                   textAlign: 'left'
                 }}
@@ -254,11 +254,11 @@ export default function CourseExamModal({
 
               {/* Previous Attempt Summary if any */}
               {previousAttempt && (
-                <div 
-                  style={{ 
-                    maxWidth: '680px', 
-                    margin: '0 auto 24px', 
-                    padding: '14px 18px', 
+                <div
+                  style={{
+                    maxWidth: '680px',
+                    margin: '0 auto 24px',
+                    padding: '14px 18px',
                     borderRadius: '10px',
                     background: previousAttempt.passed ? '#F0FDF4' : '#FFF1F2',
                     border: previousAttempt.passed ? '1px solid #86EFAC' : '1px solid #FECDD3',
@@ -295,12 +295,12 @@ export default function CourseExamModal({
               )}
 
               {/* Start Button */}
-              <button 
-                type="button" 
-                className="btn btn-primary btn-lg" 
-                style={{ 
-                  padding: '14px 44px', 
-                  fontSize: '16px', 
+              <button
+                type="button"
+                className="btn btn-primary btn-lg"
+                style={{
+                  padding: '14px 44px',
+                  fontSize: '16px',
                   fontWeight: 700,
                   borderRadius: '12px',
                   boxShadow: '0 8px 24px rgba(59, 82, 73, 0.35)'
@@ -318,11 +318,11 @@ export default function CourseExamModal({
           {viewState === 'testing' && currentQ && (
             <div>
               {/* Progress & Quick Nav Bar */}
-              <div 
-                style={{ 
-                  background: '#F8FAFC', 
-                  border: '1px solid #E2E8F0', 
-                  borderRadius: '12px', 
+              <div
+                style={{
+                  background: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '12px',
                   padding: '14px 18px',
                   marginBottom: '20px'
                 }}
@@ -376,24 +376,24 @@ export default function CourseExamModal({
               </div>
 
               {/* Current Question Box */}
-              <div 
-                style={{ 
-                  background: '#FFFFFF', 
-                  border: '1px solid #E2E8F0', 
-                  borderRadius: '14px', 
+              <div
+                style={{
+                  background: '#FFFFFF',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '14px',
                   padding: '24px',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                   marginBottom: '20px'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px' }}>
-                  <span 
-                    style={{ 
-                      background: 'var(--color-sage-subtle)', 
-                      color: 'var(--color-sage)', 
-                      fontWeight: 800, 
-                      fontSize: '14px', 
-                      padding: '4px 10px', 
+                  <span
+                    style={{
+                      background: 'var(--color-sage-subtle)',
+                      color: 'var(--color-sage)',
+                      fontWeight: 800,
+                      fontSize: '14px',
+                      padding: '4px 10px',
                       borderRadius: '6px',
                       flexShrink: 0
                     }}
@@ -430,13 +430,13 @@ export default function CourseExamModal({
                           boxShadow: isSelected ? '0 2px 10px rgba(59, 82, 73, 0.12)' : 'none'
                         }}
                       >
-                        <div 
-                          style={{ 
-                            width: '26px', 
-                            height: '26px', 
-                            borderRadius: '50%', 
-                            display: 'flex', 
-                            alignItems: 'center', 
+                        <div
+                          style={{
+                            width: '26px',
+                            height: '26px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
                             justifyContent: 'center',
                             fontSize: '14px',
                             fontWeight: 700,
@@ -492,10 +492,10 @@ export default function CourseExamModal({
                     onClick={handleSubmitExam}
                     disabled={submitting}
                     aria-busy={submitting}
-                    style={{ 
-                      minWidth: '140px', 
-                      backgroundColor: '#D49B4B', 
-                      color: '#FFFFFF', 
+                    style={{
+                      minWidth: '140px',
+                      backgroundColor: '#D49B4B',
+                      color: '#FFFFFF',
                       fontWeight: 700,
                       boxShadow: '0 4px 12px rgba(212, 155, 75, 0.3)'
                     }}
@@ -512,10 +512,10 @@ export default function CourseExamModal({
           {viewState === 'result' && evaluationResult && (
             <div style={{ maxWidth: '640px', margin: '0 auto', padding: '10px 0 20px' }}>
               {/* Score Hero Card */}
-              <div 
-                style={{ 
-                  borderRadius: '16px', 
-                  padding: '32px 24px', 
+              <div
+                style={{
+                  borderRadius: '16px',
+                  padding: '32px 24px',
                   textAlign: 'center',
                   background: evaluationResult.passed ? 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)' : 'linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%)',
                   border: evaluationResult.passed ? '1.5px solid #6EE7B7' : '1.5px solid #FDA4AF',
@@ -534,12 +534,12 @@ export default function CourseExamModal({
                   )}
                 </div>
 
-                <span 
-                  style={{ 
+                <span
+                  style={{
                     display: 'inline-block',
-                    padding: '5px 16px', 
-                    borderRadius: '20px', 
-                    fontSize: '13px', 
+                    padding: '5px 16px',
+                    borderRadius: '20px',
+                    fontSize: '13px',
                     fontWeight: 800,
                     background: evaluationResult.passed ? '#059669' : '#BE123C',
                     color: '#FFFFFF',
@@ -557,7 +557,7 @@ export default function CourseExamModal({
                   {evaluationResult.passed ? (
                     <>
                       축하합니다! 총 20문항 중 <strong>{evaluationResult.correctCount}문항</strong>을 맞추어 자격 검정에 당당히 합격하셨습니다.<br />
-                      이제 사단법인 세화불학원 이사장 직인이 날인된 정식 수료증을 발급받으실 수 있습니다.
+                      이제 [사] 세화불학원 이사장 직인이 날인된 정식 수료증을 발급받으실 수 있습니다.
                     </>
                   ) : (
                     <>
@@ -594,11 +594,11 @@ export default function CourseExamModal({
                     <button
                       type="button"
                       className="btn btn-amber btn-lg"
-                      style={{ 
-                        padding: '12px 30px', 
-                        fontSize: '15px', 
+                      style={{
+                        padding: '12px 30px',
+                        fontSize: '15px',
                         fontWeight: 800,
-                        backgroundColor: '#D49B4B', 
+                        backgroundColor: '#D49B4B',
                         color: '#FFFFFF',
                         boxShadow: '0 4px 16px rgba(212, 155, 75, 0.4)'
                       }}

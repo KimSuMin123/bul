@@ -76,7 +76,7 @@ test('certService - enrichCertificate edge cases & null safety', () => {
   const enriched = enrichCertificate(rawCert);
   assert.equal(enriched.id, 'cert-100');
   assert.equal(enriched.certGrade, '2급');
-  assert.equal(enriched.issuingOrg, '사단법인 세화불학원');
+  assert.equal(enriched.issuingOrg, '[사] 세화불학원');
   assert.equal(enriched.studentName, '홍길동');
   assert.equal(enriched.certRegNo, '민간자격 등록번호 제 2026- 00183호');
   assert.equal(enrichCertificate({ ...rawCert, certRegNo: '기존 발급번호' }).certRegNo, '기존 발급번호');
