@@ -31,6 +31,7 @@ const filteredArgs = args.filter(a => !a.startsWith('--'));
 const API_KEY = (process.env.SOLAPI_API_KEY || filteredArgs[0] || '').trim();
 const API_SECRET = (process.env.SOLAPI_API_SECRET || filteredArgs[1] || '').trim();
 const SENDER = (process.env.LMS_SMS_SENDER || '01080287565').replace(/[^0-9]/g, '');
+const ADMIN_PHONE = (process.env.LMS_SMS_ADMIN_PHONE || '01080287565').replace(/[^0-9]/g, '');
 const RECIPIENT = (process.env.TEST_RECIPIENT || '01030327565').replace(/[^0-9]/g, '');
 const SITE_URL = (process.env.LMS_SITE_URL || 'https://buddha-academy.netlify.app').replace(/\/$/, '');
 const SUPABASE_URL = (process.env.VITE_SUPABASE_URL || 'https://cxvavdxfcrprcbpnrimw.supabase.co').replace(/\/$/, '');
@@ -39,11 +40,12 @@ const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 console.log('='.repeat(65));
 console.log(' [SOLAPI SMS 연동 재개 및 자격증명 진단 도구]');
 console.log('='.repeat(65));
-console.log(`- 모드                 : ${viaEdge ? 'Supabase Edge Function 경유 (--via-edge)' : 'Node.js SDK 직접 단건 호출'}`);
-console.log(`- 보내는 번호 (Sender) : ${SENDER}`);
-console.log(`- 받는 번호 (Recipient): ${RECIPIENT}`);
-console.log(`- API Key 설정 여부    : ${API_KEY ? '설정됨 (' + API_KEY.slice(0, 4) + '****)' : '미설정 (Edge Secrets 또는 인자 필요)'}`);
-console.log(`- API Secret 설정 여부 : ${API_SECRET ? '설정됨 (길이 ' + API_SECRET.length + '자)' : '미설정 (Edge Secrets 또는 인자 필요)'}`);
+console.log(`- 모드                     : ${viaEdge ? 'Supabase Edge Function 경유 (--via-edge)' : 'Node.js SDK 직접 단건 호출'}`);
+console.log(`- 발신 번호 (Sender)       : ${SENDER}`);
+console.log(`- 관리자 수신 번호 (Admin) : ${ADMIN_PHONE}`);
+console.log(`- 테스트 수신 번호 (Test)  : ${RECIPIENT}`);
+console.log(`- API Key 설정 여부        : ${API_KEY ? '설정됨 (' + API_KEY.slice(0, 4) + '****)' : '미설정 (Edge Secrets 또는 인자 필요)'}`);
+console.log(`- API Secret 설정 여부     : ${API_SECRET ? '설정됨 (길이 ' + API_SECRET.length + '자)' : '미설정 (Edge Secrets 또는 인자 필요)'}`);
 console.log('-'.repeat(65));
 
 // 3. 4개의 테스트 메시지 정의
