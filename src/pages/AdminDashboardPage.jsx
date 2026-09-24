@@ -1863,7 +1863,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             onClick={() => setActiveTab('cert')}
           >
             <Award size={15} />
-            <span>수료증 발급 ({allCompletedCertificates.length})</span>
+            <span>자격증 발급 ({allCompletedCertificates.length})</span>
           </button>
           <button className="btn btn-ghost" style={{ borderBottom: activeTab === 'announcements' ? '3px solid var(--color-sage)' : '3px solid transparent' }} onClick={() => setActiveTab('announcements')}>
             <Bell size={15} /><span>메인 공지</span>
@@ -3737,10 +3737,10 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               <div>
                 <h3 className="heading-2 font-serif" style={{ fontSize: '20px' }}>
 
-                  수료증 발급 및 진위 확인 대장
+                  자격증 발급 및 진위 확인 대장
                 </h3>
                 <p className="text-caption">
-                  전체 완강 학인에게 정식 발급된 수료증 번호 및 직인 내역을 관리하고 대외 진위를 확인합니다.
+                  전체 완강 학인에게 정식 발급된 자격증 번호 및 직인 내역을 관리하고 대외 진위를 확인합니다.
                 </p>
               </div>
             </div>
@@ -3816,7 +3816,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   {filteredCertificates.length === 0 && (
                     <tr>
                       <td colSpan="7" style={{ padding: '30px', textAlign: 'center', color: '#94A3B8' }}>
-                        조회된 수료증 발급 내역이 없습니다.
+                        조회된 자격증 발급 내역이 없습니다.
                       </td>
                     </tr>
                   )}
@@ -5317,7 +5317,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   style={{ width: '18px', height: '18px', accentColor: 'var(--color-sage)' }}
                 />
                 <label htmlFor="seqUnlockCheck" style={{ fontSize: '13.5px', fontWeight: 600, cursor: 'pointer' }}>
-                  순차 학습 잠금 적용 (이전 차시 100% 수강 완료 시 다음 차시 열림)
+                  순차 학습 잠금 적용 (이전 차시 완강 시 다음 차시 열림)
                 </label>
               </div>
 
@@ -5334,7 +5334,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Award size={18} color="var(--color-amber-dark)" />
                     <strong style={{ fontSize: '14.5px', color: 'var(--color-charcoal)' }}>
-                      정식 수료증 발급 연동 정보
+                      정식 자격증 발급 연동 정보
                     </strong>
                   </div>
                   <span className="badge badge-amber" style={{ fontSize: '11px', fontWeight: 600 }}>수료 시 자동 발급</span>
@@ -5388,7 +5388,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                 <div style={{ marginBottom: '10px' }}>
                   <label className="form-label">
-                    자격증 번호 (수료증 발급 등록번호 양식)
+                    자격증 번호 (발급 등록번호 양식)
                   </label>
                   <input
                     type="text"
@@ -5398,7 +5398,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     onChange={(e) => setCourseForm(prev => ({ ...prev, certRegNo: e.target.value }))}
                   />
                   <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '4px', lineHeight: '1.4' }}>
-                    * 학인이 코스를 완강하면 본 등록번호 양식과 고유 일련번호가 자동 부여되어 정식 수료증 및 진위확인 시스템에 공식 등록됩니다.
+                    * 학인이 코스를 완강하면 본 등록번호 양식과 고유 일련번호가 자동 부여되어 정식 자격증 및 진위확인 시스템에 공식 등록됩니다.
                   </div>
                 </div>
 
@@ -5596,7 +5596,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               </div>
 
               <div className="form-group" style={{ marginBottom: '14px' }}>
-                <label className="form-label">자격증 번호 (수료증 발급 등록번호 양식)</label>
+                <label className="form-label">자격증 번호 (발급 등록번호 양식)</label>
                 <input
                   type="text"
                   className="form-input font-mono"
@@ -5673,7 +5673,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                     <p style={{ fontSize: '12px', color: '#64748B', margin: '0 0 10px 0', lineHeight: '1.4' }}>
                       * 문제 본문, 4지선다 보기(①~④), 하단 정답 및 해설(예: <code>1. ② — 해설</code>) 텍스트를 입력하시면 자동 파싱됩니다.<br />
-                      * 완강 시 등록된 전체 문항 중 <strong>20문제가 랜덤 추출되어 문항당 5점(총 100점 만점)</strong>으로 출제되며 <strong>60점 이상 합격</strong>해야 수료증이 지급됩니다.
+                      * 완강 시 등록된 전체 문항 중 <strong>20문제가 랜덤 추출되어 문항당 5점(총 100점 만점)</strong>으로 출제되며 <strong>60점 이상 합격</strong>해야 자격증이 지급됩니다.
                     </p>
 
                     <textarea

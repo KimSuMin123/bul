@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { X, Printer } from 'lucide-react';
 import { enrichCertificate } from '../../services/certService';
 import SealGraphic from './SealGraphic';
+import { CERTIFICATE_PRINT_NOTICE } from '../../config/sitePolicy.js';
 
 const logo = import.meta.env?.VITE_CERTIFICATE_LOGO_URL || '/images/logo.png';
 const issuerLogo = '/images/namo-oval-logo.png';
@@ -45,6 +46,7 @@ export default function CertificateModal({ certificate: rawCert, onClose }) {
   return <div className="cert-modal-backdrop" onClick={onClose}>
     <div ref={shellRef} className="cert-modal-shell" role="dialog" aria-modal="true" aria-labelledby="certificate-title" onClick={event => event.stopPropagation()}>
       <div className="cert-actions no-print"><span>자격증 미리보기</span><div><button className="btn btn-primary btn-sm" onClick={() => window.print()}><Printer size={16} /> 인쇄 / PDF 저장</button><button ref={closeRef} className="btn btn-secondary btn-sm" onClick={onClose} aria-label="자격증 닫기"><X size={17} /> 닫기</button></div></div>
+      <p className="no-print" style={{ margin: '0 0 12px', padding: '10px 14px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '8px', fontSize: '13px', lineHeight: 1.6, color: '#92400E' }}>{CERTIFICATE_PRINT_NOTICE}</p>
       <article className="cert-paper" id="printable-certificate" aria-label={`${cert.studentName || ''} 자격증`}>
         <div className="cert-frame" aria-hidden="true" />
         <header className="cert-header"><h1 id="certificate-title">자 격 증<span className="cert-title-en">Certificate of Qualification</span></h1><p className="cert-serial">자격증 번호 {cert.certNo || '—'}</p></header>

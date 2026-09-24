@@ -57,7 +57,7 @@ export default function AccessDeniedModal({
               4강부터는 교학처 수납 승인 후 개방됩니다.
             </p>
             <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '24px' }}>
-              교학처 방문 또는 지정 계좌 납부 완료 시 관리자가 승인하면 즉시 전체 강좌와 수료증 자격이 부여됩니다.
+              교학처 방문 또는 지정 계좌 납부 완료 시 관리자가 승인하면 즉시 전체 강좌와 자격증 자격이 부여됩니다.
             </p>
           </>
         ) : (

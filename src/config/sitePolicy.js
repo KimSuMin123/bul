@@ -3,6 +3,7 @@ export const PRIVACY_POLICY_VERSION = '2026-09-23';
 export const APPROVAL_SCHEDULE = '입금 확인 및 수강 승인은 매일 오전 10시~11시, 오후 6시~7시에 진행됩니다.';
 export const PAYMENT_ACCOUNT = '농협 301-0264-3664-41 ([사] 세화불학원)';
 export const NEXT_LECTURE_PROGRESS = 80;
+export const CERTIFICATE_PRINT_NOTICE = `자격증은 본인이 직접 출력하여 사용합니다. 실물 자격증을 따로 받으시려면 발급비 10,000원을 ${PAYMENT_ACCOUNT}으로 입금한 뒤 교학처(010-4702-0283)에 받으실 주소를 알려 주세요. 확인 후 우편으로 발급해 드립니다.`;
 
 /** The next lesson opens at 80%; completion and certificates still require 100%. */
 export function canOpenNextLecture(progress) {

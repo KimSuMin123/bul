@@ -165,7 +165,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
 
     const locked = isLectureLocked(currentUser?.id, lec.id);
     if (locked) {
-      showAlert(`이전 차시(제${Number(lec.orderIndex) - 1}강)를 80% 이상 수강하셔야 다음 차시를 수강하실 수 있습니다. (순차 학습 적용)`, {
+      showAlert(`이전 차시(제${Number(lec.orderIndex) - 1}강)를 완강하셔야 다음 차시를 수강하실 수 있습니다. (순차 학습 적용)`, {
         type: 'warning',
         title: '🔒 순차 학습 잠금 안내'
       });
@@ -302,7 +302,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                 <span>강의 상세 커리큘럼 ({courseLectures.length}차시)</span>
               </h2>
               <p style={{ fontSize: '13.5px', color: '#64748B', margin: 0 }}>
-                {course.sequentialUnlock !== false ? '• 본 과정은 이전 차시 진도율이 80% 이상이면 다음 차시가 열리는 [순차 학습]이 적용되어 있습니다.' : '• 자유롭게 원하는 차시를 선택하여 수강하실 수 있습니다.'}
+                {course.sequentialUnlock !== false ? '• 본 과정은 이전 차시를 완강하면 다음 차시가 열리는 [순차 학습]이 적용되어 있습니다.' : '• 자유롭게 원하는 차시를 선택하여 수강하실 수 있습니다.'}
               </p>
             </div>
 
@@ -534,7 +534,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                                       gap: '5px'
                                     }}
                                     onClick={() => handleLectureClick(lec)}
-                                    title="이전 차시를 80% 이상 수강하셔야 본 차시를 수강하실 수 있습니다."
+                                    title="이전 차시를 완강하셔야 본 차시를 수강하실 수 있습니다."
                                   >
                                     <Lock size={13} color="#94A3B8" />
                                     <span>잠김</span>

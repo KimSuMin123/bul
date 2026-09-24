@@ -45,7 +45,7 @@ export default function Footer() {
             </h4>
             <p style={{ fontSize: '13px', color: '#94A3B8', lineHeight: '1.7', marginBottom: '16px' }}>
               인류의 성자 붓다의 교학을 근본으로 정통 불교 인문학 및 명상 강좌를 제공합니다.
-              체계적인 VOD 강의와 정식 수료증 발급 시스템을 통해 마음의 평안과 바른 지혜를 함께 닦아갑니다.
+              체계적인 VOD 강의와 정식 자격증 발급 시스템을 통해 마음의 평안과 바른 지혜를 함께 닦아갑니다.
             </p>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <a
@@ -135,7 +135,8 @@ export default function Footer() {
               <li>•   수강기간은 승인일부터 90일</li>
               <li>•   100% 완강 후 시험 합격시 자격증 자동 발급</li>
               <li>•   한 계정에 한 기기만 접속</li>
-              <li>•   수료증은 내 강의실에서 바로 발급</li>
+              <li>•   자격증은 내 강의실에서 직접 출력</li>
+              <li>•   실물 자격증 발급비 10,000원 (우편 발송)</li>
             </ul>
           </div>
         </div>

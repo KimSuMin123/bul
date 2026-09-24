@@ -207,7 +207,7 @@ export default function CourseExamModal({
               </h2>
               <p style={{ fontSize: '14.5px', color: '#64748B', maxWidth: '540px', margin: '0 auto 24px', lineHeight: '1.6' }}>
                 본 과정의 모든 강의를 성실히 이수하셨습니다. <br />
-                아래 평가 기준에 따라 시험을 통과하시면 [사] 세화불학원 <strong>정식 수료증</strong>이 즉시 발급됩니다.
+                아래 평가 기준에 따라 시험을 통과하시면 [사] 세화불학원 <strong>정식 자격증</strong>이 즉시 발급됩니다.
               </p>
 
               {/* Exam Rules Card Grid */}
@@ -557,7 +557,7 @@ export default function CourseExamModal({
                   {evaluationResult.passed ? (
                     <>
                       축하합니다! 총 20문항 중 <strong>{evaluationResult.correctCount}문항</strong>을 맞추어 자격 검정에 당당히 합격하셨습니다.<br />
-                      이제 [사] 세화불학원 이사장 직인이 날인된 정식 수료증을 발급받으실 수 있습니다.
+                      이제 [사] 세화불학원 이사장 직인이 날인된 정식 자격증을 발급받으실 수 있습니다.
                     </>
                   ) : (
                     <>
@@ -608,7 +608,7 @@ export default function CourseExamModal({
                       }}
                     >
                       <Award size={20} />
-                      <span>🎓 정식 수료증 확인 및 출력</span>
+                      <span>🎓 정식 자격증 확인 및 출력</span>
                     </button>
                   )}
 

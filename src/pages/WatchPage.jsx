@@ -168,7 +168,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
 
     // Check sequential lock
     if (isLectureLocked(currentUser?.id, targetLec.id)) {
-      showAlert(`이전 차시(제${Number(targetLec.orderIndex) - 1}강)를 80% 이상 수강하셔야 다음 차시를 수강하실 수 있습니다. (순차 학습 적용)`, {
+      showAlert(`이전 차시(제${Number(targetLec.orderIndex) - 1}강)를 완강하셔야 다음 차시를 수강하실 수 있습니다. (순차 학습 적용)`, {
         type: 'warning',
         title: '🔒 순차 학습 잠금 안내'
       });
@@ -324,7 +324,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                   선수 차시 학습이 필요합니다 (순차 학습 잠금)
                 </h3>
                 <p style={{ color: '#CBD5E1', fontSize: '14px', maxWidth: '460px', lineHeight: '1.6', marginBottom: '20px' }}>
-                  본 과정은 단계별 체계적인 학습을 위해 <strong>이전 차시(제{Number(currentLecture.orderIndex) - 1}강)를 80% 이상 수강</strong>하셔야 본 차시가 오픈됩니다.
+                  본 과정은 단계별 체계적인 학습을 위해 <strong>이전 차시(제{Number(currentLecture.orderIndex) - 1}강)를 완강</strong>하셔야 본 차시가 오픈됩니다.
                 </p>
                 {prevLec && (
                   <button className="btn btn-amber btn-sm" onClick={() => handleSelectEpisode(prevLec)}>
@@ -476,7 +476,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                     <span>강의 커리큘럼 목차</span>
                   </h3>
                   <p className="text-caption" style={{ marginTop: '4px', marginBottom: 0 }}>
-                    {course.sequentialUnlock !== false ? '🔒 순차 학습 적용 (80% 이상 시 오픈)' : '자유 수강 코스'}
+                    {course.sequentialUnlock !== false ? '🔒 순차 학습 적용 (완강 시 오픈)' : '자유 수강 코스'}
                   </p>
                 </div>
 
@@ -637,7 +637,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                                     <span>{Math.round((lec.durationSeconds || 2400) / 60)}분</span>
                                     <span>•</span>
                                     <span>
-                                      {isEpCompleted ? '완강 (100%)' : isEpLocked ? '🔒 이전 강의 80% 필요' : prog?.progressRate > 0 ? `진도 ${prog.progressRate}%` : '미수강'}
+                                      {isEpCompleted ? '완강 (100%)' : isEpLocked ? '🔒 이전 강의 완강 필요' : prog?.progressRate > 0 ? `진도 ${prog.progressRate}%` : '미수강'}
                                     </span>
                                   </div>
                                 </div>

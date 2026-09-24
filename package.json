@@ -12,7 +12,7 @@
     "test:browser": "node scripts/test_course_state.mjs",
     "test:e2e": "node scripts/run_e2e_flow.mjs",
     "test:security": "node scripts/test_security_auth.mjs && node scripts/test_security_sql.mjs",
-    "test:enhancements": "node scripts/test_site_policy.mjs && node scripts/test_announcement_helpers.mjs && node scripts/test_enhancement_sql.mjs && node scripts/test_sms.mjs && node scripts/test_operations.mjs",
+    "test:enhancements": "node scripts/test_site_policy.mjs && node scripts/test_announcement_helpers.mjs && node scripts/test_enhancement_sql.mjs && node scripts/test_admin_fixes_sql.mjs && node scripts/test_sms.mjs && node scripts/test_operations.mjs",
     "backup:select": "node scripts/db_backup_select.mjs",
     "backup:restore-check": "node scripts/db_backup_restore_select.mjs",
     "test:cloud-backup": "node scripts/test_cloud_backup.mjs"

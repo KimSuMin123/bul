@@ -58,7 +58,7 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
                 style={{ fontSize: '15px', color: '#475569', lineHeight: '1.7', marginBottom: '22px' }}
               >
                 세화불학원은 붓다의 교학과 함께 불자의 실천행위인 의례를 연구하고 실천해 온 사단법인입니다.<br />
-                VOD 강의와 진도 관리, 수료증 발급을 온라인으로 운영합니다.
+                VOD 강의와 진도 관리, 자격증 발급을 온라인으로 운영합니다.
               </p>
 
               {/* Namo Buddhaya Greeting Box */}
@@ -157,8 +157,8 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
         </div>
       </section>
 
-      {/* <OpeningCeremony />
-      <AnnouncementPopup /> */}
+      {/* <OpeningCeremony /> */}
+      <AnnouncementPopup />
 
       {/* Courses Catalog Section */}
       <section id="curriculum-section" style={{ backgroundColor: '#FFFFFF', padding: '60px 0' }}>
@@ -260,10 +260,10 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
             <div className="card" style={{ padding: '20px 24px' }}>
               <h4 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-charcoal)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <HelpCircle size={18} color="var(--color-sage)" />
-                <span>수료증은 언제 발급되나요?</span>
+                <span>자격증은 언제 발급되나요?</span>
               </h4>
               <p style={{ fontSize: '14px', color: '#4A5568', lineHeight: '1.7' }}>
-                모든 강의를 끝까지 들으시면 내 강의실에서 수료증을 내려받거나 인쇄하실 수 있습니다.
+                모든 강의를 끝까지 듣고 자격 검정 시험에 합격하시면 내 강의실에서 자격증을 직접 출력하실 수 있습니다. 실물 자격증은 발급비 10,000원을 입금하고 받으실 주소를 알려 주시면 우편으로 발급해 드립니다.
               </p>
             </div>
 

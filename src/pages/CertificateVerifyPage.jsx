@@ -66,10 +66,10 @@ export default function CertificateVerifyPage({ onNavigate }) {
             <Award size={28} color="var(--color-amber-dark)" />
           </div>
           <h1 className="heading-1 font-serif" style={{ fontSize: '30px', marginBottom: '8px' }}>
-            수료증 진위 확인 시스템
+            자격증 진위 확인 시스템
           </h1>
           <p className="text-body" style={{ color: 'var(--color-text-muted)', fontSize: '15px' }}>
-            [사] 세화불학원에서 정식 발급된 수료증의 진위 여부를 실시간으로 대외 검증합니다.
+            [사] 세화불학원에서 정식 발급된 자격증의 진위 여부를 실시간으로 대외 검증합니다.
           </p>
         </div>
 
@@ -86,7 +86,7 @@ export default function CertificateVerifyPage({ onNavigate }) {
                 type="text"
                 className="form-input"
                 style={{ paddingLeft: '40px', fontSize: '15px', textTransform: 'uppercase' }}
-                placeholder="수료증 발급번호 (예: CERT-2026-00088)"
+                placeholder="자격증 발급번호 (예: CERT-2026-00088)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -144,7 +144,7 @@ export default function CertificateVerifyPage({ onNavigate }) {
                   <CheckCircle2 size={24} color="var(--color-sage)" />
                   <div>
                     <strong style={{ fontSize: '15px', color: 'var(--color-sage-dark)' }}>
-                      정상 발급된 사단법인 정식 수료증입니다
+                      정상 발급된 사단법인 정식 자격증입니다
                     </strong>
                     <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
                       [사] 세화불학원 전산 학사시스템 및 발급 대장의 정본 기록과 100% 일치합니다.
@@ -249,7 +249,7 @@ export default function CertificateVerifyPage({ onNavigate }) {
               >
                 <XCircle size={44} color="var(--color-coral)" style={{ margin: '0 auto 12px auto' }} />
                 <h3 className="heading-3" style={{ color: 'var(--color-coral-dark)', marginBottom: '6px' }}>
-                  일치하는 수료증 정보를 찾을 수 없습니다
+                  일치하는 자격증 정보를 찾을 수 없습니다
                 </h3>
                 <p style={{ fontSize: '13.5px', color: '#4A5568', maxWidth: '440px', margin: '0 auto 16px auto', lineHeight: '1.6' }}>
                   입력하신 발급번호 <strong>"{searchQuery}"</strong>에 해당하는 정식 수료 기록이 존재하지 않습니다.

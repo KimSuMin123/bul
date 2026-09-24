@@ -703,7 +703,7 @@ export const remoteDb = {
   async insertCertificate(cert) {
     requireExternalDb();
     const row = await supabaseFetch('/rpc/issue_course_certificate', { method: 'POST', body: JSON.stringify({ p_course_id: cert.courseId }) });
-    if (!row?.cert_no) throw new Error('수료증 발급 결과를 확인하지 못했습니다.');
+    if (!row?.cert_no) throw new Error('자격증 발급 결과를 확인하지 못했습니다.');
     return mapCertificate(row);
   },
 

@@ -9,7 +9,7 @@ import { useCourse } from '../context/CourseContext';
 import { useModalAlert } from '../context/ModalAlertContext';
 import CertificateModal from '../components/certificate/CertificateModal';
 import CourseExamModal from '../components/exam/CourseExamModal';
-import { APPROVAL_SCHEDULE, enrollmentConfirmation } from '../config/sitePolicy.js';
+import { APPROVAL_SCHEDULE, CERTIFICATE_PRINT_NOTICE, enrollmentConfirmation } from '../config/sitePolicy.js';
 
 export default function DashboardPage({ onNavigate, onStartLecture }) {
   const { currentUser } = useAuth();
@@ -100,7 +100,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
       try {
         cert = await claimCertificate(course.id);
       } catch (e) {
-        showAlert(e.message, { type: 'error', title: '수료증 발급 오류' });
+        showAlert(e.message, { type: 'error', title: '자격증 발급 오류' });
         return;
       }
     }
@@ -218,7 +218,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <h2 className="heading-2 font-serif" style={{ margin: 0 }}>나의 수강 과정 ({userEnrollments.length})</h2>
-              <span className="text-caption">납부 전: 대기상태 | 납부 후: 수강 중 | 100% 완강: 수료 완료 및 수료증 발급</span>
+              <span className="text-caption">납부 전: 대기상태 | 납부 후: 수강 중 | 100% 완강: 수료 완료 및 자격증 발급</span>
             </div>
             <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('home')}>
               <BookOpen size={14} />
@@ -345,7 +345,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                             <span>전 강좌 100% 완강 (자격 검정 시험 대상)</span>
                           </div>
                           <p style={{ margin: 0, fontSize: '12.5px', color: '#92400E', lineHeight: '1.5' }}>
-                            강의를 모두 이수하셨습니다! 수료증을 취득하려면 <strong>[자격 검정 평가 시험]</strong>에서 <strong>60점 이상</strong>을 득점하셔야 합니다. (재응시 가능)
+                            강의를 모두 이수하셨습니다! 자격증을 취득하려면 <strong>[자격 검정 평가 시험]</strong>에서 <strong>60점 이상</strong>을 득점하셔야 합니다. (재응시 가능)
                           </p>
                           {latestExam && (
                             <div style={{ marginTop: '8px', fontSize: '12px', color: '#B91C1C', fontWeight: 600 }}>
@@ -355,7 +355,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                         </div>
                       )}
 
-                      {/* 4. 강의 완강 + 시험 합격 (수료증 발급 자격 완료) UI */}
+                      {/* 4. 강의 완강 + 시험 합격 (자격증 발급 자격 완료) UI */}
                       {!isPending && isFullyCompleted && (
                         <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', padding: '14px', borderRadius: '10px', marginBottom: '16px' }}>
                           <div style={{ fontWeight: 700, color: '#166534', fontSize: '13.5px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -363,7 +363,10 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                             <span>전 강좌 완강 및 자격 검정 합격 ({latestExam ? `${latestExam.score}점` : '합격'})</span>
                           </div>
                           <p style={{ margin: 0, fontSize: '12.5px', color: '#15803D', lineHeight: '1.5' }}>
-                            축하드립니다! 자격 검정 기준(60점)을 통과하여 [사] 세화불학원 이사장 직인이 날인된 정식 수료증이 발급되었습니다.
+                            축하드립니다! 자격 검정 기준(60점)을 통과하여 [사] 세화불학원 이사장 직인이 날인된 정식 자격증이 발급되었습니다.
+                          </p>
+                          <p style={{ margin: '8px 0 0', fontSize: '12.5px', color: '#15803D', lineHeight: '1.5' }}>
+                            {CERTIFICATE_PRINT_NOTICE}
                           </p>
                         </div>
                       )}
@@ -431,7 +434,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                               onClick={() => handleOpenCert(course)}
                             >
                               <Award size={20} />
-                              <span>🎓 정식 수료증 발급 및 출력</span>
+                              <span>🎓 정식 자격증 발급 및 출력</span>
                             </button>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                               <button
@@ -568,11 +571,11 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
             </div>
             <div>
               <strong>• 순차 학습 시스템 (선수 차시 잠금)</strong>
-              <p>이전 차시 진도율이 80% 이상이면 다음 차시가 열립니다. 수료 및 자격증 발급에는 100% 완강과 시험 합격이 필요합니다. (일부 통합 코스는 자유 수강)</p>
+              <p>이전 차시를 완강하면 다음 차시가 열립니다. 수료 및 자격증 발급에는 전 차시 완강과 시험 합격이 필요합니다. (일부 통합 코스는 자유 수강)</p>
             </div>
             <div>
-              <strong>• 수료증 진위 확인</strong>
-              <p>발급된 수료증의 우측 하단 고유 발급번호(CERT-2026-XXXXX)는 수료증 진위 확인 페이지를 통해 즉시 진위 조회가 가능합니다.</p>
+              <strong>• 자격증 진위 확인</strong>
+              <p>발급된 자격증의 우측 하단 고유 발급번호(CERT-2026-XXXXX)는 자격증 진위 확인 페이지를 통해 즉시 진위 조회가 가능합니다.</p>
             </div>
           </div>
         </div>

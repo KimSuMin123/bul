@@ -67,7 +67,7 @@ export function getCourseQualificationDetails(courseId, courseTitle = '', course
 }
 
 /**
- * 수료증/자격증 객체 정규화 및 민간 자격증 필수 메타데이터 보강
+ * 자격증 객체 정규화 및 민간 자격증 필수 메타데이터 보강
  */
 export function enrichCertificate(cert, courseObj = null) {
   if (!cert) return null;
