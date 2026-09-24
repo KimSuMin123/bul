@@ -157,8 +157,8 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
         </div>
       </section>
 
-      <OpeningCeremony />
-      <AnnouncementPopup />
+      {/* <OpeningCeremony />
+      <AnnouncementPopup /> */}
 
       {/* Courses Catalog Section */}
       <section id="curriculum-section" style={{ backgroundColor: '#FFFFFF', padding: '60px 0' }}>
