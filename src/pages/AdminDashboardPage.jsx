@@ -795,6 +795,7 @@ export default function AdminDashboardPage() {
   const [showNewUserModal, setShowNewUserModal] = useState(false);
   const [newUserForm, setNewUserForm] = useState({
     name: '',
+    dharmaName: '',
     id: '',
     phone: '',
     birthDate: '',
@@ -828,6 +829,7 @@ export default function AdminDashboardPage() {
     const firstCourse = courses[0];
     setNewUserForm({
       name: '',
+      dharmaName: '',
       id: '',
       phone: '',
       birthDate: '',
@@ -868,7 +870,7 @@ export default function AdminDashboardPage() {
     setUserModalError('');
 
     if (!newUserForm.name.trim()) {
-      setUserModalError('성명(또는 법명)을 입력해 주세요.');
+      setUserModalError('성명을 입력해 주세요.');
       return;
     }
     if (!newUserForm.id.trim()) {
@@ -902,6 +904,7 @@ export default function AdminDashboardPage() {
         id: newUserForm.id.trim(),
         password: newUserForm.password.trim(),
         name: newUserForm.name.trim(),
+        dharmaName: (newUserForm.dharmaName || '').trim(),
         birthDate: newUserForm.birthDate,
         phone: newUserForm.phone.trim(),
         role: newUserForm.role,
@@ -967,7 +970,7 @@ export default function AdminDashboardPage() {
   const handleCopyUserInfo = () => {
     if (!createdUserInfo) return;
     const msg = `[세화붓다아카데미 학인 계정 등록 안내]
-- 성명: ${createdUserInfo.name}
+- 성명: ${createdUserInfo.name}${createdUserInfo.dharmaName ? ` (법명: ${createdUserInfo.dharmaName})` : ''}
 - 학번/식별번호: ${createdUserInfo.memberNo}
 - 아이디: ${createdUserInfo.id}
 - 임시 비밀번호: ${createdUserInfo.password}
@@ -1966,7 +1969,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       <tr key={user.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
 
                         <td style={{ padding: '14px 16px' }}>
-                          <strong>{user.name}</strong>{' '}
+                          <strong>{user.name}{user.dharmaName ? ` (${user.dharmaName})` : ''}</strong>{' '}
                           <span style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>({user.loginId || user.id})</span>
                           {user.role === 'admin' && (
                             <span className="badge badge-coral" style={{ marginLeft: '6px', fontSize: '10.5px' }}>관리자</span>
@@ -3874,14 +3877,26 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '12px' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">성명 (실명 또는 법명) *</label>
+                    <label className="form-label">성명 (실명) *</label>
                     <input
                       type="text"
                       className="form-input"
-                      placeholder="예: 홍길동, 원행 스님"
+                      placeholder="예: 홍길동"
                       value={newUserForm.name}
                       onChange={(e) => setNewUserForm({ ...newUserForm, name: e.target.value })}
                       required
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">법명</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="예: 원행 (자격증에 괄호로 표기)"
+                      value={newUserForm.dharmaName || ''}
+                      onChange={(e) => setNewUserForm({ ...newUserForm, dharmaName: e.target.value })}
+                      maxLength={50}
                     />
                   </div>
 
@@ -4139,7 +4154,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             <div style={{ backgroundColor: 'var(--color-surface-warm)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '18px', marginBottom: '20px', fontSize: '13.5px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--color-border)' }}>
                 <span style={{ color: 'var(--color-text-muted)' }}>성명 / 법명:</span>
-                <strong style={{ color: 'var(--color-charcoal)' }}>{createdUserInfo.name}</strong>
+                <strong style={{ color: 'var(--color-charcoal)' }}>{createdUserInfo.name}{createdUserInfo.dharmaName ? ` (${createdUserInfo.dharmaName})` : ''}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--color-border)' }}>
                 <span style={{ color: 'var(--color-text-muted)' }}>학번 (식별번호):</span>

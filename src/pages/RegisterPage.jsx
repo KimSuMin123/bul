@@ -12,6 +12,7 @@ export default function RegisterPage({ onNavigate }) {
     password: '',
     confirmPassword: '',
     name: '',
+    dharmaName: '',
     birthDate: '',
     phone: ''
   });
@@ -82,6 +83,7 @@ export default function RegisterPage({ onNavigate }) {
         id: formData.id,
         password: formData.password,
         name: formData.name,
+        dharmaName: formData.dharmaName,
         birthDate: formData.birthDate,
         phone: formData.phone,
         privacyConsent,
@@ -238,15 +240,29 @@ export default function RegisterPage({ onNavigate }) {
 
               {/* 이름 */}
               <div className="form-group">
-                <label className="form-label">이름 (법명) - 둘다 작성 해주셔야 합니다.</label>
+                <label className="form-label">이름 (실명) *</label>
                 <input
                   type="text"
                   name="name"
                   className="form-input"
-                  placeholder="실명과 법명을 꼭! 둘다 작성 해주셔야 합니다."
+                  placeholder="예: 홍길동"
                   value={formData.name}
                   onChange={handleChange}
                   required
+                />
+              </div>
+
+              {/* 법명 */}
+              <div className="form-group">
+                <label className="form-label">법명</label>
+                <input
+                  type="text"
+                  name="dharmaName"
+                  className="form-input"
+                  placeholder="예: 원행 (법명이 있으면 자격증에 함께 표기됩니다)"
+                  value={formData.dharmaName}
+                  onChange={handleChange}
+                  maxLength={50}
                 />
               </div>
 

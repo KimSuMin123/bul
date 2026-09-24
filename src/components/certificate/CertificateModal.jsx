@@ -53,12 +53,12 @@ export default function CertificateModal({ certificate: rawCert, onClose }) {
             <div className="cert-person-fields">
               <p><span>자격종목</span><strong>{cert.certTypeFull || cert.certType || '—'}</strong></p>
               <p><span>등록번호</span><strong>{cert.regOffice || ''}</strong></p>
-            <p><span>성명</span><strong>{cert.studentName || '—'}</strong></p>
+            <p><span>성명</span><strong>{cert.studentName || '—'}{cert.dharmaName ? ` (${cert.dharmaName})` : ''}</strong></p>
             <p><span>생년월일</span><strong>{cert.birthDate || '—'}</strong></p>
             </div></div>
           <p className="cert-statement">위 사람은 세화붓다아카데미의 검정기준에 따라 시행한 <strong>{cert.certTypeFull || cert.certType || '해당 자격'}</strong> 검정 시험에 합격하였으므로 이 자격증을 수여합니다.</p>
         </section>
-        <footer className="cert-footer"><p className="cert-date">{dateText(cert.issuedAt)}</p><div className="cert-issuer"><img className="cert-issuer-logo" src={issuerLogo} alt="" aria-hidden="true" /><strong>{(cert.issuingOrg || '[사]세화불학원').replace(/\]\s+/, ']')} {cert.representative || '이사장'}</strong><SealGraphic size={96} /></div><p className="cert-office">{cert.regOffice || ''}</p><p className="cert-check">발급고유코드 {cert.certNo || '—'} · 학적식별번호 {cert.memberNo || '—'}</p><p className="cert-legal">본 자격증은 자격기본법 제17조 제2항에 따른 등록민간자격입니다. 세화불학원 온라인 학사관리시스템에서 진위를 확인할 수 있습니다.</p></footer>
+        <footer className="cert-footer"><p className="cert-date">{dateText(cert.issuedAt)}</p><div className="cert-issuer"><img className="cert-issuer-logo" src={issuerLogo} alt="" aria-hidden="true" /><strong>{(cert.issuingOrg || '[사] 세화불학원').replace(/\]\s+/, ']')} {cert.representative || '이사장'}</strong><SealGraphic size={96} /></div><p className="cert-office">{cert.regOffice || ''}</p><p className="cert-check">발급고유코드 {cert.certNo || '—'} · 학적식별번호 {cert.memberNo || '—'}</p><p className="cert-legal">본 자격증은 자격기본법 제17조 제2항에 따른 등록민간자격입니다. 세화불학원 온라인 학사관리시스템에서 진위를 확인할 수 있습니다.</p></footer>
       </article>
     </div>
   </div>;

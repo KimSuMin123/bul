@@ -1,7 +1,7 @@
 // Runtime-independent handler: dependency injection keeps tests entirely offline.
 export const PRIVACY_POLICY_VERSION = '2026-09-23';
-const profileColumns = 'id,login_id,auth_user_id,name,birth_date,phone,member_no,role,created_at,privacy_consent,privacy_consent_at,privacy_policy_version,privacy_consent_source';
-const publicProfile = p => ({ id: p.id, name: p.name, birthDate: p.birth_date,
+const profileColumns = 'id,login_id,auth_user_id,name,dharma_name,birth_date,phone,member_no,role,created_at,privacy_consent,privacy_consent_at,privacy_policy_version,privacy_consent_source';
+const publicProfile = p => ({ id: p.id, name: p.name, dharmaName: p.dharma_name || '', birthDate: p.birth_date,
   phone: p.phone, memberNo: p.member_no, role: p.role, createdAt: p.created_at,
   loginId: p.login_id || p.id, privacyConsent: p.privacy_consent, privacyConsentAt: p.privacy_consent_at,
   privacyPolicyVersion: p.privacy_policy_version, privacyConsentSource: p.privacy_consent_source });
@@ -127,6 +127,8 @@ export function createHandler({ url, serviceKey, anonKey, allowedOrigins = [], f
       const name = String(body.name || '').trim();
       const phone = String(body.phone || '').replace(/[^0-9]/g, '');
       const birthDate = String(body.birthDate || '');
+      const dharmaName = String(body.dharmaName || '').trim();
+      if (dharmaName.length > 50) throw new HttpError(400, '법명은 50자 이내로 입력해 주세요.');
       if (!name || name.length > 100 || !/^\d{9,15}$/.test(phone) || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate) || Number.isNaN(Date.parse(birthDate))) throw new HttpError(400, '이름, 생년월일, 전화번호를 확인해 주세요.');
       let authUser;
       try { authUser = await createAuth(id, password); }
@@ -134,7 +136,7 @@ export function createHandler({ url, serviceKey, anonKey, allowedOrigins = [], f
       let profile;
       try {
         const rows = await api('/rest/v1/users', { method: 'POST', prefer: 'return=representation', body: {
-          id, auth_user_id: authUser.id, password: null, name, birth_date: birthDate, phone,
+          id, auth_user_id: authUser.id, password: null, name, dharma_name: dharmaName || null, birth_date: birthDate, phone,
           privacy_consent: true, privacy_policy_version: PRIVACY_POLICY_VERSION,
           privacy_consent_source: actor ? 'admin_attested' : 'registration',
           member_no: `BUDDHA-${crypto.randomUUID()}`, role: actor && body.role === 'admin' ? 'admin' : 'student'

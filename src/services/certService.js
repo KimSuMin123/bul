@@ -168,6 +168,7 @@ export function issueCertificate(user, course, certsList = [], certCount = 0) {
     courseId: course.id,
     memberNo: user.memberNo,
     studentName: user.name,
+    dharmaName: user.dharmaName || '',
     birthDate: user.birthDate || '1980-01-01',
     courseTitle: course.title,
     certType: qual.certType,

@@ -40,7 +40,7 @@ function mapProgress(p) {
 
 function mapCertificate(c) {
   return { certNo: c.cert_no, userId: c.user_id, courseId: c.course_id, memberNo: c.member_no,
-    studentName: c.student_name, birthDate: c.birth_date, courseTitle: c.course_title,
+    studentName: c.student_name, dharmaName: c.dharma_name || '', birthDate: c.birth_date, courseTitle: c.course_title,
     period: c.period, issuedAt: c.issued_at, status: c.status };
 }
 
@@ -181,12 +181,13 @@ export const remoteDb = {
     requireExternalDb();
     try {
       // SECURITY: Explicitly omit the 'password' column to prevent credential harvesting in browser
-      const rows = await supabaseFetch('/users?select=id,login_id,name,birth_date,phone,member_no,role,created_at');
+      const rows = await supabaseFetch('/users?select=id,login_id,name,dharma_name,birth_date,phone,member_no,role,created_at');
       return rows
         .map(r => ({
           id: r.id,
           loginId: r.login_id || r.id,
           name: r.name,
+          dharmaName: r.dharma_name || '',
           birthDate: r.birth_date,
           phone: r.phone,
           memberNo: r.member_no,
@@ -686,6 +687,7 @@ export const remoteDb = {
         courseId: c.course_id,
         memberNo: c.member_no,
         studentName: c.student_name,
+        dharmaName: c.dharma_name || '',
         birthDate: c.birth_date,
         courseTitle: c.course_title,
         period: c.period,
