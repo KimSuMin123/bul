@@ -238,12 +238,12 @@ export default function RegisterPage({ onNavigate }) {
 
               {/* 이름 */}
               <div className="form-group">
-                <label className="form-label">이름 *</label>
+                <label className="form-label">이름 (법명)  * 둘다 작성 해주셔야 합니다.</label>
                 <input
                   type="text"
                   name="name"
                   className="form-input"
-                  placeholder="실명을 입력하세요 (수료증 발급 기준)"
+                  placeholder="실명과 법명을 꼭! 둘다 작성 해주셔야 합니다."
                   value={formData.name}
                   onChange={handleChange}
                   required
