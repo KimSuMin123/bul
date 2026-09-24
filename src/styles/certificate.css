@@ -13,11 +13,11 @@
 .cert-serial { text-align: right; font-size: 11pt; color: #475569; }
 .cert-header h1 { margin: 8mm 0 2mm; font-family: var(--font-serif); font-size: 44pt; letter-spacing: .4em; text-indent: .4em; }
 .cert-main { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14mm; padding: 6mm 4mm; }
-.cert-person-fields { font-family: var(--font-serif); font-size: 14pt; text-align: left; padding-left: 6mm; }
+.cert-person-fields { font-family: var(--font-serif); font-size: calc(14pt - 1px); text-align: left; padding-left: 6mm; }
 .cert-person-fields p { display: flex; padding: 2mm 0; gap: 5mm; }
 .cert-person-fields span { display: flex; justify-content: space-between; flex: 0 0 25mm; color: #58675e; }
 .cert-person-fields span::after { content: ':'; }
-.cert-person-fields strong { overflow-wrap: anywhere; }
+.cert-person-fields strong { white-space: nowrap; }
 .cert-statement { text-align: center; font-family: var(--font-serif); font-size: 20pt; line-height: 2; word-break: keep-all; }
 .cert-footer { text-align: center; }
 .cert-date { font-family: var(--font-serif); font-size: 17pt; letter-spacing: .08em; margin-bottom: 8mm; }
