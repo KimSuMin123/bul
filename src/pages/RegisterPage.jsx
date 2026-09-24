@@ -238,7 +238,7 @@ export default function RegisterPage({ onNavigate }) {
 
               {/* 이름 */}
               <div className="form-group">
-                <label className="form-label">이름 (법명)  * 둘다 작성 해주셔야 합니다.</label>
+                <label className="form-label">이름 (법명) - 둘다 작성 해주셔야 합니다.</label>
                 <input
                   type="text"
                   name="name"
