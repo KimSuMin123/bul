@@ -46,7 +46,7 @@ export default function CertificateModal({ certificate: rawCert, onClose }) {
       <div className="cert-actions no-print"><span>자격증 미리보기</span><div><button className="btn btn-primary btn-sm" onClick={() => window.print()}><Printer size={16} /> 인쇄 / PDF 저장</button><button ref={closeRef} className="btn btn-secondary btn-sm" onClick={onClose} aria-label="자격증 닫기"><X size={17} /> 닫기</button></div></div>
       <article className="cert-paper" id="printable-certificate" aria-label={`${cert.studentName || ''} 자격증`}>
         <div className="cert-frame" aria-hidden="true" />
-        <header className="cert-header"><img className="cert-logo" src={logo} alt="세화불학원 로고" /><p className="cert-serial">자격증 번호 {cert.certNo || '—'}</p><h1 id="certificate-title">자 격 증</h1></header>
+        <header className="cert-header"><img className="cert-logo" src={logo} alt="세화불학원 로고" /><p className="cert-serial">자격증 번호 {cert.certNo || '—'}</p><h1 id="certificate-title">자 격 증<span className="cert-title-en">Certificate of Qualification</span></h1></header>
         <section className="cert-main" aria-label="자격 정보">
           <div className="cert-person">
             <div className="cert-person-fields">

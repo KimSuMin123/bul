@@ -11,7 +11,8 @@
 .cert-header { text-align: center; }
 .cert-logo { width: auto; height: 20mm; max-width: 80mm; object-fit: contain; margin: 0 auto 5mm; }
 .cert-serial { text-align: right; font-size: 11pt; color: #475569; }
-.cert-header h1 { margin: 8mm 0 2mm; font-family: var(--font-serif); font-size: 44pt; letter-spacing: .4em; text-indent: .4em; }
+.cert-header h1 { margin: 8mm 0 2mm; font-family: var(--font-serif); font-size: calc(44pt - 5px); letter-spacing: .4em; text-indent: .4em; }
+.cert-header h1 .cert-title-en { display: block; margin-top: 1mm; font-size: 13pt; font-weight: 400; letter-spacing: .12em; text-indent: 0; }
 .cert-main { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14mm; padding: 6mm 4mm; }
 .cert-person-fields { font-family: var(--font-serif); font-size: calc(14pt - 1px); text-align: left; padding-left: 6mm; }
 .cert-person-fields p { display: flex; padding: 2mm 0; gap: 5mm; }
