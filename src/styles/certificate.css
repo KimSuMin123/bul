@@ -23,6 +23,7 @@
 .cert-footer { text-align: center; }
 .cert-date { font-family: var(--font-serif); font-size: 17pt; letter-spacing: .08em; margin-bottom: 8mm; }
 .cert-issuer { display: flex; justify-content: center; align-items: center; font-family: var(--font-serif); font-size: 22pt; gap: 10px; }
+.cert-issuer-logo { height: 13mm; width: auto; object-fit: contain; }
 .cert-office, .cert-check { font-size: 9pt; color: #637269; margin-top: 2mm; }
 .cert-legal { font-size: 8pt; color: #7c8980; margin-top: 2mm; line-height: 1.4; }
 @media (max-width: 700px) { .cert-modal-backdrop { padding: 8px; } }
