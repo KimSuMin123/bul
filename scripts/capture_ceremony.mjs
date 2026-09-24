@@ -45,13 +45,13 @@ async function run() {
   const cutBtn = await page.waitForSelector('.btn-dancheong-cut');
   if (cutBtn) await cutBtn.click();
 
-  // 자르는 중 (장막 걷히는 모션 중)
-  await new Promise(r => setTimeout(r, 800));
-  console.log('Capturing Step 3: Ribbon Split & Curtains Opening...');
+  // 자르는 중 (장막 걷히는 모션 중 - 3.0초 중 1.5초 시점)
+  await new Promise(r => setTimeout(r, 1500));
+  console.log('Capturing Step 3: Ribbon Split & Curtains Opening Slowly...');
   await page.screenshot({ path: path.join(artifactDir, 'ceremony_step3_curtain_open.png') });
 
   // 5. 장막 완전히 걷힌 후 메인 홈페이지 공개
-  await new Promise(r => setTimeout(r, 1600));
+  await new Promise(r => setTimeout(r, 2500));
   console.log('Capturing Step 4: Full Homepage Revealed...');
   await page.screenshot({ path: path.join(artifactDir, 'ceremony_step4_opened.png') });
 

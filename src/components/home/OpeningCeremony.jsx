@@ -92,19 +92,19 @@ export default function OpeningCeremony() {
     }
     audioRef.current.play().then(() => setIsPlayingAudio(true)).catch(() => {});
 
-    // 0.4s: Scissor snips and ribbon splits
+    // 0.45s: Scissor snips and ribbon splits
     setTimeout(() => {
       setIsCutDone(true);
       setCurtainsOpened(true);
-    }, 400);
+    }, 450);
 
-    // 1.8s: Curtains fully open, dismiss overlay and reveal real homepage
+    // 3.6s: Curtains fully open slowly and smoothly, dismiss overlay and reveal real homepage
     setTimeout(() => {
       setIsActive(false);
       setIsCutting(false);
       setIsCutDone(false);
       setCurtainsOpened(false);
-    }, 2000);
+    }, 3600);
   };
 
   // Start Simulation Rehearsal
