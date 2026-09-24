@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 
-// Traditional 5-Color Dancheong W-Shape Ribbon Half
+// Traditional 5-Azure Silk (오청색, 五靑色) W-Shape Ribbon Half
 function WRibbonHalfSvg({ isLeft }) {
   const filterId = isLeft ? 'w-shadow-left' : 'w-shadow-right';
   return (
     <svg 
-      viewBox="0 0 500 135" 
+      viewBox="0 0 500 145" 
       preserveAspectRatio="none" 
       style={{ width: '100%', height: '100%', overflow: 'visible', display: 'block' }}
     >
@@ -15,25 +15,25 @@ function WRibbonHalfSvg({ isLeft }) {
         </filter>
       </defs>
       <g transform={isLeft ? undefined : 'translate(500, 0) scale(-1, 1)'} filter={`url(#${filterId})`}>
-        {/* 상단 팽팽한 가이드 레드 테이프 라인 */}
-        <path d="M 0 16 L 500 16" stroke="#DC2626" strokeWidth="6" strokeLinecap="round" />
-        <path d="M 0 16 L 500 16" stroke="#F87171" strokeWidth="1.5" strokeLinecap="round" />
+        {/* 1. 감청 (Dark Indigo / 紺靑) - 깊고 고요한 지혜를 상징하는 짙은 남청 비단 */}
+        <path d="M 0 18 Q 125 90, 250 20 Q 375 90, 500 26" fill="none" stroke="#0F2042" strokeWidth="11" strokeLinecap="round" />
+        <path d="M 0 18 Q 125 90, 250 20 Q 375 90, 500 26" fill="none" stroke="#1E3A8A" strokeWidth="2.5" strokeLinecap="round" />
 
-        {/* 1. 청색 (Royal Blue) W자 띠 */}
-        <path d="M 0 24 Q 125 96, 250 26 Q 375 96, 500 32" fill="none" stroke="#1D4ED8" strokeWidth="12" strokeLinecap="round" />
-        <path d="M 0 24 Q 125 96, 250 26 Q 375 96, 500 32" fill="none" stroke="#60A5FA" strokeWidth="3" strokeLinecap="round" />
+        {/* 2. 군청 (Deep Royal Navy / 群靑) - 맑고 깊은 전통 군청 비단 */}
+        <path d="M 0 30 Q 125 102, 250 32 Q 375 102, 500 38" fill="none" stroke="#1D4ED8" strokeWidth="11" strokeLinecap="round" />
+        <path d="M 0 30 Q 125 102, 250 32 Q 375 102, 500 38" fill="none" stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round" />
 
-        {/* 2. 녹색 (Emerald Green) W자 띠 */}
-        <path d="M 0 35 Q 125 107, 250 37 Q 375 107, 500 43" fill="none" stroke="#047857" strokeWidth="12" strokeLinecap="round" />
-        <path d="M 0 35 Q 125 107, 250 37 Q 375 107, 500 43" fill="none" stroke="#34D399" strokeWidth="3" strokeLinecap="round" />
+        {/* 3. 벽청 (Vivid Azure / 碧靑) - 청아하고 맑은 푸른빛 비단 */}
+        <path d="M 0 42 Q 125 114, 250 44 Q 375 114, 500 50" fill="none" stroke="#0284C7" strokeWidth="11" strokeLinecap="round" />
+        <path d="M 0 42 Q 125 114, 250 44 Q 375 114, 500 50" fill="none" stroke="#38BDF8" strokeWidth="2.5" strokeLinecap="round" />
 
-        {/* 3. 황색 (Golden Yellow) W자 띠 */}
-        <path d="M 0 46 Q 125 118, 250 48 Q 375 118, 500 54" fill="none" stroke="#D97706" strokeWidth="12" strokeLinecap="round" />
-        <path d="M 0 46 Q 125 118, 250 48 Q 375 118, 500 54" fill="none" stroke="#FDE68A" strokeWidth="3.5" strokeLinecap="round" />
+        {/* 4. 청록/비취 (Jade Teal / 靑綠) - 만물의 소생과 정토의 자비를 담은 비취청 비단 */}
+        <path d="M 0 54 Q 125 126, 250 56 Q 375 126, 500 62" fill="none" stroke="#0D9488" strokeWidth="11" strokeLinecap="round" />
+        <path d="M 0 54 Q 125 126, 250 56 Q 375 126, 500 62" fill="none" stroke="#5EEAD4" strokeWidth="2.5" strokeLinecap="round" />
 
-        {/* 4. 백색 (Silk White) W자 띠 */}
-        <path d="M 0 57 Q 125 129, 250 59 Q 375 129, 500 65" fill="none" stroke="#CBD5E1" strokeWidth="12" strokeLinecap="round" />
-        <path d="M 0 57 Q 125 129, 250 59 Q 375 129, 500 65" fill="none" stroke="#FFFFFF" strokeWidth="5" strokeLinecap="round" />
+        {/* 5. 천청/담청 (Celestial Silk Blue / 天靑·淡靑) - 청정한 하늘과 부처님의 광명을 담은 밝은 청백 비단 */}
+        <path d="M 0 66 Q 125 138, 250 68 Q 375 138, 500 74" fill="none" stroke="#BAE6FD" strokeWidth="11" strokeLinecap="round" />
+        <path d="M 0 66 Q 125 138, 250 68 Q 375 138, 500 74" fill="none" stroke="#FFFFFF" strokeWidth="3.5" strokeLinecap="round" />
       </g>
     </svg>
   );
@@ -167,7 +167,7 @@ export default function OpeningCeremony() {
                 10월 1일 18:30 세화붓다아카데미 개원 세레머니
               </div>
               <p style={{ margin: '3px 0 0 0', fontSize: '13.5px', color: '#CBD5E1' }}>
-                [D-30초 카운트다운 ➔ 전통 오색 단청 리본 커팅 ➔ 좌우 장막 걷기] 시네마틱 오프닝을 체험해 보세요.
+                [D-30초 카운트다운 ➔ 전통 오청색(五靑色) 비단 리본 커팅 ➔ 좌우 장막 걷기] 시네마틱 오프닝을 체험해 보세요.
               </p>
             </div>
           </div>
@@ -284,7 +284,7 @@ export default function OpeningCeremony() {
                   00:{String(countdown).padStart(2, '0')}
                 </span>
                 <span style={{ fontSize: '13px', color: '#94A3B8' }}>
-                  잠시 후 0초가 되면 전통 단청 리본 커팅식이 거행됩니다
+                  잠시 후 0초가 되면 전통 오청색(五靑色) 리본 커팅식이 거행됩니다
                 </span>
               </div>
             ) : (
