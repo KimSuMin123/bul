@@ -30,7 +30,7 @@ const filteredArgs = args.filter(a => !a.startsWith('--'));
 
 const API_KEY = (process.env.SOLAPI_API_KEY || filteredArgs[0] || '').trim();
 const API_SECRET = (process.env.SOLAPI_API_SECRET || filteredArgs[1] || '').trim();
-const SENDER = (process.env.LMS_SMS_SENDER || '01080287565').replace(/[^0-9]/g, '');
+const SENDER = (process.env.LMS_SMS_SENDER || '01047020283').replace(/[^0-9]/g, '');
 const ADMIN_PHONE = (process.env.LMS_SMS_ADMIN_PHONE || '01080287565').replace(/[^0-9]/g, '');
 const RECIPIENT = (process.env.TEST_RECIPIENT || '01030327565').replace(/[^0-9]/g, '');
 const SITE_URL = (process.env.LMS_SITE_URL || 'https://buddha-academy.netlify.app').replace(/\/$/, '');

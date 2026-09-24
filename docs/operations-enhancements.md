@@ -8,8 +8,8 @@
 
 | 항목 | 확정값 | 실제 설정·변경 위치 |
 |---|---|---|
-| 문자 발신번호 | 010-8028-7565 | Supabase Edge Function secret `LMS_SMS_SENDER=01080287565` |
-| 관리자 문자 수신번호 | 010-4702-0283 | 같은 프로젝트의 `LMS_SMS_ADMIN_PHONE=01047020283` |
+| 문자 발신번호 | 010-4702-0283 | Supabase Edge Function secret `LMS_SMS_SENDER=01047020283` |
+| 관리자 문자 수신번호 | 010-8028-7565 | 같은 프로젝트의 `LMS_SMS_ADMIN_PHONE=01080287565` |
 | 백업 메일 발신주소 | tntn211@naver.com | 백업 예약 실행 환경의 `SMTP_FROM` |
 | 백업 메일 수신주소 | tntn211@naver.com | 백업 예약 실행 환경의 `BACKUP_EMAIL_TO` |
 | 네이버 SMTP 서버·포트 | smtp.naver.com · 465(SSL/TLS) | `SMTP_HOST`, `SMTP_PORT` |
