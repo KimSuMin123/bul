@@ -6,7 +6,6 @@ import {
 import { useCourse } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
 import NamoAudio from '../components/home/NamoAudio';
-import OpeningCeremony from '../components/home/OpeningCeremony';
 import AnnouncementPopup from '../components/announcements/AnnouncementPopup';
 import '../styles/home-experience.css';
 
@@ -157,7 +156,6 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
         </div>
       </section>
 
-      <OpeningCeremony />
       <AnnouncementPopup />
 
       {/* Courses Catalog Section */}
