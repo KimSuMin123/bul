@@ -8,10 +8,10 @@ export function getCourseQualificationDetails(courseId, courseTitle = '', course
 
   // 1. If course has custom certificate configuration, respect it directly!
   if (course && (course.certType || course.certTypeFull || course.certRegNo)) {
-    const certType = course.certType || (course.certTypeFull ? course.certTypeFull.split(' ')[0] : '불교의례해설사');
+    const certType = course.certType || (course.certTypeFull ? course.certTypeFull.split(' ')[0] : '불교의례법사');
     const certGrade = course.certGrade || (course.certTypeFull ? course.certTypeFull.split(' ').slice(1).join(' ') : '2급') || '2급';
     const certTypeFull = course.certTypeFull || `${certType} ${certGrade}`.trim();
-    const certGradeCode = certGrade.replace(/\s+/g, '') || '해설사2급';
+    const certGradeCode = certGrade.replace(/\s+/g, '') || '법사2급';
 
     return {
       certType,
@@ -31,10 +31,10 @@ export function getCourseQualificationDetails(courseId, courseTitle = '', course
 
   if (cid === 'course-ritual-12-15' || title.includes('ii') || title.includes('2') || title.includes('심화')) {
     return {
-      certType: '불교의례해설사',
+      certType: '불교의례법사',
       certGrade: '1급',
-      certTypeFull: '불교의례해설사 1급',
-      certGradeCode: '해설사1급',
+      certTypeFull: '불교의례법사 1급',
+      certGradeCode: '법사1급',
       certEnTitle: 'Buddhist Ritual Interpreter (Level 1)',
       regOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
       customCertRegNo: '민간자격 등록번호 제 2026- 00183호',
@@ -42,10 +42,10 @@ export function getCourseQualificationDetails(courseId, courseTitle = '', course
     };
   } else if (cid === 'bundle-all' || title.includes('통합') || title.includes('지도사')) {
     return {
-      certType: '불교의례해설사',
+      certType: '불교의례법사',
       certGrade: '전문과정',
-      certTypeFull: '불교의례해설사 (전문과정)',
-      certGradeCode: '해설지도사',
+      certTypeFull: '불교의례법사 (전문과정)',
+      certGradeCode: '법사지도사',
       certEnTitle: 'Buddhist Ritual Master Instructor',
       regOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
       customCertRegNo: '민간자격 등록번호 제 2026- 00183호',
@@ -54,10 +54,10 @@ export function getCourseQualificationDetails(courseId, courseTitle = '', course
   } else {
     // Default: Course I (8~11강)
     return {
-      certType: '불교의례해설사',
+      certType: '불교의례법사',
       certGrade: '2급',
-      certTypeFull: '불교의례해설사 2급',
-      certGradeCode: '해설사2급',
+      certTypeFull: '불교의례법사 2급',
+      certGradeCode: '법사2급',
       certEnTitle: 'Buddhist Ritual Interpreter (Level 2)',
       regOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
       customCertRegNo: '민간자격 등록번호 제 2026- 00183호',
@@ -197,9 +197,9 @@ const DEMO_CERTIFICATES = [
     studentName: '이보디',
     birthDate: '1982-05-14',
     courseTitle: '불교의례법사 과정 I (8강~11강)',
-    certType: '불교의례해설사',
+    certType: '불교의례법사',
     certGrade: '2급',
-    certTypeFull: '불교의례해설사 2급',
+    certTypeFull: '불교의례법사 2급',
     certEnTitle: 'Buddhist Ritual Interpreter (Level 2)',
     regOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
     issuingOrg: '[사] 세화불학원',
@@ -218,9 +218,9 @@ const DEMO_CERTIFICATES = [
     studentName: '김원효',
     birthDate: '1979-11-20',
     courseTitle: '불교의례법사 과정 II (12강~15강)',
-    certType: '불교의례해설사',
+    certType: '불교의례법사',
     certGrade: '1급',
-    certTypeFull: '불교의례해설사 1급',
+    certTypeFull: '불교의례법사 1급',
     certEnTitle: 'Buddhist Ritual Interpreter (Level 1)',
     regOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
     issuingOrg: '[사] 세화불학원',

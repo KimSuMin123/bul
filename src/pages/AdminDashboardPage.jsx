@@ -190,9 +190,9 @@ export default function AdminDashboardPage() {
             memberNo: user.memberNo || user.id,
             courseId: course.id,
             courseTitle: course.title,
-            certType: course.certType || '불교의례해설사',
+            certType: course.certType || '불교의례법사',
             certGrade: course.certGrade || '2급',
-            certTypeFull: course.certTypeFull || `${course.certType || '불교의례해설사'} ${course.certGrade || '2급'}`,
+            certTypeFull: course.certTypeFull || `${course.certType || '불교의례법사'} ${course.certGrade || '2급'}`,
             certRegOffice: course.certRegOffice || '문화체육관광부 (민간자격 등록번호: 제 2026- 001836 호)',
             issuedAt: enr.enrolledAt || new Date().toISOString().split('T')[0],
             status: 'valid'
@@ -337,9 +337,9 @@ export default function AdminDashboardPage() {
     sequentialUnlock: true,
     price: 50000,
     instructor: '불교의례 전문 법사',
-    certType: '불교의례해설사',
+    certType: '불교의례법사',
     certGrade: '2급',
-    certTypeFull: '불교의례해설사 2급',
+    certTypeFull: '불교의례법사 2급',
     certRegNo: '민간자격 등록번호 제 2026- 00183호',
     certRegOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
     rawExamText: ''
@@ -369,9 +369,9 @@ export default function AdminDashboardPage() {
   const handleOpenCertEditModal = (course) => {
     setCertEditCourse(course);
     setCertEditForm({
-      certType: course.certType || '불교의례해설사',
+      certType: course.certType || '불교의례법사',
       certGrade: course.certGrade || '2급',
-      certTypeFull: course.certTypeFull || `${course.certType || '불교의례해설사'} ${course.certGrade || '2급'}`.trim(),
+      certTypeFull: course.certTypeFull || `${course.certType || '불교의례법사'} ${course.certGrade || '2급'}`.trim(),
       certRegNo: course.certRegNo || '민간자격 등록번호 제 2026- 00183호',
       certRegOffice: course.certRegOffice || '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
       rawExamText: course.rawExamText || ''
@@ -419,9 +419,9 @@ export default function AdminDashboardPage() {
           sequentialUnlock: true,
           price: 50000,
           instructor: '불교의례 전문 법사',
-          certType: '불교의례해설사',
+          certType: '불교의례법사',
           certGrade: '2급',
-          certTypeFull: '불교의례해설사 2급',
+          certTypeFull: '불교의례법사 2급',
           certRegNo: '민간자격 등록번호 제 2026- 00183호',
           certRegOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
           rawExamText: ''

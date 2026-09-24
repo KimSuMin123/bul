@@ -262,9 +262,9 @@ export const remoteDb = {
         sequentialUnlock: c.sequential_unlock,
         price: c.price,
         instructor: c.instructor,
-        certType: c.cert_type || '불교의례해설사',
+        certType: c.cert_type || '불교의례법사',
         certGrade: c.cert_grade || '2급',
-        certTypeFull: c.cert_type_full || `${c.cert_type || '불교의례해설사'} ${c.cert_grade || '2급'}`.trim(),
+        certTypeFull: c.cert_type_full || `${c.cert_type || '불교의례법사'} ${c.cert_grade || '2급'}`.trim(),
         certRegNo: c.cert_reg_no || '민간자격 등록번호 제 2026- 00183호',
         certRegOffice: c.cert_reg_office || '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
         rawExamText: null,
@@ -303,9 +303,9 @@ export const remoteDb = {
         sequential_unlock: courseData.sequentialUnlock,
         price: courseData.price,
         instructor: courseData.instructor,
-        cert_type: courseData.certType || '불교의례해설사',
+        cert_type: courseData.certType || '불교의례법사',
         cert_grade: courseData.certGrade || '2급',
-        cert_type_full: courseData.certTypeFull || '불교의례해설사 2급',
+        cert_type_full: courseData.certTypeFull || '불교의례법사 2급',
         cert_reg_no: courseData.certRegNo || '민간자격 등록번호 제 2026- 00183호',
         cert_reg_office: courseData.certRegOffice || '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)'
       };

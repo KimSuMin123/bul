@@ -488,7 +488,7 @@ export function CourseProvider({ children }) {
   }, [scope]);
 
   const addCourse = useCallback(async (courseData) => {
-    const certType = courseData.certType?.trim() || '불교의례해설사';
+    const certType = courseData.certType?.trim() || '불교의례법사';
     const certGrade = courseData.certGrade?.trim() || '2급';
     const certTypeFull = courseData.certTypeFull?.trim() || (certGrade ? `${certType} ${certGrade}` : certType);
     const certRegNo = courseData.certRegNo?.trim() || '민간자격 등록번호 제 2026- 00183호';

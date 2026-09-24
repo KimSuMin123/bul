@@ -1,47 +1,29 @@
 .cert-modal-backdrop { position: fixed; inset: 0; z-index: 1100; display: flex; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; background: rgba(12,20,16,.72); }
-.cert-modal-shell { width: min(100%, 800px); }
+.cert-modal-shell { width: 210mm; flex-shrink: 0; }
 .cert-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 16px; background: #26362f; color: white; border-radius: 8px 8px 0 0; }
 .cert-actions > div { display: flex; flex-wrap: wrap; gap: 8px; }
 .cert-actions button:focus-visible { outline: 3px solid #d49b4b; outline-offset: 2px; }
-.cert-paper { box-sizing: border-box; width: 100%; min-height: 1080px; position: relative; padding: 64px 68px 52px; display: flex; flex-direction: column; background: #fff; color: #1e2022; box-shadow: 0 10px 40px rgba(0,0,0,.2); }
-.cert-frame { position: absolute; inset: 22px; border: 2px solid #3b5249; pointer-events: none; }
+/* 화면·인쇄 모두 A4(210×297mm) 한 장 기준 */
+.cert-paper { box-sizing: border-box; width: 210mm; height: 297mm; position: relative; padding: 20mm 22mm 16mm; display: flex; flex-direction: column; background: #fff; color: #1e2022; box-shadow: 0 10px 40px rgba(0,0,0,.2); }
+.cert-frame { position: absolute; inset: 8mm; border: 2px solid #3b5249; pointer-events: none; }
 .cert-frame::after { content: ''; position: absolute; inset: 5px; border: 1px solid #c79954; }
 .cert-header, .cert-main, .cert-footer { position: relative; z-index: 1; }
 .cert-header { text-align: center; }
-.cert-logo { width: auto; height: 56px; max-width: 230px; object-fit: contain; margin: 0 auto 18px; }
-.cert-serial { text-align: right; font-size: 12px; color: #475569; }
-.cert-header h1 { margin: 28px 0 6px; font-family: var(--font-serif); font-size: 38px; letter-spacing: .35em; }
-.cert-title-en { color: #66746e; font-size: 11px; letter-spacing: .2em; }
-.cert-main { margin-top: 58px; flex: 1; }
-.cert-person { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 28px; }
-.cert-person-fields { flex: 1; }
-.cert-person-fields p { display: flex; border-bottom: 1px solid #d7dcd8; padding: 9px 0; gap: 18px; }
-.cert-person-fields span { min-width: 90px; color: #58675e; }
+.cert-logo { width: auto; height: 20mm; max-width: 80mm; object-fit: contain; margin: 0 auto 5mm; }
+.cert-serial { text-align: right; font-size: 11pt; color: #475569; }
+.cert-header h1 { margin: 8mm 0 2mm; font-family: var(--font-serif); font-size: 44pt; letter-spacing: .4em; text-indent: .4em; }
+.cert-main { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14mm; padding: 6mm 4mm; }
+.cert-person-fields { font-family: var(--font-serif); font-size: 17pt; text-align: left; }
+.cert-person-fields p { display: flex; border-bottom: 1px solid #d7dcd8; padding: 3.5mm 2mm; gap: 6mm; }
+.cert-person-fields span { display: flex; justify-content: space-between; flex: 0 0 30mm; color: #58675e; }
+.cert-person-fields span::after { content: ':'; }
 .cert-person-fields strong { overflow-wrap: anywhere; }
-.cert-photo { width: 94px; height: 124px; object-fit: cover; border: 1px solid #ccd2cc; }
-.cert-details { font-size: 14px; border-top: 1px solid #8fa497; }
-.cert-details > div { display: flex; align-items: baseline; padding: 11px 4px; border-bottom: 1px solid #dce3dd; gap: 18px; }
-.cert-details dt { flex: 0 0 110px; color: #58675e; font-weight: 700; }
-.cert-details dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-.cert-statement { margin: 44px 6px 18px; text-align: center; font-family: var(--font-serif); font-size: 17px; line-height: 1.9; word-break: keep-all; }
-.cert-competency { padding: 14px 18px; background: #f8f7f2; font-size: 12px; line-height: 1.6; }
-.cert-footer { text-align: center; margin-top: 32px; }
-.cert-date { font-family: var(--font-serif); font-size: 17px; margin-bottom: 22px; }
-.cert-issuer { display: flex; justify-content: center; align-items: center; font-family: var(--font-serif); font-size: 21px; gap: 8px; }
-.cert-office, .cert-check { font-size: 11px; color: #637269; margin-top: 10px; }
-.cert-legal { font-size: 9px; color: #7c8980; margin-top: 10px; line-height: 1.4; }
-@media (max-width: 700px) { .cert-modal-backdrop { padding: 8px; } .cert-paper { padding: 45px 34px; min-height: auto; } .cert-frame { inset: 12px; } .cert-header h1 { font-size: 26px; letter-spacing: .18em; } .cert-main { margin-top: 30px; } .cert-details { font-size: 12px; } .cert-details dt { flex-basis: 80px; } .cert-person-fields span { min-width: 70px; } .cert-statement { margin-top: 28px; font-size: 14px; } .cert-issuer { font-size: 16px; } }
+.cert-statement { text-align: center; font-family: var(--font-serif); font-size: 17pt; line-height: 2; word-break: keep-all; }
+.cert-footer { text-align: center; }
+.cert-date { font-family: var(--font-serif); font-size: 17pt; letter-spacing: .08em; margin-bottom: 8mm; }
+.cert-issuer { display: flex; justify-content: center; align-items: center; font-family: var(--font-serif); font-size: 22pt; gap: 10px; }
+.cert-office, .cert-check { font-size: 9pt; color: #637269; margin-top: 2mm; }
+.cert-legal { font-size: 8pt; color: #7c8980; margin-top: 2mm; line-height: 1.4; }
+@media (max-width: 700px) { .cert-modal-backdrop { padding: 8px; } }
 @page { size: A4 portrait; margin: 0; }
-@media print { html, body, #root, .app-wrapper, .main-content { width: 210mm !important; height: 297mm !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; } body * { visibility: hidden !important; } .cert-modal-backdrop, .cert-modal-backdrop * { visibility: visible !important; } .cert-modal-backdrop { position: fixed !important; inset: 0 !important; display: block !important; width: 210mm !important; height: 297mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: white !important; } .cert-modal-shell { width: 210mm !important; height: 297mm !important; } .cert-paper { width: 210mm !important; height: 297mm !important; min-height: 0 !important; padding: 18mm 21mm 16mm !important; box-shadow: none !important; break-inside: avoid !important; print-color-adjust: exact !important; -webkit-print-color-adjust: exact !important; } .cert-frame { inset: 7mm !important; } .no-print { display: none !important; } .cert-main { margin-top: 13mm !important; } .cert-statement { margin-top: 12mm !important; } }
-@media print {
-  .cert-header h1 { margin-top: 12px !important; }
-  .cert-main { flex: 0 1 auto !important; margin-top: 7mm !important; }
-  .cert-person { margin-bottom: 13px !important; }
-  .cert-person-fields p { padding: 5px 0 !important; }
-  .cert-details > div { padding: 5px 4px !important; }
-  .cert-statement { margin: 7mm 4px 12px !important; font-size: 15px !important; }
-  .cert-footer { position: absolute !important; bottom: 14mm !important; left: 21mm !important; right: 21mm !important; margin-top: 0 !important; }
-  .cert-date { margin-bottom: 7px !important; }
-  .cert-office, .cert-check { margin-top: 3px !important; }
-  .cert-legal { margin-top: 4px !important; }
-}
+@media print { html, body, #root, .app-wrapper, .main-content { width: 210mm !important; height: 297mm !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; } body * { visibility: hidden !important; } .cert-modal-backdrop, .cert-modal-backdrop * { visibility: visible !important; } .cert-modal-backdrop { position: fixed !important; inset: 0 !important; display: block !important; width: 210mm !important; height: 297mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: white !important; } .cert-modal-shell { width: 210mm !important; height: 297mm !important; zoom: 1 !important; } .cert-paper { box-shadow: none !important; break-inside: avoid !important; print-color-adjust: exact !important; -webkit-print-color-adjust: exact !important; } .no-print { display: none !important; } }
