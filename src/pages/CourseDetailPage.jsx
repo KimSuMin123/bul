@@ -230,7 +230,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
               <div>
                 <span className="text-caption" style={{ display: 'block', marginBottom: '2px' }}>학습 방식</span>
                 <strong style={{ color: course.sequentialUnlock !== false ? 'var(--color-amber-dark)' : 'inherit' }}>
-                  {course.sequentialUnlock !== false ? '🔒 차시별 순차 학습 (80% 이상 시 오픈)' : '자유 수강'}
+                  {course.sequentialUnlock !== false ? '🔒 차시별 순차 학습' : '자유 수강'}
                 </strong>
               </div>
               <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--color-border)' }} />

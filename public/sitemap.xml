@@ -6,7 +6,7 @@
   <!-- Main Homepage -->
   <url>
     <loc>https://세화붓다아카데미.com/</loc>
-    <lastmod>2026-09-17</lastmod>
+    <lastmod>2026-09-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -18,7 +18,7 @@
   <!-- About SBA (세화불학원 소개 / 설립목적 / 신행헌장 / 연혁 / 정관) -->
   <url>
     <loc>https://세화붓다아카데미.com/#about</loc>
-    <lastmod>2026-09-17</lastmod>
+    <lastmod>2026-09-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -26,7 +26,7 @@
   <!-- Course Detail: 불교의례해설사 2급 전문 자격과정 (등록번호: 제 2026-00183호) -->
   <url>
     <loc>https://세화붓다아카데미.com/#courseDetail?id=course-ritual-master-2</loc>
-    <lastmod>2026-09-17</lastmod>
+    <lastmod>2026-09-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -34,7 +34,7 @@
   <!-- Course Detail: 불교의례법사 과정 (30차시) -->
   <url>
     <loc>https://세화붓다아카데미.com/#courseDetail?id=course-ritual-master-law</loc>
-    <lastmod>2026-09-17</lastmod>
+    <lastmod>2026-09-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -42,7 +42,7 @@
   <!-- Student Dashboard / My Classroom -->
   <url>
     <loc>https://세화붓다아카데미.com/#dashboard</loc>
-    <lastmod>2026-09-17</lastmod>
+    <lastmod>2026-09-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
@@ -50,7 +50,7 @@
   <!-- Certificate Verification Public Portal -->
   <url>
     <loc>https://세화붓다아카데미.com/#verify</loc>
-    <lastmod>2026-09-17</lastmod>
+    <lastmod>2026-09-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -58,7 +58,7 @@
   <!-- User Login Portal -->
   <url>
     <loc>https://세화붓다아카데미.com/#login</loc>
-    <lastmod>2026-09-17</lastmod>
+    <lastmod>2026-09-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -66,7 +66,7 @@
   <!-- User Registration Portal -->
   <url>
     <loc>https://세화붓다아카데미.com/#register</loc>
-    <lastmod>2026-09-17</lastmod>
+    <lastmod>2026-09-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
