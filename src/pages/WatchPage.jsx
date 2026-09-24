@@ -661,8 +661,19 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
       <AccessDeniedModal
         isOpen={showDeniedModal}
         courseTitle={unauthorizedCourseTitle}
+        isPending={Boolean(
+          currentUser && course && enrollments.some(e => 
+            String(e.userId) === String(currentUser.id) && 
+            (e.courseId === course.id || e.courseId === 'bundle-all') &&
+            (e.status === 'pending' || e.status === 'applied')
+          )
+        )}
+        onStartTrial={() => {
+          const firstLec = courseLectures[0];
+          if (firstLec) onSelectLecture(firstLec.id);
+        }}
         onClose={() => setShowDeniedModal(false)}
-        onNavigateCourses={() => onNavigate('home')}
+        onNavigateCourses={() => onNavigate('dashboard')}
       />
     </div>
   );

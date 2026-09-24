@@ -313,10 +313,13 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                         <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '14px', borderRadius: '8px', marginBottom: '16px' }}>
                           <div style={{ fontWeight: 700, color: '#92400E', fontSize: '13.5px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <Clock size={15} />
-                            <span>교학처 대면 수납 승인 대기 중</span>
+                            <span>수강 신청 접수 (교학처 수납 대기)</span>
                           </div>
                           <p style={{ margin: 0, fontSize: '12.5px', color: '#B45309', lineHeight: '1.5' }}>
-                            수강 신청이 접수되었습니다. 교학처(010-4702-0283)에 방문하시어 수강료를 납부하시면 즉시 [수강 중]으로 전환되어 강의 시청이 가능합니다.
+                            수강 신청이 정상 접수되었습니다. 수강료 납부 전이라도 <strong>1~3강은 지금 바로 무료로 수강</strong>하실 수 있습니다!
+                          </p>
+                          <p style={{ margin: '4px 0 0 0', fontSize: '11.5px', color: '#92400E', lineHeight: '1.4' }}>
+                            * 교학처(010-4702-0283) 방문 또는 계좌 납부 승인 후 4강부터 전 강좌 및 수료 자격이 개방됩니다.
                           </p>
                         </div>
                       )}
@@ -368,14 +371,44 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                       {/* Card Action Buttons */}
                       <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {isPending ? (
-                          <button 
-                            className="btn btn-secondary btn-sm" 
-                            style={{ width: '100%', fontWeight: 600, padding: '10px' }}
-                            onClick={() => setShowPaymentInfoModal(true)}
-                          >
-                            <HelpCircle size={15} color="#D97706" />
-                            <span>대면 수납 절차 및 위치 안내</span>
-                          </button>
+                          <>
+                            <button 
+                              className="btn btn-primary btn-md" 
+                              style={{ 
+                                width: '100%', 
+                                fontWeight: 700, 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                gap: '8px', 
+                                padding: '11px',
+                                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                              }}
+                              onClick={() => {
+                                const sortedLecs = lectures
+                                  .filter(l => l.courseId === course.id)
+                                  .sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
+                                const targetLec = sortedLecs.slice(0, 3).find(l => {
+                                  const p = progressList.find(prog => String(prog.userId) === String(currentUser?.id) && prog.lectureId === l.id);
+                                  const isDone = p && (p.completed || (Number(p.progressRate) || 0) >= 95);
+                                  return !isDone && !isLectureLocked(currentUser?.id, l.id);
+                                }) || sortedLecs[0];
+                                if (targetLec) onStartLecture(targetLec.id);
+                              }}
+                            >
+                              <PlayCircle size={16} />
+                              <span>1~3강 무료 체험 수강하기 ▶</span>
+                            </button>
+                            <button 
+                              className="btn btn-secondary btn-sm" 
+                              style={{ width: '100%', fontWeight: 600, padding: '9px' }}
+                              onClick={() => setShowPaymentInfoModal(true)}
+                            >
+                              <HelpCircle size={15} color="#D97706" />
+                              <span>대면 수납 절차 및 위치 안내</span>
+                            </button>
+                          </>
                         ) : isFullyCompleted ? (
                           <>
                             {/* Prominent Certificate Button */}

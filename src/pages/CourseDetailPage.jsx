@@ -10,7 +10,7 @@ import { APPROVAL_SCHEDULE, PAYMENT_ACCOUNT, enrollmentConfirmation } from '../c
 
 export default function CourseDetailPage({ courseId, onNavigate, onStartLecture }) {
   const {
-    courses, lectures, enrollments, hasCourseAccess, enrollStudent,
+    courses, lectures, enrollments, hasCourseAccess, hasLectureAccess, enrollStudent,
     isLectureLocked, getLectureProgress
   } = useCourse();
   const { currentUser } = useAuth();
@@ -154,8 +154,12 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
   }
 
   const handleLectureClick = (lec) => {
-    if (!isEnrolled) {
-      showAlert('본 강좌의 수강 권한이 필요합니다. 교학처 수납 후 승인됩니다.', { type: 'warning', title: '수강 권한 안내' });
+    if (!hasLectureAccess(currentUser?.id, lec.id)) {
+      if (isPending) {
+        showAlert('수강 신청 접수 상태입니다. 4강부터는 교학처 수강료 납부 및 승인 후 수강하실 수 있습니다. (1~3강은 결제 전 무료 미리보기 가능)', { type: 'warning', title: '수강 권한 안내' });
+      } else {
+        showAlert('본 강좌의 수강 권한이 필요합니다. 먼저 [수강 신청 접수하기]를 진행하시면 1~3강을 즉시 미리 수강하실 수 있습니다.', { type: 'warning', title: '수강 권한 안내' });
+      }
       return;
     }
 
@@ -253,12 +257,25 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                   <span>내 강의실 바로 수강하기</span>
                 </button>
               ) : isPending ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span className="badge badge-amber" style={{ padding: '8px 14px', fontSize: '14px' }}>
-                    교학처 수납 대기 중
-                  </span>
-                  <span style={{ fontSize: '13px', color: '#64748B' }}>
-                    {PAYMENT_ACCOUNT}<br />{APPROVAL_SCHEDULE}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <button
+                      className="btn btn-primary btn-lg"
+                      onClick={() => {
+                        const firstAvail = courseLectures.find(l => hasLectureAccess(currentUser?.id, l.id) && !isLectureLocked(currentUser?.id, l.id)) || courseLectures[0];
+                        if (firstAvail) onStartLecture(firstAvail.id);
+                      }}
+                      style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', border: 'none', color: '#FFFFFF', fontWeight: 700 }}
+                    >
+                      <PlayCircle size={18} />
+                      <span>1~3강 바로 수강하기 (무료 체험)</span>
+                    </button>
+                    <span className="badge badge-amber" style={{ padding: '8px 14px', fontSize: '13px' }}>
+                      교학처 수납 대기 중 (4강부터 수납 후 승인)
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '12.5px', color: '#64748B' }}>
+                    {PAYMENT_ACCOUNT} | {APPROVAL_SCHEDULE}
                   </span>
                 </div>
               ) : (
@@ -479,9 +496,14 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                                       완강
                                     </span>
                                   )}
-                                  {isEpLocked && isEnrolled && (
+                                  {isEpLocked && (isEnrolled || hasLectureAccess(currentUser?.id, lec.id)) && (
                                     <span className="badge badge-neutral" style={{ fontSize: '11px', padding: '1px 7px', color: '#64748B' }}>
                                       선수 차시 수강 필요
+                                    </span>
+                                  )}
+                                  {!isEnrolled && isPending && hasLectureAccess(currentUser?.id, lec.id) && (
+                                    <span className="badge" style={{ fontSize: '11px', padding: '1px 7px', backgroundColor: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0', fontWeight: 600 }}>
+                                      무료 체험 (1~3강)
                                     </span>
                                   )}
                                 </div>
@@ -497,7 +519,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                                 약 {Math.round((lec.durationSeconds || 2400) / 60)}분
                               </span>
 
-                              {isEnrolled ? (
+                              {hasLectureAccess(currentUser?.id, lec.id) ? (
                                 isEpLocked ? (
                                   <button
                                     type="button"
@@ -540,23 +562,24 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                                       fontSize: '12.5px',
                                       display: 'inline-flex',
                                       alignItems: 'center',
-                                      gap: '5px'
+                                      gap: '5px',
+                                      ...(isPending && !isEnrolled ? { background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', border: 'none' } : {})
                                     }}
                                     onClick={() => handleLectureClick(lec)}
                                   >
                                     <PlayCircle size={13} />
-                                    <span>수강하기</span>
+                                    <span>{isPending && !isEnrolled ? '미리보기 수강' : '수강하기'}</span>
                                   </button>
                                 )
                               ) : (
                                 <button
                                   type="button"
                                   className="btn btn-secondary btn-sm"
-                                  onClick={() => showAlert('본 강좌의 수강 권한이 필요합니다. 교학처 수납 후 승인됩니다.', { type: 'warning', title: '수강 권한 안내' })}
+                                  onClick={() => showAlert(isPending ? '수강 신청 접수 상태입니다. 4강부터는 교학처 수납 승인 후 수강하실 수 있습니다. (1~3강은 결제 전 무료 미리보기 가능)' : '본 강좌의 수강 권한이 필요합니다. 먼저 [수강 신청 접수하기]를 진행하시면 1~3강을 즉시 미리 수강하실 수 있습니다.', { type: 'warning', title: '수강 권한 안내' })}
                                   style={{ fontSize: '12.5px' }}
                                 >
                                   <Lock size={13} color="var(--color-coral)" />
-                                  <span>잠김</span>
+                                  <span>{isPending ? '수납 대기' : '잠김'}</span>
                                 </button>
                               )}
                             </div>

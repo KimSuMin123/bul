@@ -202,8 +202,24 @@ export function CourseProvider({ children }) {
     const lec = lectures.find(l => l.id === lectureId);
     if (!lec) return false;
 
-    return hasCourseAccess(userId, lec.courseId);
-  }, [lectures, hasCourseAccess, isAdmin]);
+    // 1. Full course enrollment access (active or completed)
+    if (hasCourseAccess(userId, lec.courseId)) return true;
+
+    // 2. Pre-payment 3-lecture preview for applied/pending students
+    const userEnr = enrollments.find(e => e.userId === userId && (e.courseId === lec.courseId || e.courseId === 'bundle-all'));
+    if (userEnr) {
+      const courseLecs = lectures
+        .filter(l => l.courseId === lec.courseId)
+        .sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      const lecIndex = courseLecs.findIndex(l => l.id === lectureId);
+      const orderNum = Number(lec.orderIndex) || (lecIndex + 1);
+      if (orderNum <= 3 || (lecIndex >= 0 && lecIndex < 3)) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [lectures, enrollments, hasCourseAccess, isAdmin]);
 
   const isLectureLocked = useCallback((userId, lectureId, options = {}) => {
     // If admin explicitly enabled bypass mode, allow unlock for testing

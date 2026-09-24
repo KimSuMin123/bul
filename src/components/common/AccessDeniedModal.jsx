@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { ShieldAlert, X, PhoneCall, HelpCircle, ArrowRight } from 'lucide-react';
 
-export default function AccessDeniedModal({ isOpen, onClose, courseTitle = '해당 코스', onNavigateCourses }) {
+export default function AccessDeniedModal({ 
+  isOpen, 
+  onClose, 
+  courseTitle = '해당 코스', 
+  isPending = false,
+  onStartTrial,
+  onNavigateCourses 
+}) {
   const [showOfficeInfo, setShowOfficeInfo] = useState(false);
 
   if (!isOpen) return null;
@@ -27,27 +34,43 @@ export default function AccessDeniedModal({ isOpen, onClose, courseTitle = '해�
             width: '64px', 
             height: '64px', 
             borderRadius: '50%', 
-            backgroundColor: 'var(--color-coral-subtle)', 
+            backgroundColor: isPending ? 'rgba(16, 185, 129, 0.12)' : 'var(--color-coral-subtle)', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
             margin: '0 auto 20px auto'
           }}
         >
-          <ShieldAlert size={34} color="var(--color-coral)" />
+          <ShieldAlert size={34} color={isPending ? '#10B981' : 'var(--color-coral)'} />
         </div>
 
-        <h3 className="heading-2" style={{ marginBottom: '8px' }}>수강 권한 제한 안내</h3>
+        <h3 className="heading-2" style={{ marginBottom: '8px' }}>
+          {isPending ? '수강 신청 접수 완료 안내' : '수강 권한 제한 안내'}
+        </h3>
         
         {/* Exact Specification Message */}
-        <p style={{ fontSize: '15px', color: 'var(--color-charcoal)', lineHeight: '1.6', marginBottom: '14px' }}>
-          본 강의는 <strong>[{courseTitle}]</strong> 수강생 전용입니다.<br />
-          현재 수강 권한이 없습니다. 학과 사무실(관리자)에 문의하세요.
-        </p>
-
-        <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '24px' }}>
-          대면 수납 완료 후 관리자가 수강 승인을 처리하면 즉시 모든 강의와 학습자료를 열람하실 수 있습니다.
-        </p>
+        {isPending ? (
+          <>
+            <p style={{ fontSize: '15px', color: 'var(--color-charcoal)', lineHeight: '1.6', marginBottom: '14px' }}>
+              <strong>[{courseTitle}]</strong> 수강 신청이 정상 접수되었습니다.<br />
+              본 강좌는 <strong>1~3강까지 무료 체험으로 시청</strong>하실 수 있으며,<br />
+              4강부터는 교학처 수납 승인 후 개방됩니다.
+            </p>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '24px' }}>
+              교학처 방문 또는 지정 계좌 납부 완료 시 관리자가 승인하면 즉시 전체 강좌와 수료증 자격이 부여됩니다.
+            </p>
+          </>
+        ) : (
+          <>
+            <p style={{ fontSize: '15px', color: 'var(--color-charcoal)', lineHeight: '1.6', marginBottom: '14px' }}>
+              본 강의는 <strong>[{courseTitle}]</strong> 수강생 전용입니다.<br />
+              현재 수강 권한이 없습니다. 학과 사무실(관리자)에 문의하세요.
+            </p>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '24px' }}>
+              대면 수납 완료 후 관리자가 수강 승인을 처리하면 즉시 모든 강의와 학습자료를 열람하실 수 있습니다.
+            </p>
+          </>
+        )}
 
         {showOfficeInfo ? (
           <div 
@@ -74,17 +97,31 @@ export default function AccessDeniedModal({ isOpen, onClose, courseTitle = '해�
 
         {/* Action Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <button 
-            className="btn btn-primary"
-            style={{ width: '100%', padding: '12px' }}
-            onClick={() => {
-              onClose();
-              if (onNavigateCourses) onNavigateCourses();
-            }}
-          >
-            <span>코스 수강 신청 안내</span>
-            <ArrowRight size={16} />
-          </button>
+          {isPending && onStartTrial ? (
+            <button 
+              className="btn btn-primary"
+              style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
+              onClick={() => {
+                onClose();
+                onStartTrial();
+              }}
+            >
+              <span>1강 무료 체험 시청하기</span>
+              <ArrowRight size={16} />
+            </button>
+          ) : (
+            <button 
+              className="btn btn-primary"
+              style={{ width: '100%', padding: '12px' }}
+              onClick={() => {
+                onClose();
+                if (onNavigateCourses) onNavigateCourses();
+              }}
+            >
+              <span>코스 수강 신청 안내</span>
+              <ArrowRight size={16} />
+            </button>
+          )}
 
           <button 
             className="btn btn-secondary"
@@ -92,7 +129,7 @@ export default function AccessDeniedModal({ isOpen, onClose, courseTitle = '해�
             onClick={() => setShowOfficeInfo(!showOfficeInfo)}
           >
             <HelpCircle size={16} />
-            <span>{showOfficeInfo ? '학과 사무실 안내 닫기' : '학과 사무실 문의'}</span>
+            <span>{showOfficeInfo ? '학과 사무실 안내 닫기' : '교학처 수납 및 문의 안내'}</span>
           </button>
         </div>
       </div>
