@@ -128,3 +128,31 @@ test('migration 004 preserves service permissions and isolates targeted leases f
  await role('service_role');assert.deepEqual(await claim(other),[]);await role('postgres');assert.equal((await db.query('SELECT status FROM lms_private.sms_outbox WHERE id=$1',[other])).rows[0].status,'uncertain');
  const audit=(await db.query('SELECT status,code FROM lms_private.sms_attempts WHERE outbox_id=$1',[other])).rows;assert.deepEqual(audit,[{status:'uncertain',code:'lease_expired'}]);assert.ok(expired.lease_token);
 });
+
+test('verify_credentials validates SOLAPI balance API response and detects 401',async()=>{
+ const f=createSmsHandler({url:'https://db.invalid',serviceKey:'service',provider:'solapi',apiKey:'key',apiSecret:'secret',fetch:async url=>{
+  if(url.includes('/cash/v1/balance')) return Response.json({balance:5000,point:0});
+  return Response.json({});
+ }});
+ const req=new Request('https://edge.invalid',{method:'POST',headers:{Authorization:'Bearer service','Content-Type':'application/json'},body:JSON.stringify({action:'verify_credentials'})});
+ const res=await f(req);assert.equal(res.status,200);
+ const data=await res.json();assert.equal(data.ok,true);assert.equal(data.balance,5000);
+
+ const fail=createSmsHandler({url:'https://db.invalid',serviceKey:'service',provider:'solapi',apiKey:'bad',apiSecret:'bad',fetch:async()=>new Response(JSON.stringify({}),{status:401})});
+ const failRes=await fail(new Request('https://edge.invalid',{method:'POST',headers:{Authorization:'Bearer service','Content-Type':'application/json'},body:JSON.stringify({action:'verify_credentials'})}));
+ const failData=await failRes.json();assert.equal(failData.ok,false);assert.equal(failData.status,401);assert.ok(failData.error.includes('401'));
+});
+
+test('test_send dispatches 4 messages to approved target phone',async()=>{
+ const sends=[];
+ const f=createSmsHandler({url:'https://db.invalid',serviceKey:'service',provider:'solapi',apiKey:'key',apiSecret:'secret',sender:'01080287565',fetch:async(url,opts)=>{
+  if(url.includes('/send-many/detail')){sends.push(JSON.parse(opts.body));return Response.json({groupInfo:{groupId:'G1',count:{registeredSuccess:1,registeredFailed:0}}});}
+  return Response.json({});
+ }});
+ const req=new Request('https://edge.invalid',{method:'POST',headers:{Authorization:'Bearer service','Content-Type':'application/json'},body:JSON.stringify({action:'test_send',to:'01030327565'})});
+ const res=await f(req);assert.equal(res.status,200);
+ const data=await res.json();assert.equal(data.processed,4);assert.equal(data.accepted,4);
+ assert.equal(sends.length,4);
+ assert.ok(sends.every(s=>s.messages[0].to==='01030327565'&&s.messages[0].from==='01080287565'));
+});
+

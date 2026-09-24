@@ -1,15 +1,14 @@
 export const APPROVAL_NOTICE = '입금 확인 및 수강 승인은 매일 오전 10시~11시, 오후 6시~7시에 진행됩니다.';
-// Explicitly authorized operator-test recipient; configuration must also agree.
 export const OPERATOR_TEST_PHONE = '01080287565';
 const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const byteLength = text => new TextEncoder().encode(text).length;
-function fitMessage(prefix, content, suffix) {
+const byteLength = (text: string) => new TextEncoder().encode(text).length;
+function fitMessage(prefix: string, content: string, suffix: string) {
  const budget=1900-byteLength(prefix+suffix);
  let excerpt='',used=0;
  for(const character of content) { const size=byteLength(character); if(used+size>budget-4) break; excerpt+=character;used+=size; }
  return prefix+excerpt+(excerpt.length<content.length?'…':'')+suffix;
 }
-export function renderMessage(job, siteUrl = '') {
+export function renderMessage(job: any, siteUrl = '') {
  const { name, courseTitle, price } = job.payload;
  const link=`${siteUrl}/#watch?id=${encodeURIComponent(job.payload.lectureId || '')}&question=${encodeURIComponent(job.payload.postId || '')}`;
  switch (job.kind) {
@@ -20,19 +19,19 @@ export function renderMessage(job, siteUrl = '') {
   default: throw new Error('unsupported_kind');
  }
 }
-export async function solapiAuthorization(apiKey, apiSecret, date = new Date().toISOString(), salt = crypto.randomUUID().replaceAll('-', '')) {
+export async function solapiAuthorization(apiKey: string, apiSecret: string, date = new Date().toISOString(), salt = crypto.randomUUID().replaceAll('-', '')) {
  const key = await crypto.subtle.importKey('raw',new TextEncoder().encode(apiSecret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
  const signature = [...new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(date+salt)))].map(v=>v.toString(16).padStart(2,'0')).join('');
  return `HMAC-SHA256 apiKey=${apiKey}, date=${date}, salt=${salt}, signature=${signature}`;
 }
-async function equalSecret(a,b) {
+async function equalSecret(a: string | null | undefined, b: string | null | undefined) {
  if (!a || !b) return false;
- const hash = async value => new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)));
+ const hash = async (value: string) => new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)));
  const x=await hash(a),y=await hash(b); let difference=0;
  for(let i=0;i<x.length;i++) difference|=x[i]^y[i];
  return difference===0;
 }
-function decodeJwtRole(token) {
+function decodeJwtRole(token: string | null | undefined) {
  try {
   const parts = String(token||'').split('.');
   if(parts.length !== 3) return null;
@@ -42,16 +41,17 @@ function decodeJwtRole(token) {
   return payload.role || null;
  } catch { return null; }
 }
-export function createSmsHandler({url,serviceKey,workerSecret,provider='mock',apiKey,apiSecret,sender,adminPhone,testPhone,siteUrl='',fetch:request=globalThis.fetch}) {
+
+export function createSmsHandler({url,serviceKey,workerSecret,provider='mock',apiKey,apiSecret,sender,adminPhone,testPhone,siteUrl='',fetch:request=globalThis.fetch}: any) {
  let siteOrigin='';
  try { const parsed=new URL(siteUrl); if(parsed.protocol==='https:' && parsed.origin===siteUrl.replace(/\/$/,'') && !parsed.username && !parsed.password && siteUrl.length<=300) siteOrigin=parsed.origin; } catch { /* Invalid config is rejected before claiming. */ }
- const respond=(body,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
- async function rpc(name,body) {
+ const respond=(body: any,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
+ async function rpc(name: string,body: any) {
   const response=await request(`${url}/rest/v1/rpc/${name}`,{method:'POST',headers:{apikey:serviceKey,Authorization:`Bearer ${serviceKey}`,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
   if(!response.ok) throw new Error('database_unavailable');
   return response.json();
  }
- async function checkServiceToken(token) {
+ async function checkServiceToken(token: string | null | undefined) {
   if(!token) return false;
   if(serviceKey && await equalSecret(token, serviceKey)) return true;
   if(url && decodeJwtRole(token) === 'service_role') {
@@ -66,9 +66,8 @@ export function createSmsHandler({url,serviceKey,workerSecret,provider='mock',ap
   }
   return false;
  }
- const validTestJob=(job,id)=>job?.id===id&&job.event_key===`operator_test:${id}`&&job.kind==='enrollment_student'&&job.payload?.phone===testPhone&&testPhone===OPERATOR_TEST_PHONE;
- async function send(job,testId) {
-  // Defense in depth immediately before a provider request, including its route.
+ const validTestJob=(job: any,id: string)=>job?.id===id&&job.event_key===`operator_test:${id}`&&job.kind==='enrollment_student'&&job.payload?.phone===testPhone&&testPhone===OPERATOR_TEST_PHONE;
+ async function send(job: any,testId?: string) {
   if(testId&&!validTestJob(job,testId))throw new Error('invalid_test_job');
   if(provider==='mock') return {status:'mock',code:'mock_no_delivery',providerId:null};
   const to=testId?testPhone:job.kind.endsWith('_admin')?adminPhone:job.payload.phone;
@@ -82,20 +81,19 @@ export function createSmsHandler({url,serviceKey,workerSecret,provider='mock',ap
   if(!response.ok) return {status:'failed',code:`http_${response.status}`,providerId:null};
   let result;
   try { result=await response.json(); } catch { return {status:'uncertain',code:'invalid_response',providerId:null}; }
-  // API success means accepted by SOLAPI, not delivery to a handset.
   const accepted=Number(result.groupInfo?.count?.registeredSuccess);
   const failed=Number(result.groupInfo?.count?.registeredFailed);
   if(accepted===1 && failed===0 && result.groupInfo?.groupId) return {status:'accepted',code:'provider_accepted',providerId:String(result.groupInfo.groupId).slice(0,100)};
   if(accepted===0 && (failed>0 || result.failedMessageList?.length)) return {status:'failed',code:'provider_rejected',providerId:null};
   return {status:'uncertain',code:'acceptance_unknown',providerId:null};
  }
- return async req=>{
+ return async (req: Request)=>{
   if(req.method!=='POST') return respond({error:'POST required'},405);
   const token=req.headers.get('Authorization')?.match(/^Bearer (.+)$/i)?.[1];
   const serviceAuthorized=await checkServiceToken(token);
   const workerAuthorized=await equalSecret(token,workerSecret);
   if(!serviceAuthorized && !workerAuthorized) return respond({error:'Unauthorized'},401);
-  let input;
+  let input: any;
   try{
    const text=await req.text();if(byteLength(text)>2048)return respond({error:'Request too large'},413);
    if(text.trim()&&!/^application\/json(?:;|$)/i.test(req.headers.get('Content-Type')||''))return respond({error:'JSON required'},400);
@@ -161,10 +159,8 @@ export function createSmsHandler({url,serviceKey,workerSecret,provider='mock',ap
    if(testPhone!==OPERATOR_TEST_PHONE)return respond({error:'SMS test configuration unavailable'},503);
   }else if(Object.keys(input).length)return respond({error:'Unsupported request'},400);
   if(!url || !serviceKey || !['mock','solapi'].includes(provider)) return respond({error:'SMS configuration unavailable'},503);
-  // Validate all required production settings before claiming any durable work.
   if(provider==='solapi' && (!apiKey || !apiSecret || !siteOrigin || !/^\d{9,15}$/.test(sender||'') || !/^\d{9,15}$/.test(adminPhone||''))) return respond({error:'SMS configuration unavailable'},503);
   try {
-   // 15s claim + 3 * (20s provider + 15s finish) = 120s, below Edge's 150s idle limit.
    const jobs=operatorTest?await rpc('lms_claim_sms_test',{p_id:input.job_id,p_phone:testPhone}):await rpc('lms_claim_sms',{p_limit:3});
    if(!Array.isArray(jobs)||jobs.length>(operatorTest?1:3))throw new Error('invalid_claim');
    if(operatorTest){
@@ -177,9 +173,22 @@ export function createSmsHandler({url,serviceKey,workerSecret,provider='mock',ap
     try { result=await send(job,operatorTest?input.job_id:undefined); } catch { result={status:'failed',code:'invalid_payload',providerId:null}; }
     const saved=await rpc('lms_finish_sms',{p_id:job.id,p_lease_token:job.lease_token,p_status:result.status,p_code:result.code,p_provider_id:result.providerId});
     if(!saved) throw new Error('lease_lost');
-    totals.processed++; totals[result.status]++;
+    totals.processed++; (totals as any)[result.status]++;
    }
    return respond(totals);
   } catch { return respond({error:'SMS processing interrupted; inspect the outbox before retrying.'},503); }
  };
 }
+
+Deno.serve(createSmsHandler({
+ url:Deno.env.get('SUPABASE_URL') || '',
+ serviceKey:Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
+ workerSecret:Deno.env.get('LMS_SMS_WORKER_SECRET') || '',
+ provider:Deno.env.get('LMS_SMS_PROVIDER') || 'mock',
+ apiKey:Deno.env.get('SOLAPI_API_KEY') || '',
+ apiSecret:Deno.env.get('SOLAPI_API_SECRET') || '',
+ sender:Deno.env.get('LMS_SMS_SENDER') || '',
+ adminPhone:Deno.env.get('LMS_SMS_ADMIN_PHONE') || '',
+ testPhone:Deno.env.get('LMS_SMS_TEST_PHONE') || '',
+ siteUrl:Deno.env.get('LMS_SITE_URL') || ''
+}));
