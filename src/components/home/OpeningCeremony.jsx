@@ -1,5 +1,44 @@
 import React, { useEffect, useState, useRef } from 'react';
 
+// Traditional 5-Color Dancheong W-Shape Ribbon Half
+function WRibbonHalfSvg({ isLeft }) {
+  const filterId = isLeft ? 'w-shadow-left' : 'w-shadow-right';
+  return (
+    <svg 
+      viewBox="0 0 500 135" 
+      preserveAspectRatio="none" 
+      style={{ width: '100%', height: '100%', overflow: 'visible', display: 'block' }}
+    >
+      <defs>
+        <filter id={filterId} x="-10%" y="-10%" width="120%" height="150%">
+          <feDropShadow dx="0" dy="5" stdDeviation="4" floodColor="#000000" floodOpacity="0.5" />
+        </filter>
+      </defs>
+      <g transform={isLeft ? undefined : 'translate(500, 0) scale(-1, 1)'} filter={`url(#${filterId})`}>
+        {/* 상단 팽팽한 가이드 레드 테이프 라인 */}
+        <path d="M 0 16 L 500 16" stroke="#DC2626" strokeWidth="6" strokeLinecap="round" />
+        <path d="M 0 16 L 500 16" stroke="#F87171" strokeWidth="1.5" strokeLinecap="round" />
+
+        {/* 1. 청색 (Royal Blue) W자 띠 */}
+        <path d="M 0 24 Q 125 96, 250 26 Q 375 96, 500 32" fill="none" stroke="#1D4ED8" strokeWidth="12" strokeLinecap="round" />
+        <path d="M 0 24 Q 125 96, 250 26 Q 375 96, 500 32" fill="none" stroke="#60A5FA" strokeWidth="3" strokeLinecap="round" />
+
+        {/* 2. 녹색 (Emerald Green) W자 띠 */}
+        <path d="M 0 35 Q 125 107, 250 37 Q 375 107, 500 43" fill="none" stroke="#047857" strokeWidth="12" strokeLinecap="round" />
+        <path d="M 0 35 Q 125 107, 250 37 Q 375 107, 500 43" fill="none" stroke="#34D399" strokeWidth="3" strokeLinecap="round" />
+
+        {/* 3. 황색 (Golden Yellow) W자 띠 */}
+        <path d="M 0 46 Q 125 118, 250 48 Q 375 118, 500 54" fill="none" stroke="#D97706" strokeWidth="12" strokeLinecap="round" />
+        <path d="M 0 46 Q 125 118, 250 48 Q 375 118, 500 54" fill="none" stroke="#FDE68A" strokeWidth="3.5" strokeLinecap="round" />
+
+        {/* 4. 백색 (Silk White) W자 띠 */}
+        <path d="M 0 57 Q 125 129, 250 59 Q 375 129, 500 65" fill="none" stroke="#CBD5E1" strokeWidth="12" strokeLinecap="round" />
+        <path d="M 0 57 Q 125 129, 250 59 Q 375 129, 500 65" fill="none" stroke="#FFFFFF" strokeWidth="5" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}
+
 const OPENING_START_AT = '2026-10-01T18:30:00+09:00';
 const startAt = Date.parse(import.meta.env?.VITE_OPENING_START_AT || OPENING_START_AT);
 
@@ -90,7 +129,7 @@ export default function OpeningCeremony() {
     if (!audioRef.current) {
       audioRef.current = new Audio('/audio/namo_buddhaya_song.mp3');
     }
-    audioRef.current.play().then(() => setIsPlayingAudio(true)).catch(() => {});
+    audioRef.current.play().then(() => setIsPlayingAudio(true)).catch(() => { });
 
     // 0.45s: Scissor snips and ribbon splits
     setTimeout(() => {
@@ -133,8 +172,8 @@ export default function OpeningCeremony() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn btn-primary"
               style={{
                 background: 'linear-gradient(135deg, #F59E0B 0%, #B8860B 100%)',
@@ -151,8 +190,8 @@ export default function OpeningCeremony() {
             >
               <span>✨ D-30초 세레머니 입장 ▶</span>
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               style={{
                 background: 'rgba(255, 255, 255, 0.12)',
                 border: '1px solid rgba(255, 255, 255, 0.25)',
@@ -182,8 +221,8 @@ export default function OpeningCeremony() {
 
           {/* Top Controls: Audio & Exit */}
           <div className="ceremony-top-controls">
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn-ceremony-tool"
               onClick={toggleAudio}
               aria-label="배경음악 토글"
@@ -191,8 +230,8 @@ export default function OpeningCeremony() {
               <span>{isPlayingAudio ? '🔊 소리 끄기' : '🔈 배경음악/타종 듣기'}</span>
             </button>
             {countdown > 0 && (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn-ceremony-tool"
                 style={{ background: 'rgba(245, 158, 11, 0.35)', borderColor: '#F59E0B', color: '#FDE68A' }}
                 onClick={() => setCountdown(0)}
@@ -200,8 +239,8 @@ export default function OpeningCeremony() {
                 ⏩ D-0분 즉시 이동
               </button>
             )}
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn-ceremony-tool"
               style={{ background: 'rgba(239, 68, 68, 0.25)', borderColor: '#EF4444', color: '#FCA5A5' }}
               onClick={() => setIsActive(false)}
@@ -250,11 +289,11 @@ export default function OpeningCeremony() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px 0' }}>
-                <span style={{ 
-                  background: 'rgba(245, 158, 11, 0.25)', 
-                  border: '1px solid #F59E0B', 
-                  color: '#FCD34D', 
-                  padding: '4px 16px', 
+                <span style={{
+                  background: 'rgba(245, 158, 11, 0.25)',
+                  border: '1px solid #F59E0B',
+                  color: '#FCD34D',
+                  padding: '4px 16px',
                   borderRadius: '50px',
                   fontSize: '14px',
                   fontWeight: 800,
@@ -266,11 +305,15 @@ export default function OpeningCeremony() {
               </div>
             )}
 
-            {/* Traditional Dancheong 5-Color Ribbon */}
+            {/* Traditional Dancheong W-Shape 5-Color Ribbon (오색 비단 W자 드레이프) */}
             <div className={`dancheong-ribbon-wrapper ${isCutDone ? 'cut' : ''}`}>
-              <div className="dancheong-ribbon-half dancheong-ribbon-left" />
+              <div className="dancheong-w-half dancheong-w-left">
+                <WRibbonHalfSvg isLeft={true} />
+              </div>
               <div className="dancheong-ribbon-knot">🪷</div>
-              <div className="dancheong-ribbon-half dancheong-ribbon-right" />
+              <div className="dancheong-w-half dancheong-w-right">
+                <WRibbonHalfSvg isLeft={false} />
+              </div>
 
               {/* Scissor Cutting Icon Animation */}
               {isCutting && !isCutDone && (
@@ -280,14 +323,14 @@ export default function OpeningCeremony() {
 
             {/* [고유 커팅식 애니메이션] 디지털 가위질 버튼 */}
             {countdown === 0 && !isCutDone && (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn-dancheong-cut"
                 onClick={handleCutRibbon}
                 disabled={isCutting}
               >
                 <span>✂️</span>
-                <span>가위로 리본 자르기</span>
+                <span>사이트 오픈</span>
               </button>
             )}
 
