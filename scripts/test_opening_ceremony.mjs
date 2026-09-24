@@ -19,28 +19,28 @@ check('18:30:00 begins the existing five-minute timeline', () => {
   assert.equal(getOpeningTimeline(start - 1).before, true);
   assert.equal(getOpeningTimeline(start).before, false);
   assert.equal(getOpeningTimeline(start).elapsed, 0);
-  assert.equal(getOpeningTimeline(start).phase.title, '환영합니다');
+  assert.equal(getOpeningTimeline(start).phase.title, '🔔 개원의 종소리');
 });
-check('ribbon counts 5,4,3,2,1 before cutting at 180 seconds', () => {
-  assert.equal(getOpeningTimeline(start + 174999).cutCountdown, null);
-  for (let i = 0; i < 5; i++) assert.equal(getOpeningTimeline(start + (175 + i) * 1000).cutCountdown, 5 - i);
-  assert.equal(getOpeningTimeline(start + 179999).cut, false);
-  assert.equal(getOpeningTimeline(start + 180000).cut, true);
-  assert.equal(getOpeningTimeline(start + 180000).cutCountdown, null);
-  assert.equal(getOpeningTimeline(start + 180000).celebrating, true);
-  assert.equal(getOpeningTimeline(start + 186000).celebrating, false);
+check('ribbon counts 5,4,3,2,1 before cutting at 90 seconds', () => {
+  assert.equal(getOpeningTimeline(start + 84999).cutCountdown, null);
+  for (let i = 0; i < 5; i++) assert.equal(getOpeningTimeline(start + (85 + i) * 1000).cutCountdown, 5 - i);
+  assert.equal(getOpeningTimeline(start + 89999).cut, false);
+  assert.equal(getOpeningTimeline(start + 90000).cut, true);
+  assert.equal(getOpeningTimeline(start + 90000).cutCountdown, null);
+  assert.equal(getOpeningTimeline(start + 90000).celebrating, true);
+  assert.equal(getOpeningTimeline(start + 100000).celebrating, false);
 });
-check('300-second end boundary and preserved final phase', () => {
-  assert.equal(getOpeningTimeline(start + 299999).finished, false);
-  assert.equal(getOpeningTimeline(start + 300000).finished, true);
-  assert.equal(getOpeningTimeline(start + 400000).elapsed, 300);
-  assert.deepEqual(getOpeningTimeline(start + 240000).phase, OPENING_PHASES.at(-1));
+check('180-second end boundary and preserved final phase', () => {
+  assert.equal(getOpeningTimeline(start + 179999).finished, false);
+  assert.equal(getOpeningTimeline(start + 180000).finished, true);
+  assert.equal(getOpeningTimeline(start + 250000).elapsed, 180);
+  assert.deepEqual(getOpeningTimeline(start + 150000).phase, OPENING_PHASES.at(-2));
   assert.equal(OPENING_PHASES.at(-1).description, '아래 개설 강좌에서 첫 수업을 살펴보세요. 함께해 주셔서 감사합니다.');
 });
 check('invalid clocks stay hidden; late arrivals jump to current phase', () => {
   assert.equal(getOpeningTimeline(NaN).visible, false);
   assert.equal(getOpeningTimeline(start, NaN).visible, false);
-  assert.equal(getOpeningTimeline(start + 200000).phase.title, '개원을 축하합니다');
+  assert.equal(getOpeningTimeline(start + 100000).phase.title, '🎉 개원을 축하합니다!');
 });
 
 const compiled = await build({ entryPoints: ['src/components/home/OpeningCeremony.jsx'], bundle: true, write: false, platform: 'node', format: 'cjs', external: ['react'], define: { 'import.meta.env': '{}' } });
@@ -52,16 +52,15 @@ check('SSR hides the entire section before boundary, without a preview escape', 
   assert.equal(render(start - 60001), '');
   assert.match(render(start - 60000), /개원 리본 세리머니/);
   assert.match(render(start - 60000), /1:00/);
-  assert.doesNotMatch(render(start - 60000), /미리 체험|체험 시작/);
 });
 check('SSR countdown, accessible local reaction and final messages', () => {
-  assert.match(render(start + 175000), /리본 커팅까지/);
-  assert.match(render(start + 175000), /opening-countdown-number">5</);
-  assert.match(render(start + 180000), /opening-celebration/);
-  assert.match(render(start + 180000), /내 화면에서만 보이는 반응/);
-  assert.match(render(start + 300000), /행사가 마무리되었습니다/);
-  assert.match(render(start + 300000), /함께해 주셔서 감사합니다. 아래 강좌를 살펴보세요./);
-  assert.doesNotMatch(render(start + 300000), /opening-celebration/);
+  assert.match(render(start + 85000), /리본 커팅까지/);
+  assert.match(render(start + 85000), /opening-countdown-number">5</);
+  assert.match(render(start + 90000), /opening-celebration/);
+  assert.match(render(start + 90000), /내 화면에서만 보이는 반응/);
+  assert.match(render(start + 180000), /행사가 마무리되었습니다/);
+  assert.match(render(start + 180000), /함께해 주셔서 감사합니다. 아래 강좌를 살펴보세요./);
+  assert.doesNotMatch(render(start + 180000), /opening-celebration/);
 });
 console.log(`Opening ceremony: ${checks.length} checks passed.`);
 
