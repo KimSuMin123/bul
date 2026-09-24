@@ -69,7 +69,7 @@ class ErrorBoundary extends React.Component {
 export default function App() {
   const { currentUser, isAdmin, loading, error: authError } = useAuth();
   const { showAlert } = useModalAlert();
-  const { refreshData, error: courseError } = useCourse();
+  const { refreshData } = useCourse();
 
   // Navigation state: 'home' | 'about' | 'dashboard' | 'courseDetail' | 'watch' | 'login' | 'register' | 'verify' | 'admin'
   const [currentView, setCurrentView] = useState(() => {
@@ -198,12 +198,6 @@ export default function App() {
 
         <main className="main-content">
           {authError && <div role="alert" style={{ margin: '16px', padding: '16px', background: '#fff7ed', borderRadius: '8px' }}>{authError}</div>}
-          {courseError && (
-            <div role="alert" style={{ margin: '16px', padding: '16px', background: '#fff7ed', borderRadius: '8px' }}>
-              <p>{courseError}</p>
-              <button className="btn btn-secondary btn-sm" onClick={() => refreshData()}>다시 불러오기</button>
-            </div>
-          )}
           <React.Suspense fallback={<PageLoadingIndicator />}>
           {currentView === 'about' && (
             <AboutPage 
