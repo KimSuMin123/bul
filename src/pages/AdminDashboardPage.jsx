@@ -2115,24 +2115,9 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <span
-                    style={{
-                      backgroundColor: 'var(--color-sage)',
-                      color: '#FFFFFF',
-                      fontSize: '12px',
-                      fontWeight: 800,
-                      padding: '4px 10px',
-                      borderRadius: '20px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <Filter size={13} />
-                    필터 선택
-                  </span>
+
                   <span style={{ fontSize: '14.5px', fontWeight: 800, color: 'var(--color-charcoal)' }}>
-                    기부영수증 필터:
+                    기부영수증 옵션:
                   </span>
                 </div>
 
