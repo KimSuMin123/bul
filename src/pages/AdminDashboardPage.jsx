@@ -1632,7 +1632,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
         </div>
 
         {/* PWA & Push Notification Control Banner */}
-        <div
+        {/* <div
           className="card"
           style={{
             marginBottom: '24px',
@@ -1662,7 +1662,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             >
               {notifPermission === 'granted' ? <Bell size={22} /> : <BellOff size={22} />}
             </div>
-             { /*  <div>
+             <div
            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
                 <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-charcoal)' }}>
                   수강신청 실시간 푸시 알림 및 모바일 PWA 앱 연동
@@ -1687,7 +1687,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   ? '수강생이 강좌를 신청하면 관리자 기기(모바일/PC)로 즉시 맑은 알림음과 함께 OS 푸시 알림이 발송됩니다.'
                   : '스마트폰 홈화면에 앱(PWA)으로 설치하고 알림을 켜두시면 수강생이 수강신청을 접수할 때 실시간 푸시 알림을 받으실 수 있습니다.'}
               </p>
-            </div> */}
+            </div> 
           </div>
 
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1723,7 +1723,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               </button>
             )}
           </div>
-        </div>
+        </div> */}
 
         {/* Tab Navigation (컴퓨터 모드 스크롤 방지 & 간결한 명칭 최적화) */}
         <div
