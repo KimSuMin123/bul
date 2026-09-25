@@ -13,6 +13,11 @@ const dateText = value => {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(parsed).map(p => [p.type, p.value]));
   return `${parts.year}.${parts.month}.${parts.day}.`;
 };
+// Browsers use the page title as the default PDF file name, e.g. "불교의례법사2급_홍길동".
+export const certificateFileName = cert => [cert.certTypeFull || cert.certType || '자격증', cert.studentName || '']
+  .map(part => String(part).replace(/[\s\\/:*?"<>|]+/g, ''))
+  .filter(Boolean)
+  .join('_');
 
 export default function CertificateModal({ certificate: rawCert, onClose }) {
   const closeRef = useRef(null);
@@ -25,6 +30,16 @@ export default function CertificateModal({ certificate: rawCert, onClose }) {
     document.addEventListener('keydown', onKey);
     return () => { document.removeEventListener('keydown', onKey); previousFocus?.focus?.(); };
   }, [rawCert, onClose]);
+  useEffect(() => {
+    if (!rawCert) return undefined;
+    const fileName = certificateFileName(enrichCertificate(rawCert));
+    let pageTitle = document.title;
+    const beforePrint = () => { pageTitle = document.title; document.title = fileName; };
+    const afterPrint = () => { document.title = pageTitle; };
+    window.addEventListener('beforeprint', beforePrint);
+    window.addEventListener('afterprint', afterPrint);
+    return () => { window.removeEventListener('beforeprint', beforePrint); window.removeEventListener('afterprint', afterPrint); };
+  }, [rawCert]);
   // A4 용지를 창 크기에 맞게 축소 (데스크톱은 스크롤 없이 한 화면, 모바일은 폭 기준)
   useLayoutEffect(() => {
     if (!rawCert) return undefined;
