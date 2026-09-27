@@ -39,6 +39,69 @@ function WRibbonHalfSvg({ isLeft }) {
   );
 }
 
+// 범종(梵鐘) 실루엣 - 용뉴(龍鈕)·음통, 상대·하대 문양띠, 당좌(撞座)를 단순화한 아이콘
+function BeomjongSvg({ size = 28 }) {
+  return (
+    <svg viewBox="0 0 64 72" width={size} height={size * 1.125} aria-hidden="true">
+      <defs>
+        <linearGradient id="beomjong-bronze" x1="0" x2="1">
+          <stop offset="0" stopColor="#7C4A12" />
+          <stop offset="0.45" stopColor="#E7B45A" />
+          <stop offset="1" stopColor="#6B3E0E" />
+        </linearGradient>
+      </defs>
+      <path d="M26 4 Q32 0 38 4 L38 10 L26 10 Z" fill="url(#beomjong-bronze)" />
+      <rect x="40" y="2" width="4" height="9" rx="2" fill="url(#beomjong-bronze)" />
+      <path d="M18 12 Q32 8 46 12 L50 60 Q32 64 14 60 Z" fill="url(#beomjong-bronze)" stroke="#4A2A08" strokeWidth="1" />
+      <path d="M17.5 18 Q32 14.5 46.5 18" fill="none" stroke="#FDE68A" strokeWidth="2" opacity="0.8" />
+      <path d="M14.8 54 Q32 57.5 49.2 54" fill="none" stroke="#FDE68A" strokeWidth="2" opacity="0.8" />
+      <circle cx="32" cy="40" r="5" fill="none" stroke="#FDE68A" strokeWidth="1.6" />
+      <circle cx="32" cy="40" r="1.8" fill="#FDE68A" />
+      <path d="M12 60 Q32 66 52 60 L52 64 Q32 70 12 64 Z" fill="#5A3309" />
+    </svg>
+  );
+}
+
+// Web Audio로 합성한 범종 소리: 비조화 배음 + 미세하게 어긋난 두 기음이 만드는 맥놀이(beat)
+function strikeTempleBell() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return;
+  try {
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    const master = ctx.createGain();
+    master.gain.value = 0.32;
+    master.connect(ctx.destination);
+    const base = 98;
+    const partials = [
+      { ratio: 0.5, gain: 0.5, decay: 9 },
+      { ratio: 1, gain: 0.7, decay: 8 },
+      { ratio: 1.016, gain: 0.55, decay: 8 },
+      { ratio: 2.02, gain: 0.35, decay: 5 },
+      { ratio: 2.76, gain: 0.22, decay: 3.5 },
+      { ratio: 5.4, gain: 0.1, decay: 1.6 },
+      { ratio: 8.93, gain: 0.05, decay: 0.8 }
+    ];
+    partials.forEach(({ ratio, gain, decay }) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = base * ratio;
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(gain, now + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+      osc.connect(g).connect(master);
+      osc.start(now);
+      osc.stop(now + decay + 0.1);
+    });
+    setTimeout(() => ctx.close().catch(() => { }), 10000);
+  } catch {
+    // 오디오 재생 불가 환경에서는 무음으로 진행
+  }
+}
+
+const LANTERN_COLORS = ['#E11D48', '#F472B6', '#F59E0B', '#FBCFE8', '#E11D48', '#F59E0B', '#F472B6'];
+
 const OPENING_START_AT = '2026-10-01T18:30:00+09:00';
 const startAt = Date.parse(import.meta.env?.VITE_OPENING_START_AT || OPENING_START_AT);
 
@@ -120,30 +183,33 @@ export default function OpeningCeremony() {
     }
   };
 
-  // Perform Ribbon Cutting & Open Curtains
-  const handleCutRibbon = () => {
+  // 범종 타종 → 매듭이 풀리며 장막이 걷힘
+  const handleStrikeBell = () => {
     if (isCutting || isCutDone) return;
     setIsCutting(true);
+    strikeTempleBell();
 
-    // Play celebration audio automatically if permitted
-    if (!audioRef.current) {
-      audioRef.current = new Audio('/audio/namo_buddhaya_song.mp3');
-    }
-    audioRef.current.play().then(() => setIsPlayingAudio(true)).catch(() => { });
+    // 종소리가 한 번 퍼진 뒤 나모붓다야 노래 시작
+    setTimeout(() => {
+      if (!audioRef.current) {
+        audioRef.current = new Audio('/audio/namo_buddhaya_song.mp3');
+      }
+      audioRef.current.play().then(() => setIsPlayingAudio(true)).catch(() => { });
+    }, 1400);
 
-    // 0.45s: Scissor snips and ribbon splits
+    // 0.9s: 종소리 파문이 퍼지고 연꽃 매듭이 풀림
     setTimeout(() => {
       setIsCutDone(true);
       setCurtainsOpened(true);
-    }, 450);
+    }, 900);
 
-    // 3.6s: Curtains fully open slowly and smoothly, dismiss overlay and reveal real homepage
+    // 5.2s: 꽃비가 내린 뒤 오버레이 해제
     setTimeout(() => {
       setIsActive(false);
       setIsCutting(false);
       setIsCutDone(false);
       setCurtainsOpened(false);
-    }, 3600);
+    }, 5200);
   };
 
   // Start Simulation Rehearsal
@@ -167,7 +233,7 @@ export default function OpeningCeremony() {
                 10월 1일 18:30 세화붓다아카데미 개원 세레머니
               </div>
               <p style={{ margin: '3px 0 0 0', fontSize: '13.5px', color: '#CBD5E1' }}>
-                [D-30초 카운트다운 ➔ 전통 오청색(五靑色) 비단 리본 커팅 ➔ 좌우 장막 걷기] 시네마틱 오프닝을 체험해 보세요.
+                [D-30초 카운트다운 ➔ 범종 타종 ➔ 연꽃 매듭 풀기 ➔ 꽃비와 함께 장막 걷기] 개원 법회를 미리 체험해 보세요.
               </p>
             </div>
           </div>
@@ -204,7 +270,7 @@ export default function OpeningCeremony() {
               }}
               onClick={() => startRehearsal(0)}
             >
-              <span>✂️ 리본 커팅 바로가기</span>
+              <span>🔔 타종 바로가기</span>
             </button>
           </div>
         </section>
@@ -219,6 +285,24 @@ export default function OpeningCeremony() {
           {/* Right Curtain Panel (Midnight Navy) */}
           <div className={`curtain-panel curtain-right ${curtainsOpened ? 'open' : ''}`} />
 
+          {/* 처마 끝에 걸린 연등 행렬 */}
+          <div className={`yeondeung-row ${curtainsOpened ? 'lift' : ''}`} aria-hidden="true">
+            {LANTERN_COLORS.map((color, index) => (
+              <span key={index} className="yeondeung" style={{ '--i': index, '--lantern-color': color }}>
+                <i className="yeondeung-tassel" />
+              </span>
+            ))}
+          </div>
+
+          {/* 꽃비(天雨妙華) - 타종 후 화면 전체에 연꽃잎이 흩날림 */}
+          {isCutDone && (
+            <div className="flower-rain" aria-hidden="true">
+              {Array.from({ length: 48 }, (_, index) => (
+                <i key={index} style={{ '--p': index, '--x': `${(index * 37) % 100}%`, '--d': `${(index * 53) % 1600}ms` }} />
+              ))}
+            </div>
+          )}
+
           {/* Top Controls: Audio & Exit */}
           <div className="ceremony-top-controls">
             <button
@@ -227,7 +311,7 @@ export default function OpeningCeremony() {
               onClick={toggleAudio}
               aria-label="배경음악 토글"
             >
-              <span>{isPlayingAudio ? '🔊 소리 끄기' : '🔈 배경음악/타종 듣기'}</span>
+              <span>{isPlayingAudio ? '🔊 소리 끄기' : '🔈 나모붓다야 듣기'}</span>
             </button>
             {countdown > 0 && (
               <button
@@ -254,37 +338,25 @@ export default function OpeningCeremony() {
             {/* Background Aura */}
             <div className="opening-stage-aura" style={{ opacity: 0.35 }} aria-hidden="true" />
 
-            {/* Confetti Explosion on Cut */}
-            {isCutDone && (
-              <div className="opening-celebration" aria-hidden="true">
-                {Array.from({ length: 60 }, (_, index) => (
-                  <i key={index} style={{ '--spark-index': index }} />
-                ))}
-              </div>
-            )}
-
-            {/* Sacred Lotus Icon */}
-            <div style={{ fontSize: '42px', marginBottom: '8px', filter: 'drop-shadow(0 0 16px rgba(251, 191, 36, 0.8))' }}>
-              🪷
+            {/* 광배(光背)를 두른 연꽃 */}
+            <div className="ceremony-halo-lotus" aria-hidden="true">
+              <span className="ceremony-halo" />
+              <span className="ceremony-halo ceremony-halo-outer" />
+              <span className="ceremony-lotus-icon">🪷</span>
             </div>
 
             {/* Main Title */}
             <h1 className="ceremony-main-title">
               세화붓다아카데미, 나모붓다야
             </h1>
-            <p className="ceremony-sub-title">
-              Namo Buddhaya · 부처님의 지혜와 자비가 온 누리에 가득하길 발원합니다
-            </p>
+            
 
             {/* [D-30초전] Countdown Display */}
             {countdown > 0 ? (
               <div className="ceremony-countdown-box">
-                <span className="ceremony-countdown-label">개원식 시작까지</span>
+                <span className="ceremony-countdown-label">개원 법회 타종까지</span>
                 <span className="ceremony-countdown-time">
                   00:{String(countdown).padStart(2, '0')}
-                </span>
-                <span style={{ fontSize: '13px', color: '#94A3B8' }}>
-                  잠시 후 0초가 되면 전통 오청색(五靑色) 리본 커팅식이 거행됩니다
                 </span>
               </div>
             ) : (
@@ -300,7 +372,7 @@ export default function OpeningCeremony() {
                   marginBottom: '10px',
                   animation: 'pulse-dot 1s infinite alternate'
                 }}>
-                  🎉 개원의 시간이 도래했습니다!
+                  🙏 개원 시간이 되었습니다.
                 </span>
               </div>
             )}
@@ -315,30 +387,28 @@ export default function OpeningCeremony() {
                 <WRibbonHalfSvg isLeft={false} />
               </div>
 
-              {/* Scissor Cutting Icon Animation */}
-              {isCutting && !isCutDone && (
-                <div className="scissor-cut-anim">✂️</div>
+              {/* 범종 소리 파문(波紋) */}
+              {isCutting && (
+                <div className="bell-ripples" aria-hidden="true">
+                  <i /><i /><i />
+                </div>
               )}
             </div>
 
-            {/* [고유 커팅식 애니메이션] 디지털 가위질 버튼 */}
+            {/* 범종 타종 버튼 */}
             {countdown === 0 && !isCutDone && (
               <button
                 type="button"
-                className="btn-dancheong-cut"
-                onClick={handleCutRibbon}
+                className={`btn-dancheong-cut ${isCutting ? 'striking' : ''}`}
+                onClick={handleStrikeBell}
                 disabled={isCutting}
               >
-                <span>✂️</span>
-                <span>사이트 오픈</span>
+                <span className="beomjong-icon"><BeomjongSvg /></span>
+                <span>세화붓다아카데미 개원하기</span>
               </button>
             )}
 
-            {countdown > 0 && (
-              <p style={{ fontSize: '13.5px', color: '#94A3B8', marginTop: '12px' }}>
-                사찰의 깊은 새벽을 밝히는 장엄한 개원식에 함께해 주셔서 감사합니다.
-              </p>
-            )}
+            {countdown > 0 }
           </div>
         </div>
       )}

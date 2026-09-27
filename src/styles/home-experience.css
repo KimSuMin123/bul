@@ -213,21 +213,230 @@
   transform: scale(0.96);
 }
 
-/* 가위 절단 애니메이션 효과 */
-.scissor-cut-anim {
+/* ==============================================================
+   불교 의례 연출: 범종 타종 · 연등 · 꽃비 · 광배 · 단청 장막
+   ============================================================== */
+
+/* 장막 안쪽 가장자리의 단청 오방색 띠 */
+.curtain-panel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 18px;
+  background: linear-gradient(90deg, #1E3A8A 0 20%, #15803D 20% 40%, #FDE68A 40% 52%, #B91C1C 52% 76%, #0F172A 76% 100%);
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.6);
+}
+.curtain-left::after { right: 0; }
+.curtain-right::after { left: 0; transform: scaleX(-1); }
+.curtain-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.07;
+  background-image: radial-gradient(circle at 50% 50%, #FDE68A 0 2px, transparent 3px), radial-gradient(circle at 50% 50%, transparent 0 14px, #FDE68A 15px 16px, transparent 17px);
+  background-size: 48px 48px, 48px 48px;
+  pointer-events: none;
+}
+
+.ceremony-main-title { font-family: var(--font-serif); }
+.ceremony-sub-title { font-family: var(--font-serif); letter-spacing: 0.02em; }
+
+/* 광배를 두른 연꽃 */
+.ceremony-halo-lotus {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.ceremony-halo {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 2px solid rgba(253, 230, 138, 0.75);
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.45) 0%, rgba(251, 191, 36, 0.08) 60%, transparent 72%);
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.55), inset 0 0 18px rgba(253, 230, 138, 0.5);
+  animation: halo-breathe 3.2s ease-in-out infinite alternate;
+}
+.ceremony-halo-outer {
+  inset: -6px;
+  border: 1px dashed rgba(253, 230, 138, 0.5);
+  background: none;
+  box-shadow: none;
+  animation: aura-spin 40s linear infinite;
+}
+.ceremony-lotus-icon {
+  position: relative;
+  font-size: 44px;
+  filter: drop-shadow(0 0 14px rgba(251, 191, 36, 0.9));
+}
+@keyframes halo-breathe {
+  from { transform: scale(0.94); opacity: 0.75; }
+  to { transform: scale(1.06); opacity: 1; }
+}
+
+/* 연등 행렬 */
+.yeondeung-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  padding: 0 4%;
+  z-index: 8;
+  pointer-events: none;
+  transition: transform 2.4s cubic-bezier(0.65, 0, 0.25, 1), opacity 2.4s ease;
+}
+.yeondeung-row::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(253, 230, 138, 0.45);
+}
+.yeondeung-row.lift { transform: translateY(-160px); opacity: 0; }
+.yeondeung {
+  position: relative;
+  width: 44px;
+  height: 52px;
+  margin-top: calc(34px + (var(--i) % 2) * 22px);
+  border-radius: 50% 50% 46% 46%;
+  background: radial-gradient(circle at 50% 45%, #FFF7ED 0%, var(--lantern-color) 45%, color-mix(in srgb, var(--lantern-color) 60%, #000) 100%);
+  box-shadow: 0 0 22px var(--lantern-color), 0 0 48px rgba(251, 191, 36, 0.35);
+  transform-origin: 50% -30px;
+  animation: lantern-sway 3.6s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i) * -0.5s);
+}
+.yeondeung::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 1.5px;
+  height: calc(16px + (var(--i) % 2) * 22px);
+  background: rgba(253, 230, 138, 0.6);
+}
+.yeondeung::after {
+  content: '';
+  position: absolute;
+  inset: 6px 4px;
+  border-radius: inherit;
+  background: repeating-linear-gradient(90deg, transparent 0 7px, rgba(255, 255, 255, 0.18) 7px 8px);
+}
+.yeondeung-tassel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 3px;
+  height: 18px;
+  margin-left: -1.5px;
+  background: linear-gradient(#FDE68A, var(--lantern-color));
+  border-radius: 0 0 2px 2px;
+}
+@keyframes lantern-sway {
+  from { transform: rotate(-4deg); }
+  to { transform: rotate(4deg); }
+}
+
+/* 연꽃 매듭 풀림 - 사라지지 않고 떠오르며 빛남 */
+.dancheong-ribbon-wrapper.cut .dancheong-ribbon-knot {
+  transform: translate(-50%, -180%) scale(1.5);
+  opacity: 0;
+  box-shadow: 0 0 60px rgba(251, 191, 36, 1);
+  transition: transform 1.6s ease-out, opacity 1.6s ease-in, box-shadow 0.6s ease;
+}
+
+/* 범종 타종 버튼 - 청동빛 */
+.btn-dancheong-cut {
+  font-family: var(--font-serif);
+  background: linear-gradient(135deg, #92400E 0%, #B45309 45%, #78350F 100%);
+  border-color: #FDE68A;
+  letter-spacing: 0.04em;
+}
+.btn-dancheong-cut:hover {
+  background: linear-gradient(135deg, #B45309 0%, #D97706 100%);
+}
+.beomjong-icon { display: inline-flex; transform-origin: 50% 0; }
+.btn-dancheong-cut.striking .beomjong-icon { animation: beomjong-swing 0.9s ease-out; }
+@keyframes beomjong-swing {
+  0% { transform: rotate(0); }
+  20% { transform: rotate(14deg); }
+  45% { transform: rotate(-9deg); }
+  70% { transform: rotate(5deg); }
+  100% { transform: rotate(0); }
+}
+
+/* 범종 소리 파문 */
+.bell-ripples {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 72px;
+  width: 0;
+  height: 0;
   z-index: 20;
   pointer-events: none;
-  animation: scissor-snip-cut 0.5s ease-in-out forwards;
 }
-@keyframes scissor-snip-cut {
-  0% { transform: translate(-50%, -50%) rotate(-30deg) scale(1.4); opacity: 1; }
-  50% { transform: translate(-50%, -50%) rotate(0deg) scale(1.6); opacity: 1; filter: drop-shadow(0 0 30px #F59E0B); }
-  100% { transform: translate(-50%, -50%) rotate(30deg) scale(0.5); opacity: 0; }
+.bell-ripples i {
+  position: absolute;
+  left: -40px;
+  top: -40px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px solid rgba(253, 230, 138, 0.85);
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+  animation: bell-ripple 2.4s ease-out forwards;
+  opacity: 0;
+}
+.bell-ripples i:nth-child(2) { animation-delay: 0.35s; }
+.bell-ripples i:nth-child(3) { animation-delay: 0.7s; }
+@keyframes bell-ripple {
+  0% { transform: scale(0.4); opacity: 1; }
+  100% { transform: scale(12); opacity: 0; }
+}
+
+/* 꽃비 */
+.flower-rain {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  overflow: hidden;
+}
+.flower-rain i {
+  position: absolute;
+  top: -30px;
+  left: var(--x);
+  width: 14px;
+  height: 20px;
+  border-radius: 80% 0 80% 0;
+  background: linear-gradient(135deg, #FFF1F2 0%, #F9A8D4 60%, #EC4899 100%);
+  box-shadow: 0 0 8px rgba(249, 168, 212, 0.6);
+  animation: petal-fall 4.2s ease-in both;
+  animation-delay: var(--d);
+}
+.flower-rain i:nth-child(3n) { background: linear-gradient(135deg, #FFFFFF 0%, #FDE68A 100%); box-shadow: 0 0 8px rgba(253, 230, 138, 0.7); }
+.flower-rain i:nth-child(4n) { width: 10px; height: 14px; }
+@keyframes petal-fall {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translate(40px, 50vh) rotate(200deg); }
+  100% { transform: translate(-30px, 105vh) rotate(420deg); opacity: 0.2; }
+}
+
+@media (max-width: 600px) {
+  .yeondeung { width: 30px; height: 36px; }
+  .yeondeung:nth-child(n + 6) { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .yeondeung, .ceremony-halo, .ceremony-halo-outer, .bell-ripples i, .beomjong-icon { animation: none !important; }
+  .flower-rain { display: none; }
 }
 
 /* 상단 리허설 / 제어 컨트롤러 */
