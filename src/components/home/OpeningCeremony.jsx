@@ -120,6 +120,9 @@ export default function OpeningCeremony() {
   const [isCutDone, setIsCutDone] = useState(false);
   const [curtainsOpened, setCurtainsOpened] = useState(false);
 
+  // 꽃비가 끝나면 장막 뒤에서 매뉴얼이 이어서 나타남 (타종 시점부터 미리 불러옴)
+  const [showManual, setShowManual] = useState(false);
+
   // Audio state
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const audioRef = useRef(null);
@@ -198,13 +201,18 @@ export default function OpeningCeremony() {
       setCurtainsOpened(true);
     }, 900);
 
-    // 5.2s: 꽃비가 내린 뒤 오버레이 해제
+    // 5.2s: 꽃비가 내린 뒤 매뉴얼이 서서히 나타남 (닫기 버튼으로 홈으로 돌아감)
     setTimeout(() => {
-      setIsActive(false);
-      setIsCutting(false);
-      setIsCutDone(false);
-      setCurtainsOpened(false);
+      setShowManual(true);
     }, 5200);
+  };
+
+  const closeCeremony = () => {
+    setIsActive(false);
+    setIsCutting(false);
+    setIsCutDone(false);
+    setCurtainsOpened(false);
+    setShowManual(false);
   };
 
   // 세레머니 시작: 개원 시각까지 남은 시간(최대 30초)만큼 카운트다운 후 타종
@@ -214,6 +222,7 @@ export default function OpeningCeremony() {
     setIsCutting(false);
     setIsCutDone(false);
     setCurtainsOpened(false);
+    setShowManual(false);
     setIsActive(true);
   };
 
@@ -257,8 +266,15 @@ export default function OpeningCeremony() {
             </div>
           )}
 
+          {/* 개원 후 매뉴얼: 타종 시점부터 미리 불러두고 꽃비가 끝나면 서서히 나타남 (사이트 다른 곳엔 진입 버튼 없음) */}
+          {isCutting && (
+            <div className={`ceremony-manual-stage ${showManual ? 'visible' : ''}`} aria-hidden={!showManual}>
+              <iframe src="/sba-manual.html" title="세화붓다아카데미 사용자 및 관리자 매뉴얼" />
+            </div>
+          )}
+
           {/* Top Controls: Audio & Exit */}
-          <div className="ceremony-top-controls">
+          <div className={`ceremony-top-controls ${showManual ? 'manual-mode' : ''}`}>
             <button
               type="button"
               className="btn-ceremony-tool"
@@ -281,7 +297,7 @@ export default function OpeningCeremony() {
               type="button"
               className="btn-ceremony-tool"
               style={{ background: 'rgba(239, 68, 68, 0.25)', borderColor: '#EF4444', color: '#FCA5A5' }}
-              onClick={() => setIsActive(false)}
+              onClick={closeCeremony}
             >
               ✕ 닫기
             </button>
