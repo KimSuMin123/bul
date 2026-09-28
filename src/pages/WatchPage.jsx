@@ -10,6 +10,7 @@ import LectureQABoard from '../components/qa/LectureQABoard';
 import { useCourse } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
 import { useModalAlert } from '../context/ModalAlertContext';
+import { COURSE_COMPLETE_PROGRESS } from '../config/sitePolicy.js';
 
 export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
   const { currentUser, isAdmin } = useAuth();
@@ -570,7 +571,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                           {group.lectures.map((lec) => {
                             const isCurrent = lec.id === currentLecture.id;
                             const prog = getLectureProgress(currentUser?.id, lec.id);
-                            const isEpCompleted = Boolean(prog && (prog.completed || (Number(prog.progressRate) || 0) >= 95));
+                            const isEpCompleted = Boolean(prog && (prog.completed || (Number(prog.progressRate) || 0) >= COURSE_COMPLETE_PROGRESS));
                             const isEpLocked = isLectureLocked(currentUser?.id, lec.id);
                             const hasEpAccess = hasLectureAccess(currentUser?.id, lec.id);
 
@@ -637,7 +638,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                                     <span>{Math.round((lec.durationSeconds || 2400) / 60)}분</span>
                                     <span>•</span>
                                     <span>
-                                      {isEpCompleted ? '완강 (100%)' : isEpLocked ? '🔒 이전 강의 완강 필요' : prog?.progressRate > 0 ? `진도 ${prog.progressRate}%` : '미수강'}
+                                      {isEpCompleted ? '완강' : isEpLocked ? '🔒 이전 강의 완강 필요' : prog?.progressRate > 0 ? `진도 ${prog.progressRate}%` : '미수강'}
                                     </span>
                                   </div>
                                 </div>

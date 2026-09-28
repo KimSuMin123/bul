@@ -6,7 +6,7 @@ import {
 import { useCourse } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
 import { useModalAlert } from '../context/ModalAlertContext';
-import { APPROVAL_SCHEDULE, PAYMENT_ACCOUNT, enrollmentConfirmation } from '../config/sitePolicy.js';
+import { APPROVAL_SCHEDULE, PAYMENT_ACCOUNT, COURSE_COMPLETE_PROGRESS, enrollmentConfirmation } from '../config/sitePolicy.js';
 
 export default function CourseDetailPage({ courseId, onNavigate, onStartLecture }) {
   const {
@@ -432,7 +432,7 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       {group.lectures.map((lec, idx) => {
                         const prog = getLectureProgress(currentUser?.id, lec.id);
-                        const isEpCompleted = Boolean(prog && (prog.completed || (Number(prog.progressRate) || 0) >= 95));
+                        const isEpCompleted = Boolean(prog && (prog.completed || (Number(prog.progressRate) || 0) >= COURSE_COMPLETE_PROGRESS));
                         const isEpLocked = isLectureLocked(currentUser?.id, lec.id);
                         const isLastInGroup = idx === group.lectures.length - 1;
 
