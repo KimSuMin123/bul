@@ -17,7 +17,8 @@ test('enrollment confirmation includes the preserved result, bank, price and exa
   assert.equal(text.includes('즉시 전환'), false);
 });
 
-test('opening at 80 percent does not grant completion or certificate eligibility', () => {
+test('80 percent on every lecture grants completion; 79 percent does not', () => {
   const courses = [{ id: 'c1' }], lectures = [{ id: 'l1', courseId: 'c1' }];
-  assert.equal(checkLecturesCompleted('s1', 'c1', courses, lectures, [{ userId: 's1', lectureId: 'l1', courseId: 'c1', progressRate: 80, completed: false }]), false);
+  assert.equal(checkLecturesCompleted('s1', 'c1', courses, lectures, [{ userId: 's1', lectureId: 'l1', courseId: 'c1', progressRate: 80, completed: false }]), true);
+  assert.equal(checkLecturesCompleted('s1', 'c1', courses, lectures, [{ userId: 's1', lectureId: 'l1', courseId: 'c1', progressRate: 79, completed: false }]), false);
 });
