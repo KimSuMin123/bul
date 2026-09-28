@@ -21,9 +21,11 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
         style={{
           background: 'linear-gradient(180deg, #FFFFFF 0%, var(--color-surface-warm) 100%)',
           padding: '64px 0 54px 0',
-          borderBottom: '1px solid var(--color-border)'
+          borderBottom: '1px solid var(--color-border)',
+          position: 'relative'
         }}
       >
+        <OpeningCeremony />
         <div className="container" style={{ maxWidth: '1100px' }}>
           <div style={{
             display: 'flex',
@@ -157,7 +159,6 @@ export default function HomePage({ onNavigate, onSelectCourse }) {
         </div>
       </section>
 
-      {/* <OpeningCeremony /> */}
       <AnnouncementPopup />
 
       {/* Courses Catalog Section */}

@@ -102,8 +102,11 @@ function strikeTempleBell() {
 
 const LANTERN_COLORS = ['#E11D48', '#F472B6', '#F59E0B', '#FBCFE8', '#E11D48', '#F59E0B', '#F472B6'];
 
-const OPENING_START_AT = '2026-10-01T18:30:00+09:00';
+const OPENING_START_AT = '2026-09-30T18:30:00+09:00';
 const startAt = Date.parse(import.meta.env?.VITE_OPENING_START_AT || OPENING_START_AT);
+// 숨김 트리거 노출 마감: 개원 시각 + 30분 유예(지각 대비). 이후로는 버튼이 렌더링되지 않음
+const TRIGGER_GRACE_MS = 30 * 60 * 1000;
+const triggerHideAt = startAt + TRIGGER_GRACE_MS;
 
 export default function OpeningCeremony() {
   // Ceremony overlay active state
@@ -121,21 +124,13 @@ export default function OpeningCeremony() {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const audioRef = useRef(null);
 
-  // Check if current live time is around opening time (30 seconds lead)
+  // 숨김 트리거 노출 여부: 개원 시각(+유예) 이후엔 사라짐
+  const [isTriggerAvailable, setIsTriggerAvailable] = useState(() => Date.now() < triggerHideAt);
   useEffect(() => {
-    const checkLiveTime = () => {
-      const now = Date.now();
-      // If within 30 seconds before start time up to 5 minutes after start time
-      if (now >= startAt - 30000 && now < startAt + 300000) {
-        const remaining = Math.max(0, Math.ceil((startAt - now) / 1000));
-        setCountdown(remaining);
-        setIsActive(true);
-      }
-    };
-    checkLiveTime();
-    const interval = setInterval(checkLiveTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
+    if (!isTriggerAvailable) return;
+    const timer = setTimeout(() => setIsTriggerAvailable(false), Math.max(0, triggerHideAt - Date.now()));
+    return () => clearTimeout(timer);
+  }, [isTriggerAvailable]);
 
   // Countdown timer when active
   useEffect(() => {
@@ -212,9 +207,10 @@ export default function OpeningCeremony() {
     }, 5200);
   };
 
-  // Start Simulation Rehearsal
-  const startRehearsal = (seconds = 30) => {
-    setCountdown(seconds);
+  // 세레머니 시작: 개원 시각까지 남은 시간(최대 30초)만큼 카운트다운 후 타종
+  const startCeremony = () => {
+    const remaining = Math.ceil((startAt - Date.now()) / 1000);
+    setCountdown(Math.min(30, Math.max(0, remaining)));
     setIsCutting(false);
     setIsCutDone(false);
     setCurtainsOpened(false);
@@ -223,57 +219,15 @@ export default function OpeningCeremony() {
 
   return (
     <>
-      {/* Homepage Rehearsal Banner (When overlay is not active) */}
-      {!isActive && (
-        <section className="rehearsal-replay-banner" aria-label="개원식 세레머니 안내">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span style={{ fontSize: '32px' }}>🪷</span>
-            <div>
-              <div style={{ fontSize: '17px', fontWeight: 800, color: '#FCD34D' }}>
-                10월 1일 18:30 세화붓다아카데미 개원 세레머니
-              </div>
-              <p style={{ margin: '3px 0 0 0', fontSize: '13.5px', color: '#CBD5E1' }}>
-                [D-30초 카운트다운 ➔ 범종 타종 ➔ 연꽃 매듭 풀기 ➔ 꽃비와 함께 장막 걷기] 개원 법회를 미리 체험해 보세요.
-              </p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{
-                background: 'linear-gradient(135deg, #F59E0B 0%, #B8860B 100%)',
-                border: 'none',
-                color: '#FFFFFF',
-                fontWeight: 800,
-                padding: '10px 22px',
-                borderRadius: '50px',
-                boxShadow: '0 4px 16px rgba(245, 158, 11, 0.4)',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-              onClick={() => startRehearsal(30)}
-            >
-              <span>✨ D-30초 세레머니 입장 ▶</span>
-            </button>
-            <button
-              type="button"
-              style={{
-                background: 'rgba(255, 255, 255, 0.12)',
-                border: '1px solid rgba(255, 255, 255, 0.25)',
-                color: '#F8FAFC',
-                fontWeight: 700,
-                padding: '10px 18px',
-                borderRadius: '50px',
-                cursor: 'pointer',
-                fontSize: '13.5px'
-              }}
-              onClick={() => startRehearsal(0)}
-            >
-              <span>🔔 타종 바로가기</span>
-            </button>
-          </div>
-        </section>
+      {/* 개발자 전용 숨김 트리거: 히어로 섹션 우측 하단 모서리의 투명 버튼 (더블클릭) */}
+      {!isActive && isTriggerAvailable && (
+        <button
+          type="button"
+          className="ceremony-secret-trigger"
+          onDoubleClick={startCeremony}
+          tabIndex={-1}
+          aria-hidden="true"
+        />
       )}
 
       {/* Fullscreen Cinematic Curtain Overlay */}
