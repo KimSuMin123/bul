@@ -16,11 +16,14 @@ export default function CertificateVerifyPage({ onNavigate }) {
     if (e) e.preventDefault();
     const query = searchQuery.trim().toUpperCase();
     if (!query) return;
+    // 발급번호는 'CERT-' + 소문자 UUID 형태로 저장되므로 원격 조회 시 접두어만 대문자로 맞춤
+    const compact = searchQuery.replace(/\s+/g, '');
+    const remoteQuery = /^cert-/i.test(compact) ? `CERT-${compact.slice(5).toLowerCase()}` : compact;
 
     setIsSearching(true);
     try {
       // 1. Single direct lookup from Supabase (instant and privacy preserving)
-      const remoteCert = await remoteDb.getCertificateByNo(query);
+      const remoteCert = await remoteDb.getCertificateByNo(remoteQuery);
       if (remoteCert) {
         setVerifyResult(enrichCertificate(remoteCert));
       } else {

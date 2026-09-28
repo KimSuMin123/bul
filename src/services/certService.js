@@ -1,6 +1,17 @@
 import { hasPassedCourseExam } from './examService.js';
 import { COURSE_COMPLETE_PROGRESS } from '../config/sitePolicy.js';
 
+const CURRENT_COURSE_CERTS = {
+  course_rit_02: {
+    title: '불교의례법사 양성 과정 (2급)', certType: '불교의례법사', certGrade: '2급', certGradeCode: '법사2급',
+    certEnTitle: 'Buddhist Ritual Officiant (Level 2)', regNo: '제 2026-001837호'
+  },
+  course_rit_exp_02: {
+    title: '불교의례해설사 양성 과정 (2급)', certType: '불교의례해설사', certGrade: '2급', certGradeCode: '해설사2급',
+    certEnTitle: 'Buddhist Ritual Interpreter (Level 2)', regNo: '제 2026-001836호'
+  }
+};
+
 /**
  * 과정별 민간 자격증 종목, 등급, 직무역량 및 등록정보 매핑
  */
@@ -29,6 +40,22 @@ export function getCourseQualificationDetails(courseId, courseTitle = '', course
   // 2. Default fallback mapping by course ID or Title
   const cid = (courseId || '').toLowerCase();
   const title = (courseTitle || '').toLowerCase();
+
+  // 현재 운영 과정: 강좌 정보 없이(최초 발급 직후, 진위 확인) 그려도 DB 설정과 같은 종목·등급·등록번호가 나오도록 고정
+  const current = CURRENT_COURSE_CERTS[cid]
+    || Object.values(CURRENT_COURSE_CERTS).find(c => title && title === c.title.toLowerCase());
+  if (current) {
+    return {
+      certType: current.certType,
+      certGrade: current.certGrade,
+      certTypeFull: `${current.certType} ${current.certGrade}`,
+      certGradeCode: current.certGradeCode,
+      certEnTitle: current.certEnTitle,
+      regOffice: `문화체육관광부 (민간자격 등록번호: ${current.regNo})`,
+      customCertRegNo: `민간자격 등록번호 ${current.regNo}`,
+      competency: `${current.title} 전문 교육과정 이수 및 자격 검정 통과`
+    };
+  }
 
   if (cid === 'course-ritual-12-15' || title.includes('ii') || title.includes('2') || title.includes('심화')) {
     return {

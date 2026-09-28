@@ -711,7 +711,7 @@ export function CourseProvider({ children }) {
     setCertificates(prev => [...prev.filter(cert => cert.certNo !== newCert.certNo), newCert]);
 
     notifySyncUpdate({ type: 'CERTIFICATE_CLAIMED', userId: currentUser.id, courseId });
-    return newCert;
+    return enrichCertificate(newCert, course);
   }, [currentUser, courses, lectures, progressList, examAttempts, certificates, notifySyncUpdate, scope]);
 
   // Exam helpers
