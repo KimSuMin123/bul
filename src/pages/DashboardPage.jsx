@@ -246,7 +246,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
                 const progress = getCourseProgress(currentUser.id, course.id);
                 const remainingDays = getRemainingDays(enr.expireAt);
                 const isPending = enr.status === 'pending' || enr.status === 'applied';
-                const isLecturesDone = progress >= 100;
+                const isLecturesDone = checkLecturesCompleted(currentUser.id, course.id);
                 const hasPassedExam = isExamPassed(currentUser.id, course.id);
                 const isFullyCompleted = isLecturesDone && hasPassedExam;
                 const latestExam = getExamResult(currentUser.id, course.id);

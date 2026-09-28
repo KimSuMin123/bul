@@ -1,4 +1,5 @@
 import { hasPassedCourseExam } from './examService.js';
+import { COURSE_COMPLETE_PROGRESS } from '../config/sitePolicy.js';
 
 /**
  * 과정별 민간 자격증 종목, 등급, 직무역량 및 등록정보 매핑
@@ -101,7 +102,7 @@ export function generateMemberNumber(seqCount = 0) {
 }
 
 /**
- * Check if a student has completed all lectures in a course (100% progress)
+ * Check if a student has completed all lectures in a course (each lecture >= COURSE_COMPLETE_PROGRESS)
  */
 export function checkLecturesCompleted(userId, courseId, courses = [], lectures = [], progressList = []) {
   const course = courses.find(c => c.id === courseId);
@@ -118,7 +119,7 @@ export function checkLecturesCompleted(userId, courseId, courses = [], lectures 
 
   return targetLectureIds.every(lecId => {
     const p = progressList.find(prog => prog.userId === userId && prog.lectureId === lecId);
-    return p && (p.completed || p.progressRate >= 100);
+    return p && (p.completed || Number(p.progressRate) >= COURSE_COMPLETE_PROGRESS);
   });
 }
 
