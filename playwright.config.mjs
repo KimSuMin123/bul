@@ -25,10 +25,11 @@ export default defineConfig({
     screenshot: 'on',
     trace: 'retain-on-failure'
   },
+  // E2E_BUILD=1 runs the suite against a production build (same as Netlify) instead of the dev server
   webServer: {
-    command: 'node scripts/start_test_server.mjs',
+    command: process.env.E2E_BUILD ? 'node scripts/start_test_server_build.mjs' : 'node scripts/start_test_server.mjs',
     url: 'http://127.0.0.1:4310',
     reuseExistingServer: false,
-    timeout: 30_000
+    timeout: process.env.E2E_BUILD ? 240_000 : 30_000
   }
 });
