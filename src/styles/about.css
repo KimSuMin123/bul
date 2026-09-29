@@ -19,14 +19,19 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
 }
 
+/* 가운데 정렬은 양 끝 auto 여백으로 한다. justify-content:center는 폭이 좁은 휴대폰에서
+   왼쪽 탭(설립목적·신행헌장)을 스크롤할 수 없는 영역으로 밀어낸다. */
 .about-subnav-inner {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+
+.about-subnav-inner > :first-child { margin-left: auto; }
+.about-subnav-inner > :last-child { margin-right: auto; }
 
 .about-subnav-inner::-webkit-scrollbar {
   display: none;
