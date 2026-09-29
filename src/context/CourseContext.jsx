@@ -7,6 +7,7 @@ import { aggregateDonationReceipt, normalizePhone, findReceiptByPhoneOrUser } fr
 import { useAuth } from './AuthContext.jsx';
 import { canOpenNextLecture } from '../config/sitePolicy.js';
 
+import { kstDate } from '../utils/kstDate.js';
 const CourseContext = createContext(null);
 
 export function CourseProvider({ children }) {
@@ -182,7 +183,7 @@ export function CourseProvider({ children }) {
     if (!userId) return false;
     if (isAdmin) return true; // Admins have full preview access
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = kstDate();
     const userEnrs = enrollments.filter(e => e.userId === userId && (e.status === 'active' || e.status === 'completed') && e.expireAt && e.expireAt.slice(0, 10) >= today);
     const directMatch = userEnrs.find(e => e.courseId === courseId);
     if (directMatch) return true;
@@ -318,9 +319,9 @@ export function CourseProvider({ children }) {
       userId,
       courseId,
       status,
-      enrolledAt: today.toISOString().split('T')[0],
-      paidAt: status === 'active' ? today.toISOString().split('T')[0] : null,
-      expireAt: expireDate.toISOString().split('T')[0]
+      enrolledAt: kstDate(today),
+      paidAt: status === 'active' ? kstDate(today) : null,
+      expireAt: kstDate(expireDate)
     };
 
     await remoteDb.upsertEnrollment(item);
@@ -408,7 +409,7 @@ export function CourseProvider({ children }) {
       id: `pay_${Date.now()}`,
       userId,
       courseId,
-      paidAt: paidAt || new Date().toISOString().split('T')[0],
+      paidAt: paidAt || kstDate(),
       manager: manager.trim(),
       amount: Number(amount) || 0,
       methodMemo: methodMemo.trim(),

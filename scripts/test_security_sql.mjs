@@ -30,6 +30,7 @@ test('security migration and RLS execute in PostgreSQL', async t => {
  await db.query('INSERT INTO courses(id,title,raw_exam_text) VALUES($1,$2,$3)',['c2','Legacy course','1. Existing question?\n① First\n② Second\n\n1. ② — Existing explanation']);
  await db.exec(await fs.readFile(new URL('../supabase/migrations/202609230001_security.sql',import.meta.url),'utf8'));
  await db.exec(await fs.readFile(new URL('../supabase/migrations/202609230002_course_writes.sql',import.meta.url),'utf8'));
+ await db.exec(await fs.readFile(new URL('../supabase/migrations/202609300003_payment_dates_kst.sql',import.meta.url),'utf8'));
  await db.exec(`UPDATE users SET auth_user_id=CASE id WHEN 'student' THEN '${uid}'::uuid WHEN 'other' THEN '${other}'::uuid ELSE '${admin}'::uuid END;
  INSERT INTO storage.objects(bucket_id,name) VALUES('lectures','a.mp4');`);
  const asRole = async (role,identity='') => { await db.exec(`RESET ROLE; SET ROLE ${role}; SELECT set_config('request.jwt.claim.sub','${identity}',false);`); };
@@ -59,6 +60,11 @@ test('security migration and RLS execute in PostgreSQL', async t => {
   assert.deepEqual((await db.query(paymentSql)).rows[0].value,first);
   assert.equal((await db.query('SELECT * FROM payments')).rows.length,1);
   assert.equal((await db.query('SELECT manager FROM payments')).rows[0].manager,'Admin');
+  // 수강 시작일·만료일은 한국 날짜 기준(202609300003)
+  const kst=(await db.query("SELECT ((now() AT TIME ZONE 'Asia/Seoul')::date)::text AS d, ((now() AT TIME ZONE 'Asia/Seoul')::date + 90)::text AS e")).rows[0];
+  const enr=(await db.query("SELECT enrolled_at::text AS s, expire_at::text AS e, (SELECT default_period_days FROM courses WHERE id='c1') AS days FROM enrollments WHERE user_id='student' AND course_id='c1'")).rows[0];
+  assert.equal(enr.s,kst.d,'enrolled_at is the Korean date');
+  assert.equal(enr.e,(await db.query(`SELECT (((now() AT TIME ZONE 'Asia/Seoul')::date) + ${Math.max(1, Number(enr.days) || 90)})::text AS e`)).rows[0].e,'expire_at counts from the Korean date');
   await denied(paymentSql.replace(',100,',',101,'));
  });
  await t.test('private exam questions can only be managed by admin',async()=>{

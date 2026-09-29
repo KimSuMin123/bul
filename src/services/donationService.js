@@ -9,6 +9,7 @@
  * @param {string} rawPhone 
  * @returns {string}
  */
+import { kstDate } from '../utils/kstDate.js';
 export function normalizePhone(rawPhone) {
   if (!rawPhone) return '';
   const digits = String(rawPhone).replace(/[^0-9]/g, '');
@@ -42,7 +43,7 @@ export function aggregateDonationReceipt(currentReceipts = [], {
   paidAt = null
 }) {
   const normPhone = normalizePhone(phone);
-  const nowStr = paidAt || new Date().toISOString().split('T')[0];
+  const nowStr = paidAt || kstDate();
   const numAmount = Math.max(0, parseInt(amount, 10) || 0);
 
   const listCopy = Array.isArray(currentReceipts) ? [...currentReceipts] : [];

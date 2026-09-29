@@ -27,6 +27,7 @@ import AnnouncementManager from '../components/announcements/AnnouncementManager
 import { PRIVACY_POLICY_VERSION } from '../config/sitePolicy.js';
 import '../styles/home-experience.css';
 
+import { kstDate } from '../utils/kstDate.js';
 // 강의 영상 업로드 안내: 자동 변환 설명 + PC용 변환 도구(zip) 내려받기
 const VIDEO_TOOL_URL = '/downloads/sba-video-converter.zip';
 // 브라우저가 미리보기(길이 확인)를 못 하지만 업로드 시 ffmpeg 변환으로 처리되는 형식. 그 외 형식에서 길이를 못 읽으면 손상 파일로 보고 거절한다.
@@ -216,7 +217,7 @@ export default function AdminDashboardPage() {
             certGrade: course.certGrade || '2급',
             certTypeFull: course.certTypeFull || `${course.certType || '불교의례법사'} ${course.certGrade || '2급'}`,
             certRegOffice: course.certRegOffice || '문화체육관광부 (민간자격 등록번호: 제 2026- 001836 호)',
-            issuedAt: enr.enrolledAt || new Date().toISOString().split('T')[0],
+            issuedAt: enr.enrolledAt || kstDate(),
             status: 'valid'
           });
         }
@@ -338,7 +339,7 @@ export default function AdminDashboardPage() {
   const [payManager, setPayManager] = useState(currentUser?.name || '세화 교학처 담당자');
   const [payAmount, setPayAmount] = useState('50000');
   const [payMethodMemo, setPayMethodMemo] = useState('대면 카드 결제');
-  const [payDate, setPayDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [payDate, setPayDate] = useState(() => kstDate());
   const [payWithDonationReceipt, setPayWithDonationReceipt] = useState(false);
 
   // Donation Receipt Filter state ('all' | 'unissued' | 'issued')
@@ -954,7 +955,7 @@ export default function AdminDashboardPage() {
             manager: currentUser?.name || '세화 교학처 담당자',
             amount: parseInt(newUserForm.paymentAmount || '0', 10),
             methodMemo: newUserForm.paymentMethodMemo || '대면 접수 / 현장 결제',
-            paidAt: new Date().toISOString().split('T')[0]
+            paidAt: kstDate()
           });
         } else {
           await enrollStudent(registered.id, newUserForm.courseId, newUserForm.status);
@@ -1209,7 +1210,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
           manager: currentUser?.name || '교학처 관리자',
           amount: amount,
           methodMemo: withReceipt ? '교학처 방문 대면 수납 승인 (기부금 영수증 동시 발행)' : '교학처 방문 대면 수납 승인',
-          paidAt: new Date().toISOString().split('T')[0],
+          paidAt: kstDate(),
           withDonationReceipt: withReceipt,
           studentName,
           studentPhone,
@@ -1254,7 +1255,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
         amount,
         courseTitle,
         paymentId: record.id,
-        paidAt: record.paidAt || new Date().toISOString().split('T')[0]
+        paidAt: record.paidAt || kstDate()
       });
       showAlert(`[${studentName}] 학인의 기부금 영수증이 발행 대장에 정상 등재/누적되었습니다.`, { type: 'success', title: '기부영수증 발행 완료' });
       await refreshData();
@@ -1263,7 +1264,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
 
   // 3-Filter Excel Export Handler (전체 보기 / 미발행 건 / 기발행 건)
   const handleExportFilteredPaymentsExcel = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = kstDate();
     let exportRows = [];
     let filterLabel = '';
 
@@ -1409,7 +1410,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
       showAlert('발행 대장에 등록된 기부금 영수증 내역이 없습니다.', { type: 'warning', title: '추출 데이터 없음' });
       return;
     }
-    const today = new Date().toISOString().split('T')[0];
+    const today = kstDate();
     const exportRows = filteredDonationReceipts.map((rcpt, idx) => ({
       _index: idx + 1,
       name: rcpt.name,
@@ -4598,7 +4599,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               {/* 발행일 및 직인 */}
               <div style={{ textAlign: 'center', marginTop: '16px' }}>
                 <div style={{ fontSize: '13px', color: '#64748B', marginBottom: '8px' }}>
-                  발행일자: {selectedDonationReceipt.lastIssuedAt || new Date().toISOString().split('T')[0]}
+                  발행일자: {selectedDonationReceipt.lastIssuedAt || kstDate()}
                 </div>
                 <div style={{ fontSize: '18px', fontWeight: 900, color: '#064E3B', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <span>[사]세화붓다아카데미 이사장</span>

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node scripts/test_unit_and_integration.mjs && node scripts/test_api_failure_contract.mjs && node scripts/test_auth_session.mjs && node scripts/test_frontend_save_and_modal.mjs && node scripts/test_media_storage.mjs && node scripts/test_media_metadata.mjs && npm run test:security",
+    "test": "node scripts/test_unit_and_integration.mjs && node scripts/test_api_failure_contract.mjs && node scripts/test_auth_session.mjs && node scripts/test_frontend_save_and_modal.mjs && node scripts/test_media_storage.mjs && node scripts/test_media_metadata.mjs && node scripts/test_kst_date.mjs && npm run test:security",
     "test:unit": "node scripts/test_unit_and_integration.mjs",
     "test:browser": "node scripts/test_course_state.mjs",
     "test:e2e": "node scripts/run_e2e_flow.mjs",

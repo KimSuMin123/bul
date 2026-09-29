@@ -2,6 +2,7 @@
 // Public API key identifies the project; user JWTs carry the authenticated identity.
 import { getAccessToken, getAuthSession, setAuthSession, beginAuthAttempt, clearAuthSession, callAuthAction } from './authSession.js';
 import { getThumbnailUrl } from './mediaStorage.js';
+import { kstDate } from '../utils/kstDate.js';
 export { uploadLectureVideo, deleteLectureVideo, uploadThumbnailImage, getLectureVideoUrl, getThumbnailUrl } from './mediaStorage.js';
 
 const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' ? process.env : {});
@@ -576,7 +577,7 @@ export const remoteDb = {
           p_amount: Number(amount) || 0,
           p_manager: (manager || '').trim(),
           p_method_memo: (methodMemo || '').trim(),
-          p_paid_at: paidAt || new Date().toISOString().split('T')[0]
+          p_paid_at: paidAt || kstDate()
         })
       });
       if (!res || res.success !== true || !res.paymentId) {
@@ -620,7 +621,7 @@ export const remoteDb = {
         name: receipt.name,
         phone: receipt.phone,
         total_amount: Number(receipt.totalAmount) || 0,
-        last_issued_at: receipt.lastIssuedAt || new Date().toISOString().split('T')[0],
+        last_issued_at: receipt.lastIssuedAt || kstDate(),
         created_at: receipt.createdAt || new Date().toISOString(),
         donation_count: Number(receipt.donationCount) || 1,
         history: receipt.history || []

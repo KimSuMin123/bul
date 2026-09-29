@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { enrollmentConfirmation, PRIVACY_POLICY_VERSION } from '../src/config/sitePolicy.js';
+import { kstDate } from '../src/utils/kstDate.js';
 
 // Execute the actual event handlers with isolated UI/API dependencies.
 // No browser, network, or application data is used.
@@ -153,6 +154,7 @@ test('dashboard application failure reports failure and remains retryable', asyn
 
 function adminContext(overrides = {}) {
   return {
+    kstDate,
     enrollmentSaveRef: { current: false }, setSavingEnrollment() {},
     selectedUser: { id: 'test-user', name: 'Test' },
     currentUser: { name: 'Admin' }, courses: [{ id: 'test-course', title: 'Test', price: 100 }],
