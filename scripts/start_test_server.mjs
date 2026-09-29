@@ -9,8 +9,11 @@ const server = await createServer({
   define: {
     'import.meta.env.VITE_SUPABASE_URL': JSON.stringify('http://127.0.0.1:4310'),
     'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify('test-only'),
-    'import.meta.env.VITE_VIDEO_UPLOAD_MODE': JSON.stringify('direct')
+    'import.meta.env.VITE_VIDEO_UPLOAD_MODE': JSON.stringify('direct'),
+    // The isolated server blocks the internet, so AVI tests load the ffmpeg.wasm core from node_modules
+    'import.meta.env.VITE_FFMPEG_CORE_BASE': JSON.stringify('/node_modules/@ffmpeg/core/dist/esm')
   },
+  optimizeDeps: { exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'] },
   server: { host: '127.0.0.1', port: 4310, strictPort: true, open: false, hmr: false }
 });
 await server.listen();

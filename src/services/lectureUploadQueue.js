@@ -59,7 +59,7 @@ async function run() {
           stage: 'uploading', percent: prog.percent || 0, detail: prog.speed ? `업로드 ${prog.speed}` : '업로드 중'
         }));
         update(job.id, { stage: 'saving', percent: 100, detail: '차시에 적용 중' });
-        await task.apply({ ...uploaded, converted: prepared.converted, originalMb: prepared.originalMb, resultMb: prepared.resultMb });
+        await task.apply({ ...uploaded, converted: prepared.converted, duration: prepared.duration, originalMb: prepared.originalMb, resultMb: prepared.resultMb });
         const summary = prepared.converted ? `${prepared.originalMb}MB → ${prepared.resultMb}MB 호환 변환` : '이미 호환 형식이라 그대로 업로드';
         update(job.id, { stage: 'done', percent: 100, detail: summary });
         task.onDone?.(`[${job.label}] 영상 처리가 끝나 차시에 적용되었습니다. (${summary})`);

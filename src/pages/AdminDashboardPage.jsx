@@ -27,6 +27,26 @@ import AnnouncementManager from '../components/announcements/AnnouncementManager
 import { PRIVACY_POLICY_VERSION } from '../config/sitePolicy.js';
 import '../styles/home-experience.css';
 
+// 강의 영상 업로드 안내: 자동 변환 설명 + PC용 변환 도구(zip) 내려받기
+const VIDEO_TOOL_URL = '/downloads/sba-video-converter.zip';
+// 브라우저가 미리보기(길이 확인)를 못 하지만 업로드 시 ffmpeg 변환으로 처리되는 형식. 그 외 형식에서 길이를 못 읽으면 손상 파일로 보고 거절한다.
+const NO_PREVIEW_VIDEO = /\.(avi|wmv|flv|mpe?g|ts|m2ts|3gp|asf|vob)$/i;
+function LectureVideoNotice({ action }) {
+  return (
+    <div style={{ padding: '10px 14px', backgroundColor: 'rgba(59, 90, 68, 0.08)', borderRadius: '6px', marginBottom: '12px', fontSize: '12px', color: 'var(--color-sage)', display: 'flex', alignItems: 'flex-start', gap: '8px', lineHeight: 1.6 }}>
+      <CheckCircle size={15} style={{ flexShrink: 0, marginTop: '2px' }} />
+      <span>
+        <strong>동영상 직접 업로드:</strong> {action} 영상은 모든 기기에서 재생되는 mp4(1080p, 45MB 초과 시 720p)로 자동 변환되며, 변환·업로드는 백그라운드에서 진행됩니다.
+        <br />
+        AVI 녹화본이나 긴 영상은 PC용 변환 도구로 먼저 변환하면 훨씬 빠릅니다.{' '}
+        <a href={VIDEO_TOOL_URL} download style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontWeight: 700, color: 'var(--color-sage)', textDecoration: 'underline' }}>
+          <Download size={12} />변환 도구 내려받기 (zip, 약 30MB)
+        </a>
+      </span>
+    </div>
+  );
+}
+
 export default function AdminDashboardPage() {
   const { showAlert, showConfirm } = useModalAlert();
   const [savingEnrollment, setSavingEnrollment] = useState(false);
@@ -718,9 +738,15 @@ export default function AdminDashboardPage() {
       }
     } catch (e) {
       if (version !== metadataVersionRef.current) return;
-      setNewVideoFile(null);
-      setNewVideoPreviewUrl('');
-      setUploadErrorMsg(e.message || '영상 정보를 읽지 못했습니다. 다른 파일을 선택해 주세요.');
+      if (controller.signal.aborted || !NO_PREVIEW_VIDEO.test(file.name)) {
+        setNewVideoFile(null);
+        setNewVideoPreviewUrl('');
+        setUploadErrorMsg(e.message || '영상 정보를 읽지 못했습니다. 다른 파일을 선택해 주세요.');
+      } else {
+        // AVI 등 브라우저가 바로 재생하지 못하는 형식: 미리보기 없이 받고, 길이는 변환 후 자동 입력
+        setLecForm(prev => ({ ...prev, title: prev.title || file.name.replace(/\.[^/.]+$/, "") }));
+        setUploadSuccessMsg('이 형식은 미리보기가 안 되지만 업로드할 수 있습니다. 등록 시 호환 mp4로 자동 변환되며, 재생 시간은 변환 후 자동 입력됩니다.');
+      }
     } finally {
       if (version === metadataVersionRef.current) {
         metadataBusyRef.current = false;
@@ -759,7 +785,10 @@ export default function AdminDashboardPage() {
       try {
         setReplaceErrorMsg('');
         setReplaceSuccessMsg('');
-        const meta = await extractVideoMetadata(replaceVideoFile);
+        // AVI 등은 브라우저가 길이를 못 읽으므로 변환 결과의 길이를 쓴다
+        const meta = NO_PREVIEW_VIDEO.test(replaceVideoFile.name)
+          ? await extractVideoMetadata(replaceVideoFile).catch(() => ({ duration: 0 }))
+          : await extractVideoMetadata(replaceVideoFile);
         const lecture = replaceModalLec;
         // 변환(필요 시)·업로드·교체는 왼쪽 아래 '영상 처리' 패널에서 백그라운드로 진행
         enqueueLectureUpload({
@@ -767,7 +796,7 @@ export default function AdminDashboardPage() {
           label: `영상 교체 · ${lecture.title}`,
           apply: result => updateLecture(lecture.id, {
             videoUrl: result.publicUrl,
-            durationSeconds: meta.duration || lecture.durationSeconds
+            durationSeconds: meta.duration || Math.round(result.duration || 0) || lecture.durationSeconds
           }),
           onDone: message => showAlert(message, { type: 'success', title: '영상 교체 완료' }),
           onError: message => showAlert(message, { type: 'error', title: '영상 교체 실패' })
@@ -1540,7 +1569,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               orderIndex: Number(form.orderIndex),
               title: form.title,
               description: form.description,
-              durationSeconds: Number(form.durationSeconds),
+              durationSeconds: Number(form.durationSeconds) || Math.round(result.duration || 0),
               videoUrl: result.publicUrl,
               attachments: form.attachmentName ? [{ name: form.attachmentName, size: '2.5 MB' }] : []
             }),
@@ -4710,12 +4739,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 {/* Direct File Upload Mode */}
                 {uploadMode === 'file' ? (
                   <div>
-                    <div style={{ padding: '10px 14px', backgroundColor: 'rgba(59, 90, 68, 0.08)', borderRadius: '6px', marginBottom: '12px', fontSize: '12px', color: 'var(--color-sage)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <CheckCircle size={15} style={{ flexShrink: 0 }} />
-                      <span>
-                        <strong>동영상 직접 업로드:</strong> 선택한 파일을 저장소로 업로드합니다. 원본 화질과 용량이 유지되므로 재생에 적합한 MP4 파일을 준비해 주세요.
-                      </span>
-                    </div>
+                    <LectureVideoNotice action="선택한" />
 
                     <input
                       type="file"
@@ -4757,7 +4781,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                           이곳을 클릭하거나 동영상 파일을 끌어다 놓으세요
                         </div>
                         <div style={{ fontSize: '12.5px', color: 'var(--color-text-muted)' }}>
-                          MP4 권장 · 업로드 전 파일 형식과 용량을 확인해 주세요.
+                          MP4 · MOV · AVI · MKV 등 · 자동으로 호환 mp4로 변환됩니다.
                         </div>
                       </div>
                     ) : (
@@ -4973,12 +4997,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
             </div>
 
             <form onSubmit={handleReplaceVideoSubmit}>
-              <div style={{ padding: '10px 14px', backgroundColor: 'rgba(59, 90, 68, 0.08)', borderRadius: '6px', marginBottom: '14px', fontSize: '12px', color: 'var(--color-sage)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle size={15} style={{ flexShrink: 0 }} />
-                <span>
-                  <strong>동영상 직접 업로드:</strong> 선택한 파일을 저장소에 올린 뒤 차시의 영상을 교체합니다. 업로드 전에 재생 가능한 파일인지 확인해 주세요.
-                </span>
-              </div>
+              <LectureVideoNotice action="새로 선택한" />
 
               <input
                 type="file"

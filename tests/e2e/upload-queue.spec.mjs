@@ -70,3 +70,45 @@ test('an already compatible video skips conversion and replaces the lecture vide
   expect(bodies).toHaveLength(1);
   expect(backend.db.lectures[0].video_url).toContain('/storage/v1/object/lectures/');
 });
+
+test('an AVI recording (MJPEG + PCM) is converted with ffmpeg.wasm to 1080p Level 4.0 with sound and gets its duration', async ({ page, backend }) => {
+  test.setTimeout(300000);
+  const bodies = captureUploads(page);
+  await login(page, admin.id);
+  await page.getByRole('button', { name: '+ 신규 VOD 차시 등록', exact: true }).click();
+  const modal = page.locator('.modal-card').filter({ hasText: '신규 VOD 차시 등록 (CMS)' });
+  await modal.locator('select').selectOption(courseId);
+  // The PC converter (bat + ffmpeg.exe) is downloadable from the upload form
+  const toolLink = modal.getByRole('link', { name: /변환 도구 내려받기/ });
+  await expect(toolLink).toHaveAttribute('href', '/downloads/sba-video-converter.zip');
+  const tool = await page.request.get('/downloads/sba-video-converter.zip');
+  expect(tool.status()).toBe(200);
+  expect((await tool.body()).length).toBeGreaterThan(20 * 1024 * 1024);
+  await modal.locator('input[type="file"]').setInputFiles(asset('legacy-recording.avi'));
+  // The browser cannot preview AVI, but the file is accepted and the title comes from the file name
+  await expect(modal).toContainText('미리보기가 안 되지만 업로드할 수 있습니다');
+  await expect(modal.getByPlaceholder('예: 4강. 보살행과 일상 속 자비 실천')).toHaveValue('legacy-recording');
+  await modal.getByRole('button', { name: '차시 등록 시작 (영상은 백그라운드 처리)', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '확인', exact: true }).click();
+  const started = Date.now();
+  const job = page.getByText(/신규 차시 · legacy-recording/).locator('..').locator('..');
+  const ticker = setInterval(async () => {
+    const text = await job.innerText().catch(() => '');
+    console.log(`[${Math.round((Date.now() - started) / 1000)}s] ${text.replace(/\s+/g, ' ').slice(0, 160)}`);
+  }, 10000);
+  try {
+    // Stop at the first result, success or failure, instead of waiting out the timeout
+    await expect(page.getByRole('dialog')).toContainText(/차시 등록 (완료|실패)/, { timeout: 280000 });
+  } finally {
+    clearInterval(ticker);
+  }
+  await expect(page.getByRole('dialog')).toContainText('차시 등록 완료');
+  console.log(`[AVI 변환+업로드 총 ${Math.round((Date.now() - started) / 1000)}초]`);
+
+  expect(bodies).toHaveLength(1);
+  const result = probe(bodies[0]);
+  expect(result).toMatchObject({ codec: 'h264', pix_fmt: 'yuv420p', sar: '1:1', fps: '30', audio: 'aac', size: '1920x1080', level: 40 });
+  const lecture = backend.db.lectures[1];
+  expect(lecture.title).toBe('legacy-recording');
+  expect(lecture.duration_seconds).toBe(3);
+});

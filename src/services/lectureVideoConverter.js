@@ -9,12 +9,12 @@ import {
 const MB = 1024 * 1024;
 export const LECTURE_VIDEO_LIMIT_BYTES = 45 * MB;
 const AUDIO_BITRATE = 64000;
-// 이 값보다 낮은 영상 비트레이트가 필요한 긴 강의는 1080p 대신 720p로 만든다(하드웨어 인코더 저비트레이트 화질 보호)
-const MIN_1080P_VIDEO_BITRATE = 200000;
 // 브라우저 인코더는 목표 비트레이트를 거의 다 채우므로, 45MB 한도가 아니라 슬라이드 강의에 충분한 값을 목표로 둔다
 const TARGET_VIDEO_BITRATE = { 1080: 250000, 720: 180000 };
 
-const UNSUPPORTED_FORMAT_MESSAGE = '이 영상 형식(예: AVI)은 브라우저에서 자동 변환할 수 없습니다. 압축 도구로 변환한 mp4 파일을 올려 주세요.';
+// 브라우저 내장 인코더가 못 읽는 형식은 ffmpeg(wasm) 경로로 넘긴다
+class NeedsFfmpegError extends Error {}
+const FFMPEG_EXTENSIONS = /\.(avi|wmv|flv|mpe?g|ts|m2ts|3gp|asf|vob)$/i;
 
 export function supportsBrowserVideoConversion() {
   return typeof window !== 'undefined' && typeof window.VideoEncoder === 'function' && typeof window.AudioEncoder === 'function';
@@ -45,7 +45,7 @@ async function inspect(file) {
       && file.size <= LECTURE_VIDEO_LIMIT_BYTES && /mp4/i.test(file.type || file.name);
     return { compatible, duration };
   } catch (error) {
-    if (error instanceof UnsupportedInputFormatError) throw new Error(UNSUPPORTED_FORMAT_MESSAGE);
+    if (error instanceof UnsupportedInputFormatError) throw new NeedsFfmpegError('unsupported');
     throw error;
   } finally {
     input.dispose();
@@ -67,18 +67,13 @@ async function convertOnce(file, height, videoBitrate, onRatio) {
     });
     const inputHasAudio = Boolean(await input.getPrimaryAudioTrack());
     const audioDropped = conversion.discardedTracks.some(item => item.track?.type === 'audio');
-    if (inputHasAudio && audioDropped) {
-      throw new Error('이 브라우저에서는 영상의 소리를 변환할 수 없어 업로드를 멈췄습니다(소리 없는 강의 방지). 크롬 또는 엣지 최신 버전에서 다시 시도하거나 압축 도구를 사용해 주세요.');
-    }
-    if (!conversion.isValid) {
-      const reasons = conversion.discardedTracks.map(item => item.reason).join(', ');
-      throw new Error(`이 브라우저에서 영상을 변환할 수 없습니다(${reasons || '알 수 없는 이유'}). 크롬 또는 엣지 최신 버전에서 다시 시도하거나 압축 도구를 사용해 주세요.`);
-    }
+    // 소리를 못 옮기거나 영상을 못 읽으면 ffmpeg 경로로 넘긴다(소리 없는 강의 방지)
+    if ((inputHasAudio && audioDropped) || !conversion.isValid) throw new NeedsFfmpegError('decode');
     conversion.onProgress = ratio => onRatio(ratio);
     await conversion.execute();
     return output.target.buffer;
   } catch (error) {
-    if (error instanceof UnsupportedInputFormatError) throw new Error(UNSUPPORTED_FORMAT_MESSAGE);
+    if (error instanceof UnsupportedInputFormatError) throw new NeedsFfmpegError('unsupported');
     throw error;
   } finally {
     input.dispose();
@@ -91,36 +86,60 @@ async function convertOnce(file, height, videoBitrate, onRatio) {
  */
 export async function prepareLectureVideo(file, onProgress) {
   const started = Date.now();
-  const report = (ratio, attemptLabel) => onProgress?.({
+  let phase = '영상 확인 중';
+  const report = (ratio, attemptLabel = phase) => onProgress?.({
     step: 'processing', percent: Math.min(99, Math.round(ratio * 100)), loaded: 0, total: file.size,
     compressSec: Math.round((Date.now() - started) / 1000), speed: attemptLabel
   });
-  report(0, '영상 확인 중');
-  const { compatible, duration } = await inspect(file);
-  if (compatible) return { file, converted: false, originalMb: +(file.size / MB).toFixed(1), resultMb: +(file.size / MB).toFixed(1) };
-  if (!supportsBrowserVideoConversion()) {
-    throw new Error('이 브라우저는 영상 자동 변환을 지원하지 않습니다. PC의 크롬 또는 엣지 최신 버전을 사용하거나, 압축 도구로 변환한 파일을 올려 주세요.');
+  const originalMb = +(file.size / MB).toFixed(1);
+  const name = `${(file.name || 'lecture').replace(/\.[^.]+$/, '')}.mp4`;
+  const done = (buffer, height, duration) => ({
+    file: new File([buffer], name, { type: 'video/mp4' }), converted: true, height, duration,
+    originalMb, resultMb: +(buffer.byteLength / MB).toFixed(1)
+  });
+  const tooBig = bytes => new Error(`변환 후에도 ${(bytes / MB).toFixed(1)}MB로 45MB를 넘습니다. 영상을 나눠서 올려 주세요.`);
+
+  const viaFfmpeg = async () => {
+    const { convertWithFfmpeg } = await import('./lectureVideoFfmpeg.js');
+    const result = await convertWithFfmpeg(file, LECTURE_VIDEO_LIMIT_BYTES, ratio => report(ratio), label => { phase = label; report(0); });
+    if (result.buffer.byteLength > LECTURE_VIDEO_LIMIT_BYTES) throw tooBig(result.buffer.byteLength);
+    return done(result.buffer, result.height, result.duration);
+  };
+
+  report(0);
+  if (FFMPEG_EXTENSIONS.test(file.name || '')) return viaFfmpeg();
+  let info;
+  try {
+    info = await inspect(file);
+  } catch (error) {
+    if (error instanceof NeedsFfmpegError) return viaFfmpeg();
+    throw error;
   }
+  const { compatible, duration } = info;
+  if (compatible) return { file, converted: false, duration, originalMb, resultMb: originalMb };
+  if (!supportsBrowserVideoConversion()) return viaFfmpeg();
 
   // 45MB 안에 들어가도록 길이에 맞춰 비트레이트를 정한다(컨테이너 여유분 10% 확보).
   const seconds = Math.max(1, duration);
   const videoBudget = Math.floor((LECTURE_VIDEO_LIMIT_BYTES * 8 * 0.9) / seconds) - AUDIO_BITRATE;
-  const attempts = videoBudget >= MIN_1080P_VIDEO_BITRATE
-    ? [[1080, Math.min(videoBudget, TARGET_VIDEO_BITRATE[1080])], [720, Math.min(Math.floor(videoBudget * 0.8), TARGET_VIDEO_BITRATE[720])]]
-    : [[720, Math.min(Math.max(80000, videoBudget), TARGET_VIDEO_BITRATE[720])], [720, Math.max(60000, Math.floor(videoBudget * 0.7))]];
+  // 1080p로 먼저 만들고, 45MB를 넘으면 720p로 다시 만든다
+  const attempts = [
+    [1080, Math.max(120000, Math.min(videoBudget, TARGET_VIDEO_BITRATE[1080]))],
+    [720, Math.max(60000, Math.min(Math.floor(videoBudget * 0.8), TARGET_VIDEO_BITRATE[720]))]
+  ];
 
   let last;
   for (const [index, [height, bitrate]] of attempts.entries()) {
     const label = `${height}p 변환${index ? ' (재시도)' : ''}`;
-    const buffer = await convertOnce(file, height, bitrate, ratio => report(ratio, label));
-    last = buffer;
-    if (buffer.byteLength <= LECTURE_VIDEO_LIMIT_BYTES) {
-      const name = `${(file.name || 'lecture').replace(/\.[^.]+$/, '')}.mp4`;
-      return {
-        file: new File([buffer], name, { type: 'video/mp4' }), converted: true, height,
-        originalMb: +(file.size / MB).toFixed(1), resultMb: +(buffer.byteLength / MB).toFixed(1)
-      };
+    let buffer;
+    try {
+      buffer = await convertOnce(file, height, bitrate, ratio => report(ratio, label));
+    } catch (error) {
+      if (error instanceof NeedsFfmpegError) return viaFfmpeg();
+      throw error;
     }
+    last = buffer;
+    if (buffer.byteLength <= LECTURE_VIDEO_LIMIT_BYTES) return done(buffer, height, duration);
   }
-  throw new Error(`변환 후에도 ${(last.byteLength / MB).toFixed(1)}MB로 45MB를 넘습니다. 영상을 나누거나 압축 도구를 사용해 주세요.`);
+  throw tooBig(last.byteLength);
 }

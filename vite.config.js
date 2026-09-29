@@ -23,6 +23,8 @@ export default defineConfig(({ command, mode }) => {
       }
     }
   ],
+  // ffmpeg.wasm은 자체 워커를 쓰므로 사전 번들링에서 제외해야 개발 서버에서 동작한다(AVI 변환용)
+  optimizeDeps: { exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'] },
   server: {
     port: 3000,
     host: '127.0.0.1',
