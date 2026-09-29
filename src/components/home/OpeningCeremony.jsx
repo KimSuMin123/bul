@@ -122,10 +122,34 @@ export default function OpeningCeremony() {
 
   // 꽃비가 끝나면 장막 뒤에서 매뉴얼이 이어서 나타남 (타종 시점부터 미리 불러옴)
   const [showManual, setShowManual] = useState(false);
+  const manualFrameRef = useRef(null);
+
+  // 매뉴얼이 나타나면 키보드 초점을 매뉴얼로 옮겨 스페이스바로 바로 넘길 수 있게 함
+  useEffect(() => {
+    if (!showManual) return;
+    const frame = manualFrameRef.current;
+    frame?.focus();
+    frame?.contentWindow?.focus();
+    // 초점이 바깥(세레머니 화면)에 남아 있어도 넘김 키는 매뉴얼로 전달
+    const forward = e => {
+      const deck = manualFrameRef.current?.contentWindow?.sbaDeck;
+      if (!deck) return;
+      if (e.key === ' ' || e.key === 'ArrowRight' || e.key === 'PageDown') {
+        e.preventDefault();
+        if (e.key === ' ' && e.shiftKey) deck.prev(); else deck.next();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        deck.prev();
+      }
+    };
+    window.addEventListener('keydown', forward);
+    return () => window.removeEventListener('keydown', forward);
+  }, [showManual]);
 
   // Audio state
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const audioRef = useRef(null);
+  const fadeTimerRef = useRef(null);
 
   // 숨김 트리거 노출 여부: 개원 시각(+유예) 이후엔 사라짐
   const [isTriggerAvailable, setIsTriggerAvailable] = useState(() => Date.now() < triggerHideAt);
@@ -156,6 +180,7 @@ export default function OpeningCeremony() {
   // Audio cleanup
   useEffect(() => {
     return () => {
+      clearInterval(fadeTimerRef.current);
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
@@ -163,22 +188,35 @@ export default function OpeningCeremony() {
     };
   }, []);
 
-  // Toggle BGM / Bell sound
-  const toggleAudio = () => {
+  // 나모붓다야 노래: 세레머니가 열리면 자동 재생, 진행자는 끄기만 가능 (다시 켜는 버튼 없음)
+  const startSong = () => {
     if (!audioRef.current) {
       audioRef.current = new Audio('/audio/namo_buddhaya_song.mp3');
       audioRef.current.addEventListener('ended', () => setIsPlayingAudio(false));
     }
-    if (isPlayingAudio) {
+    audioRef.current.currentTime = 0;
+    audioRef.current.play().then(() => setIsPlayingAudio(true)).catch(() => setIsPlayingAudio(false));
+  };
+
+  const stopSong = () => {
+    clearInterval(fadeTimerRef.current);
+    if (audioRef.current) {
       audioRef.current.pause();
-      setIsPlayingAudio(false);
-    } else {
-      audioRef.current.play().then(() => {
-        setIsPlayingAudio(true);
-      }).catch(() => {
-        setIsPlayingAudio(false);
-      });
+      audioRef.current.currentTime = 0;
+      audioRef.current.volume = 1;
     }
+    setIsPlayingAudio(false);
+  };
+
+  // 매뉴얼이 시작되면 노래를 약 1.5초 동안 서서히 줄이며 멈춤
+  const fadeOutSong = () => {
+    const audio = audioRef.current;
+    if (!audio || audio.paused) { stopSong(); return; }
+    clearInterval(fadeTimerRef.current);
+    fadeTimerRef.current = setInterval(() => {
+      if (audio.volume <= 0.07) { stopSong(); return; }
+      audio.volume = Math.max(0, audio.volume - 0.066);
+    }, 100);
   };
 
   // 범종 타종 → 매듭이 풀리며 장막이 걷힘
@@ -187,27 +225,21 @@ export default function OpeningCeremony() {
     setIsCutting(true);
     strikeTempleBell();
 
-    // 종소리가 한 번 퍼진 뒤 나모붓다야 노래 시작
-    setTimeout(() => {
-      if (!audioRef.current) {
-        audioRef.current = new Audio('/audio/namo_buddhaya_song.mp3');
-      }
-      audioRef.current.play().then(() => setIsPlayingAudio(true)).catch(() => { });
-    }, 1400);
-
     // 0.9s: 종소리 파문이 퍼지고 연꽃 매듭이 풀림
     setTimeout(() => {
       setIsCutDone(true);
       setCurtainsOpened(true);
     }, 900);
 
-    // 5.2s: 꽃비가 내린 뒤 매뉴얼이 서서히 나타남 (닫기 버튼으로 홈으로 돌아감)
+    // 5.2s: 꽃비가 내린 뒤 매뉴얼이 서서히 나타나고 노래는 서서히 멈춤 (닫기 버튼으로 홈으로 돌아감)
     setTimeout(() => {
       setShowManual(true);
+      fadeOutSong();
     }, 5200);
   };
 
   const closeCeremony = () => {
+    stopSong();
     setIsActive(false);
     setIsCutting(false);
     setIsCutDone(false);
@@ -224,6 +256,8 @@ export default function OpeningCeremony() {
     setCurtainsOpened(false);
     setShowManual(false);
     setIsActive(true);
+    // 더블클릭(사용자 조작) 직후라 브라우저 자동재생 제한 없이 바로 재생됨
+    startSong();
   };
 
   return (
@@ -269,28 +303,20 @@ export default function OpeningCeremony() {
           {/* 개원 후 매뉴얼: 타종 시점부터 미리 불러두고 꽃비가 끝나면 서서히 나타남 (사이트 다른 곳엔 진입 버튼 없음) */}
           {isCutting && (
             <div className={`ceremony-manual-stage ${showManual ? 'visible' : ''}`} aria-hidden={!showManual}>
-              <iframe src="/sba-manual.html" title="세화붓다아카데미 사용자 및 관리자 매뉴얼" />
+              <iframe ref={manualFrameRef} src="/sba-manual.html?mode=slides" title="세화붓다아카데미 사용자 및 관리자 매뉴얼" />
             </div>
           )}
 
           {/* Top Controls: Audio & Exit */}
           <div className={`ceremony-top-controls ${showManual ? 'manual-mode' : ''}`}>
-            <button
-              type="button"
-              className="btn-ceremony-tool"
-              onClick={toggleAudio}
-              aria-label="배경음악 토글"
-            >
-              <span>{isPlayingAudio ? '🔊 소리 끄기' : '🔈 나모붓다야 듣기'}</span>
-            </button>
-            {countdown > 0 && (
+            {isPlayingAudio && (
               <button
                 type="button"
                 className="btn-ceremony-tool"
-                style={{ background: 'rgba(245, 158, 11, 0.35)', borderColor: '#F59E0B', color: '#FDE68A' }}
-                onClick={() => setCountdown(0)}
+                onClick={stopSong}
+                aria-label="나모붓다야 노래 끄기"
               >
-                ⏩ D-0분 즉시 이동
+                <span>🔊 소리 끄기</span>
               </button>
             )}
             <button
