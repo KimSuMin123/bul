@@ -3427,7 +3427,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       <th style={{ padding: '12px 16px' }}>차시 순서</th>
                       <th style={{ padding: '12px 16px' }}>강의 제목</th>
                       <th style={{ padding: '12px 16px' }}>재생 시간</th>
-                      <th style={{ padding: '12px 16px' }}>첨부 교안(PDF)</th>
+                      {/* PDF 교안: 파일 업로드·저장이 구현되지 않아 숨김(구현 후 주석 해제)
+                      <th style={{ padding: '12px 16px' }}>첨부 교안(PDF)</th> */}
                       <th style={{ padding: '12px 16px' }}>동영상 스트리밍 & 관리</th>
                     </tr>
                   </thead>
@@ -3478,13 +3479,14 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                               </div>
                             </td>
                             <td style={{ padding: '14px 16px' }}>약 {Math.round(lec.durationSeconds / 60)}분 ({lec.durationSeconds}초)</td>
+                            {/* PDF 교안: 파일 업로드·저장이 구현되지 않아 숨김(구현 후 주석 해제)
                             <td style={{ padding: '14px 16px' }}>
                               {lec.attachments && lec.attachments.length > 0 ? (
                                 <span className="badge badge-sage">{lec.attachments[0].name}</span>
                               ) : (
                                 <span style={{ color: '#94A3B8' }}>없음</span>
                               )}
-                            </td>
+                            </td> */}
                             <td style={{ padding: '14px 16px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                 {isServerVideo ? (
@@ -4914,6 +4916,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   </div>
                 </div>
 
+                {/* PDF 교안: 파일 업로드·저장이 구현되지 않아 숨김(구현 후 주석 해제)
                 <div style={{ flex: 1 }}>
                   <label className="form-label">강의 교재 첨부파일명 (PDF)</label>
                   <input
@@ -4922,7 +4925,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     value={lecForm.attachmentName}
                     onChange={(e) => setLecForm({ ...lecForm, attachmentName: e.target.value })}
                   />
-                </div>
+                </div> */}
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>

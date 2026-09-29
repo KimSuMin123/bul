@@ -369,7 +369,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                 onClick={() => setActiveTab('info')}
               >
                 <FileText size={16} />
-                <span>강의 개요 및 교안 자료</span>
+                <span>강의 개요</span>{/* 원래 문구: 강의 개요 및 교안 자료 — PDF 교안 구현 후 복원 */}
               </button>
 
               <button
@@ -418,7 +418,8 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                   {currentLecture.description || `${course.title}의 ${currentLecture.orderIndex}차시 강의입니다. 경전과 의식집의 핵심 구절을 살피며 심도 있는 해설과 집전 방법을 학습합니다.`}
                 </p>
 
-                {/* Attachments Download */}
+                {/* PDF 교안: 파일 업로드·저장이 구현되지 않아 숨김(구현 후 주석 해제)
+                (Attachments Download)
                 <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '20px' }}>
                   <h4 style={{ fontSize: '14.5px', fontWeight: 600, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <FileText size={16} color="var(--color-sage)" />
@@ -447,7 +448,7 @@ export default function WatchPage({ lectureId, onNavigate, onSelectLecture }) {
                       본 차시에는 별도 첨부된 PDF 교안이 없습니다. 영상 내 자막과 강의 교재를 참고해 주십시오.
                     </div>
                   )}
-                </div>
+                </div> */}
               </div>
             )}
 
