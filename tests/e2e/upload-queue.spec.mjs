@@ -71,7 +71,7 @@ test('an already compatible video skips conversion and replaces the lecture vide
   expect(backend.db.lectures[0].video_url).toContain('/storage/v1/object/lectures/');
 });
 
-test('an AVI recording (MJPEG + PCM) is converted with ffmpeg.wasm to 1080p Level 4.0 with sound and gets its duration', async ({ page, backend }) => {
+test('an AVI recording (MJPEG + PCM) is converted with ffmpeg.wasm to 720p (its source height) Level 4.0 with sound and gets its duration', async ({ page, backend }) => {
   test.setTimeout(300000);
   const bodies = captureUploads(page);
   await login(page, admin.id);
@@ -107,7 +107,7 @@ test('an AVI recording (MJPEG + PCM) is converted with ffmpeg.wasm to 1080p Leve
 
   expect(bodies).toHaveLength(1);
   const result = probe(bodies[0]);
-  expect(result).toMatchObject({ codec: 'h264', pix_fmt: 'yuv420p', sar: '1:1', fps: '30', audio: 'aac', size: '1920x1080', level: 40 });
+  expect(result).toMatchObject({ codec: 'h264', pix_fmt: 'yuv420p', sar: '1:1', fps: '30', audio: 'aac', size: '1280x720', level: 40 });
   const lecture = backend.db.lectures[1];
   expect(lecture.title).toBe('legacy-recording');
   expect(lecture.duration_seconds).toBe(3);

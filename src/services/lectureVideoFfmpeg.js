@@ -21,7 +21,7 @@ function loadFFmpeg() {
 
 function buildArgs(input, output, height, crf) {
   const width = height === 1080 ? 1920 : 1280;
-  const vf = `scale=${width}:${height}:force_original_aspect_ratio=decrease:flags=lanczos:out_range=tv:out_color_matrix=bt709,`
+  const vf = `scale=${width}:${height}:force_original_aspect_ratio=decrease:force_divisible_by=2:flags=lanczos:out_range=tv:out_color_matrix=bt709,`
     + `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30,format=yuv420p`;
   return ['-hide_banner', '-y', '-i', input, '-vf', vf,
     '-c:v', 'libx264', '-profile:v', 'high', '-level:v', '4.0', '-pix_fmt', 'yuv420p', '-color_range', 'tv',
@@ -55,8 +55,10 @@ export async function convertWithFfmpeg(file, limitBytes, onRatio, onPhase) {
     const duration = d ? Number(d[1]) * 3600 + Number(d[2]) * 60 + Number(d[3]) : 0;
     const size = /Video: [^\n]*?(\d{3,5})x(\d{3,5})/.exec(text);
     if (!size) throw new Error('영상 정보를 읽지 못했습니다. 파일이 손상되지 않았는지 확인해 주세요.');
-    // 1080p(Level 4.0)로 먼저 만들고, 45MB를 넘으면 720p(Level 4.0)로 다시 만든다
-    const attempts = [[1080, 28], [720, 28], [720, 31]];
+    // 1080p(Level 4.0)로 먼저 만들고, 45MB를 넘으면 720p(Level 4.0)로 다시 만든다.
+    // 원본이 720p 이하면 1080p로 키우지 않는다(화질 이득 없이 시간·용량만 늘어남).
+    const sourceHeight = Number(size[2]);
+    const attempts = sourceHeight > 720 ? [[1080, 28], [720, 28], [720, 31]] : [[720, 28], [720, 31]];
     ffmpeg.on('progress', onProgress);
     let last = null;
     for (const [index, [height, crf]] of attempts.entries()) {

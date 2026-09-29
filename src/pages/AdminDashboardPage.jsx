@@ -36,7 +36,7 @@ function LectureVideoNotice({ action }) {
     <div style={{ padding: '10px 14px', backgroundColor: 'rgba(59, 90, 68, 0.08)', borderRadius: '6px', marginBottom: '12px', fontSize: '12px', color: 'var(--color-sage)', display: 'flex', alignItems: 'flex-start', gap: '8px', lineHeight: 1.6 }}>
       <CheckCircle size={15} style={{ flexShrink: 0, marginTop: '2px' }} />
       <span>
-        <strong>동영상 직접 업로드:</strong> {action} 영상은 모든 기기에서 재생되는 mp4(1080p, 45MB 초과 시 720p)로 자동 변환되며, 변환·업로드는 백그라운드에서 진행됩니다.
+        <strong>동영상 직접 업로드:</strong> {action} 영상은 모든 기기에서 재생되는 mp4(1080p · 원본이 720p 이하이거나 45MB 초과 시 720p)로 자동 변환되며, 변환·업로드는 백그라운드에서 진행됩니다.
         <br />
         AVI 녹화본이나 긴 영상은 PC용 변환 도구로 먼저 변환하면 훨씬 빠릅니다.{' '}
         <a href={VIDEO_TOOL_URL} download style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontWeight: 700, color: 'var(--color-sage)', textDecoration: 'underline' }}>

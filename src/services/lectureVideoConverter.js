@@ -43,7 +43,7 @@ async function inspect(file) {
       && (size === '1920x1080' || size === '1280x720') && !fullRange
       && (!audio || audio.codec === 'aac')
       && file.size <= LECTURE_VIDEO_LIMIT_BYTES && /mp4/i.test(file.type || file.name);
-    return { compatible, duration };
+    return { compatible, duration, height: video.displayHeight };
   } catch (error) {
     if (error instanceof UnsupportedInputFormatError) throw new NeedsFfmpegError('unsupported');
     throw error;
@@ -115,18 +115,19 @@ export async function prepareLectureVideo(file, onProgress) {
     if (error instanceof NeedsFfmpegError) return viaFfmpeg();
     throw error;
   }
-  const { compatible, duration } = info;
+  const { compatible, duration, height: sourceHeight } = info;
   if (compatible) return { file, converted: false, duration, originalMb, resultMb: originalMb };
   if (!supportsBrowserVideoConversion()) return viaFfmpeg();
 
   // 45MB 안에 들어가도록 길이에 맞춰 비트레이트를 정한다(컨테이너 여유분 10% 확보).
   const seconds = Math.max(1, duration);
   const videoBudget = Math.floor((LECTURE_VIDEO_LIMIT_BYTES * 8 * 0.9) / seconds) - AUDIO_BITRATE;
-  // 1080p로 먼저 만들고, 45MB를 넘으면 720p로 다시 만든다
+  // 1080p로 먼저 만들고, 45MB를 넘으면 720p로 다시 만든다. 원본이 720p 이하면 1080p로 키우지 않는다.
   const attempts = [
-    [1080, Math.max(120000, Math.min(videoBudget, TARGET_VIDEO_BITRATE[1080]))],
-    [720, Math.max(60000, Math.min(Math.floor(videoBudget * 0.8), TARGET_VIDEO_BITRATE[720]))]
+    [720, Math.max(60000, Math.min(Math.floor(videoBudget * 0.8), TARGET_VIDEO_BITRATE[720]))],
+    [720, Math.max(60000, Math.floor(videoBudget * 0.6))]
   ];
+  if (!(sourceHeight <= 720)) attempts.unshift([1080, Math.max(120000, Math.min(videoBudget, TARGET_VIDEO_BITRATE[1080]))]);
 
   let last;
   for (const [index, [height, bitrate]] of attempts.entries()) {

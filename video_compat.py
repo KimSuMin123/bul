@@ -25,7 +25,7 @@ ATTEMPTS = [(1080, 28), (720, 28), (720, 31)]
 def build_cmd(ffmpeg, src, dst, height, crf):
     width = 1920 if height == 1080 else 1280
     vf = (
-        f"scale={width}:{height}:force_original_aspect_ratio=decrease:flags=lanczos"
+        f"scale={width}:{height}:force_original_aspect_ratio=decrease:force_divisible_by=2:flags=lanczos"
         f":out_range=tv:out_color_matrix=bt709,"
         f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30,format=yuv420p"
     )
