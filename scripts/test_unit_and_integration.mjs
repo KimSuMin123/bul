@@ -40,15 +40,19 @@ import {
 // 1. UNIT TESTS: certService
 // ==============================================================================
 test('certService - getCourseQualificationDetails (Normal & Custom)', () => {
-  // Level 2 default
-  const qual1 = getCourseQualificationDetails('course-ritual-8-11', '불교의례해설사 I');
+  // 현재 운영 과정 2개(법사·해설사 2급): 강좌 정보 없이도 종목·등급·등록번호가 고정값으로 나온다
+  const qual1 = getCourseQualificationDetails('course_rit_exp_02');
   assert.equal(qual1.certType, '불교의례해설사');
   assert.equal(qual1.certGrade, '2급');
-  assert.match(qual1.regOffice, /문화체육관광부/);
+  assert.match(qual1.regOffice, /문화체육관광부.*제 2026-001836호/);
 
-  // Level 1 deep course
-  const qual2 = getCourseQualificationDetails('course-ritual-12-15', '불교의례해설사 II');
-  assert.equal(qual2.certGrade, '1급');
+  const qual2 = getCourseQualificationDetails('course_rit_02');
+  assert.equal(qual2.certType, '불교의례법사');
+  assert.equal(qual2.certGrade, '2급');
+  assert.match(qual2.customCertRegNo, /제 2026-001837호/);
+
+  // 강좌 ID 없이 제목만으로도 같은 결과
+  assert.equal(getCourseQualificationDetails('', '불교의례해설사 양성 과정 (2급)').certType, '불교의례해설사');
 
   // Custom course configuration
   const customCourse = {
@@ -296,9 +300,11 @@ test('integration - Course lecture chunk grouping (10 lectures per part)', () =>
 });
 
 test('integration - WatchPage expiration date check logic', () => {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // 로컬(한국) 날짜 기준: toISOString()은 UTC라 한국 새벽 0~9시에 하루 전 날짜가 되어 오판한다
+  const localDate = ms => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const todayStr = localDate(Date.now());
+  const yesterday = localDate(Date.now() - 24 * 60 * 60 * 1000);
+  const nextMonth = localDate(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
   const isExpired = (expireAt) => {
     if (!expireAt) return false;

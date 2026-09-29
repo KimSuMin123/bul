@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHandler, digest, syntheticEmail } from '../supabase/functions/lms-auth/handler.js';
 
 function fixture({ users = [], authUsers = [], role = 'student', rate = true, failProfile = false } = {}) {
- const profiles = structuredClone(users), identities = structuredClone(authUsers), calls = [];
+ const profiles = structuredClone(users), identities = structuredClone(authUsers), calls = [], resetFailures = new Map();
  const fakeFetch = async (url, options) => {
   const parsed = new URL(url), path = parsed.pathname, body = options.body ? JSON.parse(options.body) : {};
   calls.push({ path, body, headers: options.headers, method: options.method });
@@ -19,7 +19,18 @@ function fixture({ users = [], authUsers = [], role = 'student', rate = true, fa
    const found=identities.find(u=>u.email===body.email && u.password===body.password);
    return found ? Response.json({ access_token:'valid-token',refresh_token:'valid-refresh',user:{id:found.id} }) : Response.json({}, {status:400});
   }
-  if (path.startsWith('/auth/v1/admin/users/')) return Response.json({success:true});
+  if (path.endsWith('/lms_self_reset_locked')) return Response.json((resetFailures.get(body.p_user_id)?.lockedUntil || 0) > Date.now());
+  if (path.endsWith('/lms_self_reset_fail')) {
+   const entry = resetFailures.get(body.p_user_id) || { failures: 0, lockedUntil: 0 };
+   entry.failures += 1; if (entry.failures >= 5) { entry.lockedUntil = Date.now() + 30 * 60000; entry.failures = 0; }
+   resetFailures.set(body.p_user_id, entry); return Response.json(entry.lockedUntil > Date.now());
+  }
+  if (path.endsWith('/lms_self_reset_clear')) { resetFailures.delete(body.p_user_id); return new Response(null, { status: 204 }); }
+  if (path === '/auth/v1/logout') return new Response(null, { status: 204 });
+  if (path.startsWith('/auth/v1/admin/users/')) {
+   if (options.method === 'PUT') { const u = identities.find(i => path.endsWith(`/${i.id}`)); if (u && body.password) u.password = body.password; }
+   return Response.json({success:true});
+  }
   if (path === '/rest/v1/users') {
    if (parsed.searchParams.has('auth_user_id') && options.method === 'GET') return Response.json([{ id:'actor',auth_user_id:'auth-actor',role }]);
    if (options.method === 'POST') {
@@ -141,4 +152,43 @@ test('login alias preserves canonical Auth identity and legacy reset semantics',
  const old=fixture({users:[{...legacy,login_id:'adsba'}]});
  assert.equal((await old.call({action:'login',id:'adsba',password:legacy.password})).status,200);
  assert.equal(old.identities[0].email,email);
+});
+
+const member = { id:'member1',password:null,name:'홍 길동',birth_date:'1990-05-17',phone:'01011112222',member_no:'M-2',role:'student',auth_user_id:'auth-1' };
+const memberAuth = async () => [{ id:'auth-1', email: await syntheticEmail('member1'), password:'OldPass123!' }];
+test('self-reset changes the password only when id, name and birth date all match, then signs out every device',async()=>{
+ const f=fixture({users:[member],authUsers:await memberAuth()});
+ const ok=await f.call({action:'self-reset',id:'member1',name:'홍길동',birthDate:'1990-05-17',newPassword:'NewPass123!'});
+ assert.equal(ok.status,200); assert.equal(ok.body.success,true);
+ assert.equal(f.identities[0].password,'NewPass123!');
+ const logout=f.calls.find(c=>c.path==='/auth/v1/logout');
+ assert.ok(logout, 'global logout was requested'); assert.equal(logout.headers.Authorization,'Bearer valid-token');
+ assert.ok(f.calls.some(c=>c.path.endsWith('/lms_self_reset_clear')));
+});
+test('self-reset rejects wrong name or birth date with one generic message and never changes the password',async()=>{
+ const f=fixture({users:[member],authUsers:await memberAuth()});
+ for (const body of [{name:'김철수',birthDate:'1990-05-17'},{name:'홍길동',birthDate:'1990-05-18'},{name:'홍길동',birthDate:''}]) {
+  const r=await f.call({action:'self-reset',id:'member1',newPassword:'NewPass123!',...body});
+  assert.equal(r.status,400); assert.equal(r.body.error,'입력하신 아이디, 이름, 생년월일과 일치하는 회원 정보가 없습니다.');
+ }
+ const unknown=await f.call({action:'self-reset',id:'nobody',name:'홍길동',birthDate:'1990-05-17',newPassword:'NewPass123!'});
+ assert.equal(unknown.status,400); assert.equal(unknown.body.error,'입력하신 아이디, 이름, 생년월일과 일치하는 회원 정보가 없습니다.');
+ assert.equal(f.identities[0].password,'OldPass123!');
+ assert.ok(!f.calls.some(c=>c.method==='PUT'));
+});
+test('self-reset locks the account for 30 minutes after five mismatches, even for the correct answer',async()=>{
+ const f=fixture({users:[member],authUsers:await memberAuth()});
+ for (let i=0;i<5;i++) assert.equal((await f.call({action:'self-reset',id:'member1',name:'틀림',birthDate:'1990-05-17',newPassword:'NewPass123!'})).status,400);
+ const locked=await f.call({action:'self-reset',id:'member1',name:'홍길동',birthDate:'1990-05-17',newPassword:'NewPass123!'});
+ assert.equal(locked.status,429); assert.match(locked.body.error,/30분/);
+ assert.equal(f.identities[0].password,'OldPass123!');
+});
+test('self-reset never changes an administrator password and still enforces the password rule',async()=>{
+ const adminUser={...member,id:'boss',role:'admin',auth_user_id:'auth-9'};
+ const f=fixture({users:[adminUser],authUsers:[{id:'auth-9',email:await syntheticEmail('boss'),password:'AdminPass1!'}]});
+ const r=await f.call({action:'self-reset',id:'boss',name:'홍길동',birthDate:'1990-05-17',newPassword:'NewPass123!'});
+ assert.equal(r.status,403); assert.equal(f.identities[0].password,'AdminPass1!');
+ const g=fixture({users:[member],authUsers:await memberAuth()});
+ const weak=await g.call({action:'self-reset',id:'member1',name:'홍길동',birthDate:'1990-05-17',newPassword:'short'});
+ assert.equal(weak.status,400); assert.equal(g.identities[0].password,'OldPass123!');
 });

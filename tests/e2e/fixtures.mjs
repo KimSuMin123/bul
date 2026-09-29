@@ -50,6 +50,12 @@ export const test = base.extend({
       if (hold) await hold;
 
       if (endpoint === '/functions/v1/lms-auth') {
+        if (body?.action === 'self-reset') {
+          const user = [student, admin].find(item => item.id === body.id);
+          if (!user || user.name !== body.name || user.birthDate !== body.birthDate) return respond({ error: '입력하신 아이디, 이름, 생년월일과 일치하는 회원 정보가 없습니다.' }, 400);
+          if (user.role === 'admin') return respond({ error: '관리자 계정은 이 방법으로 변경할 수 없습니다.' }, 403);
+          return respond({ success: true });
+        }
         if (body?.action === 'login') {
           const user = [student, admin].find(item => item.id === body.id);
           if (!user || body.password !== 'FixtureOnly123!') return respond({ message: '아이디 또는 비밀번호가 일치하지 않습니다.' }, 401);

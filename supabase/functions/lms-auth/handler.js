@@ -63,7 +63,7 @@ export function createHandler({ url, serviceKey, anonKey, allowedOrigins = [], f
       let body;
       try { body = JSON.parse(text); } catch { throw new HttpError(400, '잘못된 요청입니다.'); }
       const action = body?.action;
-      const supported = ['login','register','admin-register','admin-reset','admin-delete','availability'];
+      const supported = ['login','register','admin-register','admin-reset','admin-delete','availability','self-reset'];
       if (!supported.includes(action)) throw new HttpError(400, '지원하지 않는 요청입니다. 비밀번호 재설정은 관리자에게 문의해 주세요.');
       const actor = action.startsWith('admin-') ? await admin(req) : null;
       const id = String(body.id || body.userId || '').trim().toLowerCase();
@@ -115,6 +115,32 @@ export function createHandler({ url, serviceKey, anonKey, allowedOrigins = [], f
         return respond({ success: true });
       }
       if (password.length < 8 || password.length > 128 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) throw new HttpError(400, '비밀번호는 영문, 숫자, 기호를 포함한 8~128자로 입력해 주세요.');
+      if (action === 'self-reset') {
+        // 비밀번호 셀프 재설정: 아이디·이름·생년월일이 모두 맞아야 한다. 계정별 5회 실패 시 30분 잠금, 관리자 제외.
+        const mismatch = new HttpError(400, '입력하신 아이디, 이름, 생년월일과 일치하는 회원 정보가 없습니다.');
+        if (!existing) throw mismatch;
+        if (await api('/rest/v1/rpc/lms_self_reset_locked', { method: 'POST', body: { p_user_id: existing.id } })) {
+          throw new HttpError(429, '정보가 5회 이상 일치하지 않아 30분 동안 재설정이 제한됩니다. 잠시 후 다시 시도하거나 교학처에 문의해 주세요.');
+        }
+        const sameName = String(body.name || '').replace(/\s+/g, '') === String(existing.name || '').replace(/\s+/g, '');
+        const sameBirth = String(body.birthDate || '') === String(existing.birth_date || '').slice(0, 10);
+        if (!sameName || !sameBirth) {
+          await api('/rest/v1/rpc/lms_self_reset_fail', { method: 'POST', body: { p_user_id: existing.id } });
+          throw mismatch;
+        }
+        if (existing.role === 'admin') throw new HttpError(403, '관리자 계정은 이 방법으로 변경할 수 없습니다.');
+        let authId = existing.auth_user_id;
+        if (authId) await api(`/auth/v1/admin/users/${authId}`, { method: 'PUT', body: { password } });
+        else authId = (await createAuth(existing.id, password)).id;
+        await api(`/rest/v1/users?id=eq.${encodeURIComponent(existing.id)}`, { method: 'PATCH', body: { auth_user_id: authId, password: null } });
+        await api('/rest/v1/rpc/lms_self_reset_clear', { method: 'POST', body: { p_user_id: existing.id } });
+        // 모든 기기 로그인 종료: 새 비밀번호로 받은 세션으로 전체 로그아웃(실패해도 변경은 유지)
+        try {
+          const session = await signIn(existing.id, password);
+          await api('/auth/v1/logout?scope=global', { method: 'POST', token: session.access_token });
+        } catch { /* 비밀번호 변경은 이미 완료됨 */ }
+        return respond({ success: true });
+      }
       if (action === 'admin-reset') {
         if (!existing) throw new HttpError(404, '회원을 찾을 수 없습니다.');
         let authId = existing.auth_user_id;

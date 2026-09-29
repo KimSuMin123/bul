@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useModalAlert } from '../context/ModalAlertContext';
+import ResetPasswordModal from '../components/auth/ResetPasswordModal';
 
 export default function LoginPage({ onNavigate }) {
   const { login, currentUser } = useAuth();
@@ -12,6 +13,7 @@ export default function LoginPage({ onNavigate }) {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginTargetUserId, setLoginTargetUserId] = useState(null);
+  const [showReset, setShowReset] = useState(false);
 
   // Route only after the verified identity has reached the rendered auth state.
   useEffect(() => {
@@ -101,7 +103,7 @@ export default function LoginPage({ onNavigate }) {
                   type="button"
                   className="btn-ghost"
                   style={{ fontSize: '12px', color: 'var(--color-sage)', padding: 0 }}
-                  onClick={() => showAlert('비밀번호를 잊으셨다면 교학처(010-4702-0283)로 문의해 주세요.\n\n교학처에서 본인 확인을 마친 뒤 관리자가 비밀번호를 초기화해 드립니다.', { type: 'info', title: '비밀번호 재설정 안내' })}
+                  onClick={() => setShowReset(true)}
                 >
                   비밀번호 찾기
                 </button>
@@ -141,6 +143,18 @@ export default function LoginPage({ onNavigate }) {
 
       </div>
 
+      {showReset && (
+        <ResetPasswordModal
+          initialId={id}
+          onClose={() => setShowReset(false)}
+          onReset={resetId => {
+            setShowReset(false);
+            setId(resetId);
+            setPassword('');
+            showAlert('비밀번호가 재설정되었습니다. 새 비밀번호로 로그인해 주세요.', { type: 'success', title: '비밀번호 재설정 완료' });
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { removeStored, STORAGE_KEYS, initStorage } from '../services/storage';
 import { remoteDb } from '../services/apiClient';
-import { changeOwnPassword, clearAuthSession, getAuthSession, revokeOtherSessions, signOutSession } from '../services/authSession';
+import { callAuthAction, changeOwnPassword, clearAuthSession, getAuthSession, revokeOtherSessions, signOutSession } from '../services/authSession';
 import { PRIVACY_POLICY_VERSION } from '../config/sitePolicy.js';
 
 const AuthContext = createContext(null);
@@ -126,7 +126,14 @@ export function AuthProvider({ children }) {
     await remoteDb.updateUserPassword(userId, password);
     return true;
   };
-  const resetPassword = async () => { throw new Error('교학처에 본인 확인 후 비밀번호 초기화를 요청해 주세요.'); };
+  // 비밀번호를 잊은 회원의 셀프 재설정(아이디·이름·생년월일 확인은 서버에서, 5회 실패 시 30분 잠금)
+  const resetPassword = async ({ id, name, birthDate, newPassword }) => {
+    if (!id?.trim() || !name?.trim() || !birthDate) throw new Error('아이디, 이름, 생년월일을 모두 입력해 주세요.');
+    const ruleError = passwordRuleError(newPassword);
+    if (ruleError) throw new Error(ruleError);
+    await callAuthAction('self-reset', { id: id.trim(), name: name.trim(), birthDate, newPassword });
+    return true;
+  };
 
   return <AuthContext.Provider value={{ currentUser, users, loading, error, sessionConflict,
     clearConflictAlert: () => setSessionConflict(false), refreshUsers, login, logout, register,

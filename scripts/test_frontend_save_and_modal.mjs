@@ -418,11 +418,17 @@ test('QA shared lock prevents simultaneous mutations', async () => {
   assert.equal(ctx.qaBusyRef.current, false);
 });
 
-test('login has no unauthenticated password reset operation', () => {
-  const source = readFileSync(new URL('../src/pages/LoginPage.jsx', import.meta.url), 'utf8');
-  assert.doesNotMatch(source, /resetPassword|handleResetPassword|forgotPhone|newPassword/);
-  assert.match(source, /교학처에서 본인 확인/);
-  assert.doesNotMatch(source, /\?{3,}/);
+test('unauthenticated password reset only goes through the server identity check (id, name, birth date)', () => {
+  const login = readFileSync(new URL('../src/pages/LoginPage.jsx', import.meta.url), 'utf8');
+  const modal = readFileSync(new URL('../src/components/auth/ResetPasswordModal.jsx', import.meta.url), 'utf8');
+  const auth = readFileSync(new URL('../src/context/AuthContext.jsx', import.meta.url), 'utf8');
+  // 로그인 화면은 재설정 창만 연다(비밀번호를 직접 쓰거나 전화번호로 찾지 않음)
+  assert.match(login, /ResetPasswordModal/);
+  assert.doesNotMatch(login, /handleResetPassword|forgotPhone/);
+  // 재설정은 서버의 self-reset(아이디·이름·생년월일 확인, 잠금)으로만 한다
+  assert.match(auth, /callAuthAction\('self-reset', \{ id: id\.trim\(\), name: name\.trim\(\), birthDate, newPassword \}\)/);
+  assert.match(modal, /교학처\(010-4702-0283\)/);
+  assert.doesNotMatch(login + modal, /\?{3,}/);
 });
 
 test('login waits for committed auth state before navigating', async () => {
