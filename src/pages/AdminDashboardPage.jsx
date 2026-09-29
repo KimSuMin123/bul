@@ -13,6 +13,7 @@ import { useAuth } from '../context/AuthContext';
 import { uploadLectureVideo, extractVideoMetadata, isStorageConfigured, uploadThumbnailImage, getLectureVideoUrl } from '../services/apiClient';
 import { parseExamText } from '../services/examService';
 import CertificateModal from '../components/certificate/CertificateModal';
+import { enrichCertificate } from '../services/certService';
 import { useModalAlert } from '../context/ModalAlertContext';
 import {
   getNotificationPermission,
@@ -3767,7 +3768,8 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       </td>
                       <td style={{ padding: '12px 14px' }}>
                         <span className="badge badge-amber" style={{ fontSize: '11px', fontWeight: 700 }}>
-                          {cert.certTypeFull || cert.certType || (cert.courseId === 'course-ritual-12-15' ? '불교의례법사 1급' : '불교의례법사 2급')}
+                          {/* DB 원본 행에는 종목 정보가 없으므로 강좌 설정을 합쳐 표시 (해설사 자격증이 법사로 보이던 문제) */}
+                          {enrichCertificate(cert, courses.find(c => c.id === cert.courseId)).certTypeFull}
                         </span>
                       </td>
                       <td style={{ padding: '12px 14px', fontWeight: 600 }}>
