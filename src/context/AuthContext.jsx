@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { removeStored, STORAGE_KEYS, initStorage } from '../services/storage';
 import { remoteDb } from '../services/apiClient';
-import { clearAuthSession, getAuthSession, signOutSession } from '../services/authSession';
+import { clearAuthSession, getAuthSession, revokeOtherSessions, signOutSession } from '../services/authSession';
 import { PRIVACY_POLICY_VERSION } from '../config/sitePolicy.js';
 
 const AuthContext = createContext(null);
@@ -39,12 +39,19 @@ export function AuthProvider({ children }) {
         setError('로그인 세션을 확인하지 못했습니다. 다시 로그인해 주세요.');
       }
     }).finally(() => { if (version === authVersion.current) setLoading(false); });
-    const expired = () => {
+    const expired = event => {
+      // 수강생이 사용 중에 로그인 연장을 거절당하면 다른 기기 로그인으로 끊긴 것(1인 1기기)
+      const replaced = event?.detail?.reason === 'refresh' && userRef.current && userRef.current.role !== 'admin';
       authVersion.current++;
       setCurrentUser(null);
       setUsers([]);
       setLoading(false);
-      setError('로그인이 만료되었습니다. 다시 로그인해 주세요.');
+      if (replaced) {
+        setSessionConflict(true);
+        setError(null);
+      } else {
+        setError('로그인이 만료되었습니다. 다시 로그인해 주세요.');
+      }
     };
     window.addEventListener('buddha_auth_expired', expired);
     return () => { authVersion.current++; window.removeEventListener('buddha_auth_expired', expired); };
@@ -61,6 +68,8 @@ export function AuthProvider({ children }) {
     if (version !== authVersion.current) return null;
     setCurrentUser({ ...user, activeSessionToken: getAuthSession()?.access_token });
     setSessionConflict(false);
+    // 1인 1기기(관리자 제외): 다른 기기 로그인을 끊는다. 실패해도 이 기기의 로그인은 유지한다.
+    if (user.role !== 'admin') void revokeOtherSessions().catch(() => {});
     setError(null);
     setLoading(false);
     return user;

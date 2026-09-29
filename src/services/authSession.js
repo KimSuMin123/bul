@@ -62,7 +62,8 @@ export async function getAccessToken() {
       .catch(error => {
         if (generation === started && (error.status === 400 || error.status === 401)) {
           clearAuthSession();
-          globalThis.window?.dispatchEvent(new Event('buddha_auth_expired'));
+          // 로그인 연장 거절: 다른 기기 로그인으로 끊겼거나 서버에서 세션이 무효화된 경우
+          globalThis.window?.dispatchEvent(new CustomEvent('buddha_auth_expired', { detail: { reason: 'refresh' } }));
         }
         throw error;
       }).finally(() => { refreshing = null; });
@@ -72,6 +73,12 @@ export async function getAccessToken() {
 
 export async function callAuthAction(action, fields = {}, authenticated = false) {
   return authRequest('/functions/v1/lms-auth', { action, ...fields }, authenticated ? await getAccessToken() : key);
+}
+
+// 1인 1기기: 방금 로그인한 기기만 남기고 같은 계정의 다른 기기 로그인을 끊는다.
+// 끊긴 기기는 다음 로그인 연장(최대 1시간 이내) 때 거절되어 중복 로그인 안내 후 로그아웃된다.
+export async function revokeOtherSessions() {
+  await authRequest('/auth/v1/logout?scope=others', undefined, await getAccessToken());
 }
 
 export async function signOutSession() {

@@ -61,6 +61,8 @@ export const test = base.extend({
         if (!backend.sessionValid || !backend.sessionUser) return respond({ message: 'Expired session' }, 401);
         return respond({ access_token: `fixture-token-${backend.sessionUser.id}`, refresh_token: `fixture-refresh-${backend.sessionUser.id}`, expires_at: Math.floor(Date.now() / 1000) + 3600 });
       }
+      // scope=others only signs out the account's other devices; this device stays signed in
+      if (endpoint === '/auth/v1/logout' && url.searchParams.get('scope') === 'others') return route.fulfill({ status: 204, body: '' });
       if (endpoint === '/auth/v1/logout') { backend.sessionUser = null; return respond({}); }
       if (endpoint === '/rest/v1/rpc/current_lms_user') {
         if (!backend.sessionValid || !backend.sessionUser || !call.authorization?.startsWith('Bearer fixture-token-')) return respond({ message: 'Unauthorized' }, 401);

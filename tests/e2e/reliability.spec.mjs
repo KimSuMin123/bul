@@ -17,7 +17,8 @@ test('student login uses a bearer session; refresh validates it and logout clear
   await page.getByRole('button', { name: '로그아웃', exact: true }).click();
   await page.goto('/#dashboard');
   await expect(page.getByRole('heading', { name: '로그인이 필요합니다' })).toBeVisible();
-  await expect.poll(() => writes(backend, '/auth/v1/logout').length).toBe(1);
+  // Only this device's logout (the login's scope=others sign-out of other devices is separate)
+  await expect.poll(() => writes(backend, '/auth/v1/logout').filter(call => !call.query.includes('scope=others')).length).toBe(1);
 });
 
 test('forged cached admin identity cannot open the admin screen', async ({ page, backend }) => {

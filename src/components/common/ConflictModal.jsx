@@ -41,7 +41,7 @@ export default function ConflictModal() {
         <button 
           className="btn btn-primary" 
           style={{ width: '100%', padding: '12px' }}
-          onClick={clearConflictAlert}
+          onClick={() => { clearConflictAlert(); window.location.hash = 'login'; }}
         >
           <LogIn size={16} />
           <span>다시 로그인하기</span>
