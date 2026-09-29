@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
+import LectureUploadPanel from './components/admin/LectureUploadPanel';
 import ConflictModal from './components/common/ConflictModal';
 import PageLoadingIndicator from './components/common/PageLoadingIndicator';
 
@@ -266,6 +267,9 @@ export default function App() {
 
         {/* Concurrent Login Session Conflict Modal */}
         <ConflictModal />
+
+        {/* 관리자 강의 영상 백그라운드 처리 현황 (처리 중인 영상이 있을 때만 표시) */}
+        <LectureUploadPanel />
       </div>
     </ErrorBoundary>
   );

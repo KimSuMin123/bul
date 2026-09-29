@@ -14,6 +14,7 @@ import { uploadLectureVideo, extractVideoMetadata, isStorageConfigured, uploadTh
 import { parseExamText } from '../services/examService';
 import CertificateModal from '../components/certificate/CertificateModal';
 import { enrichCertificate } from '../services/certService';
+import { enqueueLectureUpload } from '../services/lectureUploadQueue';
 import { useModalAlert } from '../context/ModalAlertContext';
 import {
   getNotificationPermission,
@@ -756,35 +757,30 @@ export default function AdminDashboardPage() {
       }
 
       try {
-        setIsReplacing(true);
         setReplaceErrorMsg('');
         setReplaceSuccessMsg('');
-
         const meta = await extractVideoMetadata(replaceVideoFile);
-        const result = await uploadLectureVideo(replaceVideoFile, (prog) => {
-          setReplaceProgress(prog);
+        const lecture = replaceModalLec;
+        // 변환(필요 시)·업로드·교체는 왼쪽 아래 '영상 처리' 패널에서 백그라운드로 진행
+        enqueueLectureUpload({
+          file: replaceVideoFile,
+          label: `영상 교체 · ${lecture.title}`,
+          apply: result => updateLecture(lecture.id, {
+            videoUrl: result.publicUrl,
+            durationSeconds: meta.duration || lecture.durationSeconds
+          }),
+          onDone: message => showAlert(message, { type: 'success', title: '영상 교체 완료' }),
+          onError: message => showAlert(message, { type: 'error', title: '영상 교체 실패' })
         });
-
-        await updateLecture(replaceModalLec.id, {
-          videoUrl: result.publicUrl,
-          durationSeconds: meta.duration || replaceModalLec.durationSeconds
-        });
-
-        const compText = result.compressedMb ? ` (${result.originalMb}MB ➔ ${result.compressedMb}MB 압축)` : '';
-        setReplaceSuccessMsg(`동영상 업로드와 차시 영상 교체가 완료되었습니다.${compText}`);
-
-
-        setTimeout(() => {
-          setReplaceModalLec(null);
-          setReplaceVideoFile(null);
-          setReplaceVideoPreviewUrl('');
-          setReplaceProgress(null);
-          setIsReplacing(false);
-        }, 1400);
-      } catch (err) {
+        setReplaceModalLec(null);
+        setReplaceVideoFile(null);
+        setReplaceVideoPreviewUrl('');
+        setReplaceProgress(null);
         setIsReplacing(false);
-        setReplaceErrorMsg(`업로드 실패: ${err.message}`);
-        showAlert(`동영상 업로드 실패: ${err.message}`, { type: 'error', title: '업로드 오류' });
+        showAlert('영상 교체를 시작했습니다. 왼쪽 아래 [영상 처리] 창에서 진행 상황을 볼 수 있으며, 다른 작업을 계속하셔도 됩니다.\n\n처리가 끝날 때까지 이 탭은 닫지 마세요.', { type: 'info', title: '백그라운드 처리 시작' });
+      } catch (err) {
+        setReplaceErrorMsg(`영상 확인 실패: ${err.message}`);
+        showAlert(`영상 정보를 읽지 못했습니다: ${err.message}`, { type: 'error', title: '영상 확인 오류' });
       }
     });
   };
@@ -1534,27 +1530,31 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
         }
 
         if (newVideoFile) {
-          try {
-            setIsUploading(true);
-            setUploadErrorMsg('');
-            setUploadSuccessMsg('');
-
-            const result = await uploadLectureVideo(newVideoFile, (prog) => {
-              setUploadProgress(prog);
-            });
-            finalVideoUrl = result.publicUrl;
-            setLecForm(prev => ({ ...prev, videoUrl: result.publicUrl }));
-            setNewVideoFile(null);
-            const compText = result.compressedMb ? ` (${result.originalMb}MB ➔ ${result.compressedMb}MB 압축 완료)` : '';
-            setUploadSuccessMsg(`영상 업로드가 완료되었습니다. 차시 정보를 저장하고 있습니다.${compText}`);
-          } catch (err) {
-            setIsUploading(false);
-            setUploadErrorMsg(`업로드 오류: ${err.message}`);
-            showAlert(`서버 업로드 오류: ${err.message}`, { type: 'error', title: '업로드 오류' });
-            return;
-          } finally {
-            setIsUploading(false);
-          }
+          // 변환(필요 시)·업로드·차시 등록은 왼쪽 아래 '영상 처리' 패널에서 백그라운드로 진행
+          const form = { ...lecForm };
+          enqueueLectureUpload({
+            file: newVideoFile,
+            label: `신규 차시 · ${form.title}`,
+            apply: result => addLecture({
+              courseId: form.courseId,
+              orderIndex: Number(form.orderIndex),
+              title: form.title,
+              description: form.description,
+              durationSeconds: Number(form.durationSeconds),
+              videoUrl: result.publicUrl,
+              attachments: form.attachmentName ? [{ name: form.attachmentName, size: '2.5 MB' }] : []
+            }),
+            onDone: message => showAlert(message, { type: 'success', title: '차시 등록 완료' }),
+            onError: message => showAlert(message, { type: 'error', title: '차시 등록 실패' })
+          });
+          setShowNewLecModal(false);
+          setNewVideoFile(null);
+          setNewVideoPreviewUrl('');
+          setUploadProgress(null);
+          setUploadSuccessMsg('');
+          setUploadErrorMsg('');
+          showAlert(`[${form.title}] 차시 등록을 시작했습니다. 영상 변환·업로드가 끝나면 자동으로 등록됩니다.\n왼쪽 아래 [영상 처리] 창에서 진행 상황을 볼 수 있으며, 다른 작업을 계속하셔도 됩니다.\n\n처리가 끝날 때까지 이 탭은 닫지 마세요.`, { type: 'info', title: '백그라운드 처리 시작' });
+          return;
         }
       } else {
         if (!finalVideoUrl.trim()) {
@@ -4806,12 +4806,12 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                               <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <Loader2 size={15} className="spin" style={{ color: 'var(--color-sage)' }} />
                                 {uploadProgress.step === 'processing'
-                                  ? '동영상 처리 중...'
+                                  ? '모든 기기 호환 형식으로 자동 변환 중...'
                                   : '서버로 영상 원본 파일 전송 중...'}
                               </span>
                               <span style={{ fontWeight: 700, color: 'var(--color-sage)', fontSize: '12px' }}>
                                 {uploadProgress.step === 'processing'
-                                  ? `최적화 중 (${uploadProgress.compressSec || 0}초 경과)`
+                                  ? `자동 변환 ${uploadProgress.percent || 0}% (${uploadProgress.compressSec || 0}초 경과)`
                                   : `${uploadProgress.percent}% (${uploadProgress.speed})`}
                               </span>
                             </div>
@@ -4829,12 +4829,12 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                             <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
                               <span>
                                 {uploadProgress.step === 'processing'
-                                  ? '동영상 처리를 마친 뒤 업로드합니다'
+                                  ? '변환이 끝나면 자동으로 업로드합니다'
                                   : '클라우드 저장소 업로드를 준비하고 있습니다'}
                               </span>
                               <span>
                                 {uploadProgress.step === 'processing'
-                                  ? '창을 닫지 마세요'
+                                  ? '이 창과 탭을 닫지 마세요'
                                   : `${(uploadProgress.loaded / (1024 * 1024)).toFixed(1)} MB / ${(uploadProgress.total / (1024 * 1024)).toFixed(1)} MB`}
                               </span>
                             </div>
@@ -4922,14 +4922,14 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       <Loader2 size={16} className="spin" />
                       <span>
                         {uploadProgress?.step === 'processing'
-                          ? `동영상 처리 중 (${uploadProgress?.compressSec || 0}초 경과)...`
+                          ? `자동 변환 중 ${uploadProgress?.percent || 0}% (${uploadProgress?.compressSec || 0}초 경과)...`
                           : `서버로 업로드 등록 중... (${uploadProgress?.percent || 0}%)`}
                       </span>
                     </>
                   ) : (
                     <>
                       <UploadCloud size={16} />
-                      <span>프라이빗 서버로 업로드 및 차시 등록 완료</span>
+                      <span>차시 등록 시작 (영상은 백그라운드 처리)</span>
                     </>
                   )}
                 </button>
@@ -5060,12 +5060,12 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Loader2 size={15} className="spin" style={{ color: 'var(--color-sage)' }} />
                           {replaceProgress.step === 'processing'
-                            ? '동영상 처리 중...'
+                            ? '모든 기기 호환 형식으로 자동 변환 중...'
                             : '서버로 영상 원본 파일 전송 중...'}
                         </span>
                         <span style={{ fontWeight: 700, color: 'var(--color-sage)', fontSize: '12px' }}>
                           {replaceProgress.step === 'processing'
-                            ? `최적화 중 (${replaceProgress.compressSec || 0}초 경과)`
+                            ? `자동 변환 ${replaceProgress.percent || 0}% (${replaceProgress.compressSec || 0}초 경과)`
                             : `${replaceProgress.percent}% (${replaceProgress.speed})`}
                         </span>
                       </div>
@@ -5083,12 +5083,12 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
                         <span>
                           {replaceProgress.step === 'processing'
-                            ? '동영상 처리를 마친 뒤 업로드합니다'
+                            ? '변환이 끝나면 자동으로 업로드합니다'
                             : '클라우드 저장소 업로드를 준비하고 있습니다'}
                         </span>
                         <span>
                           {replaceProgress.step === 'processing'
-                            ? '창을 닫지 마세요'
+                            ? '이 창과 탭을 닫지 마세요'
                             : `${(replaceProgress.loaded / (1024 * 1024)).toFixed(1)} MB / ${(replaceProgress.total / (1024 * 1024)).toFixed(1)} MB`}
                         </span>
                       </div>
@@ -5132,14 +5132,14 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       <Loader2 size={15} className="spin" />
                       <span>
                         {replaceProgress?.step === 'processing'
-                          ? `동영상 처리 중 (${replaceProgress?.compressSec || 0}초 경과)...`
+                          ? `자동 변환 중 ${replaceProgress?.percent || 0}% (${replaceProgress?.compressSec || 0}초 경과)...`
                           : `서버로 업로드 중 (${replaceProgress?.percent || 0}%)...`}
                       </span>
                     </>
                   ) : (
                     <>
                       <UploadCloud size={15} />
-                      <span>서버로 업로드 및 교체 완료</span>
+                      <span>영상 교체 시작 (백그라운드 처리)</span>
                     </>
                   )}
                 </button>

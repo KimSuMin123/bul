@@ -42,13 +42,37 @@ def build_cmd(ffmpeg, src, dst, height, crf):
     ]
 
 
-def encode_under_limit(ffmpeg, src, dst, limit_mb=SIZE_LIMIT_MB, log=print):
-    """원본을 호환 형식으로 인코딩하고 limit_mb 이하가 되는 첫 결과를 dst에 남긴다. (크기MB, 높이) 반환."""
+def media_duration(ffmpeg, src):
+    """원본 길이(초). 알 수 없으면 0."""
+    info = subprocess.run([ffmpeg, "-hide_banner", "-i", str(src)], capture_output=True,
+                          text=True, encoding="utf-8", errors="replace").stderr
+    m = re.search(r"Duration: (\d+):(\d+):([\d.]+)", info)
+    return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3)) if m else 0.0
+
+
+def run_with_progress(cmd, duration, on_progress=None):
+    """ffmpeg를 실행하며 진행률(0~100)을 on_progress로 알린다."""
+    cmd = cmd[:-1] + ["-progress", "pipe:1", "-nostats", cmd[-1]]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    for line in proc.stdout:
+        if on_progress and duration and line.startswith("out_time_us="):
+            try:
+                on_progress(min(99.9, int(line.split("=", 1)[1]) / 1e6 / duration * 100))
+            except ValueError:
+                pass
+    if proc.wait() != 0:
+        raise subprocess.CalledProcessError(proc.returncode, cmd)
+
+
+def encode_under_limit(ffmpeg, src, dst, limit_mb=SIZE_LIMIT_MB, log=print, on_progress=None):
+    """원본을 호환 형식으로 인코딩하고 limit_mb 이하가 되는 첫 결과를 dst에 남긴다. (크기MB, 높이) 반환.
+    on_progress(퍼센트, 높이) 가 있으면 인코딩 진행률을 알린다."""
     src, dst = Path(src), Path(dst)
     tmp = dst.with_name(f"temp_{dst.name}")
+    duration = media_duration(ffmpeg, src)
     for height, crf in ATTEMPTS:
-        subprocess.run(build_cmd(ffmpeg, src, tmp, height, crf), check=True,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        run_with_progress(build_cmd(ffmpeg, src, tmp, height, crf), duration,
+                          (lambda pct, h=height: on_progress(pct, h)) if on_progress else None)
         size_mb = os.path.getsize(tmp) / (1024 * 1024)
         if size_mb <= limit_mb or (height, crf) == ATTEMPTS[-1]:
             if dst.exists():

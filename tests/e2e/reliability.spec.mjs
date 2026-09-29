@@ -181,6 +181,7 @@ test('exam renders server-issued questions and sends only attempt id and answers
 });
 
 test('configured direct video upload uses authenticated storage without a development-only API', async ({ page, backend }) => {
+  test.setTimeout(180000); // the video is converted in the browser before upload
   await login(page, admin.id);
   await page.getByRole('button', { name: '+ 신규 VOD 차시 등록', exact: true }).click();
   const modal = page.locator('.modal-card').filter({ hasText: '신규 VOD 차시 등록 (CMS)' });
@@ -188,8 +189,10 @@ test('configured direct video upload uses authenticated storage without a develo
   await modal.getByPlaceholder('예: 4강. 보살행과 일상 속 자비 실천').fill('업로드 경로 검증');
   // This original 64x64 WebM is decoded by the real HTMLVideoElement metadata path.
   await modal.locator('input[type="file"]').setInputFiles(videoFixture);
-  await modal.getByRole('button', { name: '프라이빗 서버로 업로드 및 차시 등록 완료', exact: true }).click();
-  await expect(page.getByRole('dialog')).toContainText('차시 등록 완료');
+  await modal.getByRole('button', { name: '차시 등록 시작 (영상은 백그라운드 처리)', exact: true }).click();
+  await expect(page.getByRole('dialog')).toContainText('백그라운드 처리 시작');
+  await page.getByRole('dialog').getByRole('button', { name: '확인', exact: true }).click();
+  await expect(page.getByRole('dialog')).toContainText('차시 등록 완료', { timeout: 120000 });
   const uploads = backend.requests.filter(call => call.method === 'POST' && call.endpoint.startsWith('/storage/v1/object/'));
   expect(uploads).toHaveLength(1);
   expect(uploads[0].authorization).toBe(`Bearer fixture-token-${admin.id}`);
