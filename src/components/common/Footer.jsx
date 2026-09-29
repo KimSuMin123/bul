@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Mail, MapPin, Clock, ExternalLink } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, ExternalLink, FileText } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -138,6 +138,16 @@ export default function Footer() {
               <li>•   자격증은 내 강의실에서 직접 출력</li>
               <li>•   실물 자격증 발급비 10,000원 (우편 발송)</li>
             </ul>
+            <a
+              href="/terms-of-service.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ marginTop: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '12.5px', fontWeight: 600, color: '#E2E8F0', background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.14)', borderRadius: '6px', textDecoration: 'none' }}
+            >
+              <FileText size={14} color="var(--color-amber)" />
+              <span>온라인 강좌 서비스 이용약관</span>
+              <ExternalLink size={12} style={{ opacity: 0.7 }} />
+            </a>
           </div>
         </div>
 
