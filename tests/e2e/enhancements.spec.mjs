@@ -23,7 +23,7 @@ for (const rate of [79.99, 80, 80.01]) {
     await expect(page.getByRole('button', { name: '잠김', exact: true })).toHaveCount(rate < 80 ? 1 : 0);
     if (rate < 80) {
       await page.getByRole('button', { name: '잠김', exact: true }).click();
-      await expect(page.getByRole('dialog').getByText(/80% 이상/)).toBeVisible();
+      await expect(page.getByRole('dialog')).toContainText('이전 차시(제1강)를 완강하셔야 다음 차시를 수강하실 수 있습니다.');
     }
   });
 }

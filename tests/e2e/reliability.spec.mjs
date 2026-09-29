@@ -262,8 +262,8 @@ test('certificate denial stays an error and never writes a client-generated cert
   backend.db.exam_attempts = [{ id: 'attempt-saved', user_id: student.id, course_id: courseId, score: 100, passed: true, correct_count: 20, total_count: 20, created_at: '2026-09-01' }];
   backend.fail('POST', '/rest/v1/rpc/issue_course_certificate', 403);
   await login(page);
-  await page.getByRole('button', { name: /수료증.*발급|수료증.*출력/ }).first().click();
-  await expect(page.getByRole('dialog')).toContainText('수료증 발급 오류');
+  await page.getByRole('button', { name: /자격증 발급 및 출력/ }).first().click();
+  await expect(page.getByRole('dialog')).toContainText('자격증 발급 오류');
   expect(writes(backend, '/rest/v1/rpc/issue_course_certificate')[0].body).toEqual({ p_course_id: courseId });
   expect(writes(backend, '/rest/v1/certificates')).toHaveLength(0);
   expect(backend.db.certificates).toHaveLength(0);
