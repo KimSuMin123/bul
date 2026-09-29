@@ -34,6 +34,7 @@ test('sequential member and certificate numbers',async t=>{
   ('CERT-10c8935f-4dbb-45a2-a27c-b1ba9b57a12b','dss1475','course_rit_exp_02','BUDDHA-2026-00001','D','1960-11-06','해설사','2026-09-25','2026-09-25','valid'),
   ('CERT-d897c117-2748-4e64-8304-f8d38e430129','dootam','course_rit_02','BUDDHA-2026-00005','M','1955-04-23','법사','2026-09-29','2026-09-29','valid');`);
  await db.exec(await fs.readFile(new URL('../supabase/migrations/202609290001_sequential_numbers.sql',import.meta.url),'utf8'));
+ await db.exec(await fs.readFile(new URL('../supabase/migrations/202609300002_cert_issue_date_kst.sql',import.meta.url),'utf8'));
  const members=async()=>Object.fromEntries((await db.query('SELECT id,member_no FROM users')).rows.map(r=>[r.id,r.member_no]));
  const certs=async()=>Object.fromEntries((await db.query("SELECT user_id||'/'||course_id AS k,cert_no,member_no FROM certificates")).rows.map(r=>[r.k,r]));
 
@@ -65,6 +66,9 @@ test('sequential member and certificate numbers',async t=>{
   assert.equal(first.cert_no,'CERT-LAW-2026-0003');
   assert.equal(again.cert_no,'CERT-LAW-2026-0003','a repeat claim returns the same certificate');
   assert.equal(first.member_no,'BUDDHA-2026-00009');
+  // 발급일은 한국 날짜(서버 UTC 날짜가 아님): 202609300002
+  const kst=(await db.query("SELECT ((now() AT TIME ZONE 'Asia/Seoul')::date)::text AS d")).rows[0].d;
+  assert.equal(String(first.issued_at).slice(0,10),kst,'issued_at is the Korean date');
   assert.equal((await db.query("SELECT last_value FROM lms_private.number_counters WHERE key='cert:LAW:2026'")).rows[0].last_value,3,'no number burned');
  });
 });
