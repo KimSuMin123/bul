@@ -2,13 +2,14 @@ import React, { useState, useMemo, useRef } from 'react';
 import {
   PlayCircle, Clock, Award, CheckCircle2, AlertCircle,
   Calendar, BookOpen, ExternalLink, HelpCircle, ArrowRight,
-  X, MapPin, Phone, CreditCard, Mail
+  X, MapPin, Phone, CreditCard, Mail, KeyRound
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCourse } from '../context/CourseContext';
 import { useModalAlert } from '../context/ModalAlertContext';
 import CertificateModal from '../components/certificate/CertificateModal';
 import CourseExamModal from '../components/exam/CourseExamModal';
+import ChangePasswordModal from '../components/auth/ChangePasswordModal';
 import { APPROVAL_SCHEDULE, CERTIFICATE_PRINT_NOTICE, enrollmentConfirmation } from '../config/sitePolicy.js';
 
 export default function DashboardPage({ onNavigate, onStartLecture }) {
@@ -25,6 +26,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
   const [activeExamCourse, setActiveExamCourse] = useState(null);
   const [showPaymentInfoModal, setShowPaymentInfoModal] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const applyingRef = useRef(false);
 
   // Get current user enrollments
@@ -169,6 +171,10 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
             <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('home')}>
               <BookOpen size={15} />
               <span>전체 강좌 둘러보기</span>
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowPasswordModal(true)}>
+              <KeyRound size={15} />
+              <span>비밀번호 변경</span>
             </button>
           </div>
         </div>
@@ -581,6 +587,16 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
         </div>
 
       </div>
+
+      {showPasswordModal && (
+        <ChangePasswordModal
+          onClose={() => setShowPasswordModal(false)}
+          onChanged={() => {
+            setShowPasswordModal(false);
+            showAlert('비밀번호가 변경되었습니다. 다음 로그인부터 새 비밀번호를 사용해 주세요.', { type: 'success', title: '비밀번호 변경 완료' });
+          }}
+        />
+      )}
 
       {/* Certificate Modal */}
       {activeCert && (

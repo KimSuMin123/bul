@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { removeStored, STORAGE_KEYS, initStorage } from '../services/storage';
 import { remoteDb } from '../services/apiClient';
-import { clearAuthSession, getAuthSession, revokeOtherSessions, signOutSession } from '../services/authSession';
+import { changeOwnPassword, clearAuthSession, getAuthSession, revokeOtherSessions, signOutSession } from '../services/authSession';
 import { PRIVACY_POLICY_VERSION } from '../config/sitePolicy.js';
 
 const AuthContext = createContext(null);
@@ -85,6 +85,19 @@ export function AuthProvider({ children }) {
   };
   const checkIdAvailable = async id => (await remoteDb.checkAvailability({ id: id.trim() })).idAvailable === true;
   const checkPhoneAvailable = async phone => (await remoteDb.checkAvailability({ phone: phone.replace(/[^0-9]/g, '') })).phoneAvailable === true;
+  const passwordRuleError = password => (!password || password.length < 8 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password))
+    ? '비밀번호는 영문, 숫자, 기호를 포함하여 8자 이상이어야 합니다.' : null;
+  const changePassword = async (currentPassword, newPassword) => {
+    if (!currentUser) throw new Error('로그인이 필요합니다.');
+    if (!currentPassword) throw new Error('현재 비밀번호를 입력해 주세요.');
+    const ruleError = passwordRuleError(newPassword);
+    if (ruleError) throw new Error(ruleError);
+    if (newPassword === currentPassword) throw new Error('새 비밀번호가 현재 비밀번호와 같습니다.');
+    await changeOwnPassword(currentUser.loginId || currentUser.id, currentPassword, newPassword);
+    // 1인 1기기(관리자 제외): 비밀번호를 바꾸면 다른 기기 로그인도 끊는다.
+    if (currentUser.role !== 'admin') void revokeOtherSessions().catch(() => {});
+    return true;
+  };
   const validateMember = ({ id, password, name, birthDate, phone, privacyConsent, privacyPolicyVersion }) => {
     if (privacyConsent !== true || privacyPolicyVersion !== PRIVACY_POLICY_VERSION) throw new Error('현재 개인정보 수집·이용 안내를 확인하고 동의해 주세요.');
     if (!id?.trim() || !name?.trim() || !birthDate || !phone?.trim()) throw new Error('회원 정보를 모두 입력해 주세요.');
@@ -118,7 +131,7 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={{ currentUser, users, loading, error, sessionConflict,
     clearConflictAlert: () => setSessionConflict(false), refreshUsers, login, logout, register,
     adminRegisterUser, adminDeleteUser, adminResetPassword, checkIdAvailable, checkPhoneAvailable,
-    resetPassword, isAdmin: currentUser?.role === 'admin' }}>{children}</AuthContext.Provider>;
+    resetPassword, changePassword, isAdmin: currentUser?.role === 'admin' }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

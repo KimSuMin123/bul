@@ -81,6 +81,21 @@ export async function revokeOtherSessions() {
   await authRequest('/auth/v1/logout?scope=others', undefined, await getAccessToken());
 }
 
+// 본인 비밀번호 변경: 현재 비밀번호로 다시 로그인해 본인임을 확인한 뒤, 그 세션으로 Supabase Auth 비밀번호를 바꾼다.
+export async function changeOwnPassword(loginId, currentPassword, newPassword) {
+  let verified;
+  try {
+    verified = await callAuthAction('login', { id: loginId, password: currentPassword });
+  } catch (error) {
+    if (error.status === 401) throw new Error('현재 비밀번호가 일치하지 않습니다.');
+    throw error;
+  }
+  if (!verified?.session?.access_token) throw new Error('본인 확인에 실패했습니다. 다시 시도해 주세요.');
+  await authRequest('/auth/v1/user', { password: newPassword }, verified.session.access_token, 'PUT');
+  // 확인에 쓴 새 세션을 이 기기의 세션으로 이어서 사용한다.
+  setAuthSession(verified.session);
+}
+
 export async function signOutSession() {
   const token = getAuthSession()?.access_token;
   clearAuthSession();
