@@ -16,9 +16,10 @@ export default function CertificateVerifyPage({ onNavigate }) {
     if (e) e.preventDefault();
     const query = searchQuery.trim().toUpperCase();
     if (!query) return;
-    // 발급번호는 'CERT-' + 소문자 UUID 형태로 저장되므로 원격 조회 시 접두어만 대문자로 맞춤
+    // 발급번호는 'CERT-LAW-2026-0001'처럼 대문자로 저장됨. 번호 전환 전의 'CERT-' + 소문자 UUID 형식도 조회되도록 유지
     const compact = searchQuery.replace(/\s+/g, '');
-    const remoteQuery = /^cert-/i.test(compact) ? `CERT-${compact.slice(5).toLowerCase()}` : compact;
+    const isLegacyUuid = /^cert-[0-9a-f]{8}-[0-9a-f]{4}-/i.test(compact);
+    const remoteQuery = isLegacyUuid ? `CERT-${compact.slice(5).toLowerCase()}` : compact.toUpperCase();
 
     setIsSearching(true);
     try {
@@ -89,7 +90,7 @@ export default function CertificateVerifyPage({ onNavigate }) {
                 type="text"
                 className="form-input"
                 style={{ paddingLeft: '40px', fontSize: '15px', textTransform: 'uppercase' }}
-                placeholder="자격증 발급번호 (예: CERT-2026-00088)"
+                placeholder="자격증 발급번호 (예: CERT-LAW-2026-0001)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -99,21 +100,9 @@ export default function CertificateVerifyPage({ onNavigate }) {
             </button>
           </form>
 
-          {/* Sample quick button */}
-          <div style={{ marginTop: '12px', fontSize: '12.5px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>예시 발급번호:</span>
-            <button
-              type="button"
-              className="btn-ghost"
-              style={{ color: 'var(--color-sage)', padding: 0, textDecoration: 'underline', fontSize: '12.5px' }}
-              onClick={() => {
-                setSearchQuery('CERT-2026-00088');
-                setVerifyResult(verifyCertificate('CERT-2026-00088', certificates));
-                setHasSearched(true);
-              }}
-            >
-              CERT-2026-00088 (이보디 수료생)
-            </button>
+          {/* 발급번호 형식 안내 (실제 수료생 번호를 예시로 노출하지 않음) */}
+          <div style={{ marginTop: '12px', fontSize: '12.5px', color: 'var(--color-text-muted)' }}>
+            발급번호 형식: 불교의례법사 <b>CERT-LAW-연도-번호</b> · 불교의례해설사 <b>CERT-EXP-연도-번호</b>
           </div>
         </div>
 

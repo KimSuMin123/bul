@@ -11,7 +11,6 @@ import {
 import { useCourse } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
 import { uploadLectureVideo, extractVideoMetadata, isStorageConfigured, uploadThumbnailImage, getLectureVideoUrl } from '../services/apiClient';
-import { generateMemberNumber } from '../services/certService';
 import { parseExamText } from '../services/examService';
 import CertificateModal from '../components/certificate/CertificateModal';
 import { useModalAlert } from '../context/ModalAlertContext';
@@ -178,7 +177,8 @@ export default function AdminDashboardPage() {
         const course = courses.find(c => c.id === enr.courseId);
         const alreadyExists = certList.some(c => String(c.userId) === String(enr.userId) && String(c.courseId) === String(enr.courseId));
         if (!alreadyExists && user && course) {
-          const autoCertNo = `CERT-${course.id.toUpperCase().replace(/[^A-Z0-9]/g, '')}-${user.memberNo || user.id}`;
+          // 아직 학인이 발급받지 않은 자격증: 번호는 발급 시 DB가 부여하므로 임의 번호를 만들지 않음
+          const autoCertNo = '발급 전 (학인 발급 시 번호 부여)';
           const autoCertRegNo = course.certRegNo || `제 2026-${course.certGrade || '2급'}-${user.memberNo || '00100'} 호`;
           certList.push({
             id: `auto_${enr.id}`,
@@ -825,7 +825,6 @@ export default function AdminDashboardPage() {
   const [isResettingPw, setIsResettingPw] = useState(false);
 
   const handleOpenNewUserModal = () => {
-    const defaultMemberNo = generateMemberNumber();
     const firstCourse = courses[0];
     setNewUserForm({
       name: '',
@@ -835,7 +834,7 @@ export default function AdminDashboardPage() {
       birthDate: '',
       role: 'student',
       password: 'buddha1234!',
-      memberNo: defaultMemberNo,
+      memberNo: '',
       privacyConsent: false,
       assignCourse: true,
       courseId: firstCourse ? firstCourse.id : 'course-ritual-8-11',
@@ -908,7 +907,6 @@ export default function AdminDashboardPage() {
         birthDate: newUserForm.birthDate,
         phone: newUserForm.phone.trim(),
         role: newUserForm.role,
-        memberNo: newUserForm.memberNo.trim(),
         privacyConsent: true,
         privacyPolicyVersion: PRIVACY_POLICY_VERSION
       });
@@ -3951,10 +3949,10 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     <input
                       type="text"
                       className="form-input"
-                      value={newUserForm.memberNo}
-                      onChange={(e) => setNewUserForm({ ...newUserForm, memberNo: e.target.value })}
-                      placeholder="BUDDHA-2026-XXXXX"
-                      style={{ fontFamily: 'monospace' }}
+                      value="등록 시 다음 번호 자동 부여 (BUDDHA-연도-00001)"
+                      readOnly
+                      tabIndex={-1}
+                      style={{ fontFamily: 'monospace', color: 'var(--color-text-muted)', background: '#F8FAFC' }}
                     />
                   </div>
                 </div>

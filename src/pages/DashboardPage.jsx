@@ -575,7 +575,7 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
             </div>
             <div>
               <strong>• 자격증 진위 확인</strong>
-              <p>발급된 자격증의 우측 하단 고유 발급번호(CERT-2026-XXXXX)는 자격증 진위 확인 페이지를 통해 즉시 진위 조회가 가능합니다.</p>
+              <p>발급된 자격증의 우측 하단 고유 발급번호(예: CERT-LAW-2026-0001)는 자격증 진위 확인 페이지를 통해 즉시 진위 조회가 가능합니다.</p>
             </div>
           </div>
         </div>

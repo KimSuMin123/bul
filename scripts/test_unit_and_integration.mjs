@@ -9,8 +9,6 @@ import assert from 'node:assert/strict';
 import {
   getCourseQualificationDetails,
   enrichCertificate,
-  generateCertNumber,
-  generateMemberNumber,
   checkLecturesCompleted,
   verifyCertificate
 } from '../src/services/certService.js';
@@ -81,15 +79,6 @@ test('certService - enrichCertificate edge cases & null safety', () => {
   assert.equal(enriched.certRegNo, '민간자격 등록번호 제 2026- 00183호');
   assert.equal(enrichCertificate({ ...rawCert, certRegNo: '기존 발급번호' }).certRegNo, '기존 발급번호');
   assert.equal(enrichCertificate(rawCert, { id: rawCert.courseId, certType: '시험 종목', certRegNo: '사용자 지정 등록번호' }).certRegNo, '사용자 지정 등록번호');
-});
-
-test('certService - generateCertNumber and generateMemberNumber format', () => {
-  const certNo = generateCertNumber(5);
-  const currentYear = new Date().getFullYear();
-  assert.equal(certNo, `CERT-${currentYear}-0006`);
-
-  const memberNo = generateMemberNumber(42);
-  assert.equal(memberNo, `BUDDHA-${currentYear}-00043`);
 });
 
 test('certService - checkLecturesCompleted logic & empty states', () => {

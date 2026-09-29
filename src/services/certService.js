@@ -116,18 +116,6 @@ export function enrichCertificate(cert, courseObj = null) {
   };
 }
 
-export function generateCertNumber(seqCount = 0) {
-  const currentYear = new Date().getFullYear();
-  const nextSeq = (seqCount || 0) + 1;
-  return `CERT-${currentYear}-${String(nextSeq).padStart(4, '0')}`;
-}
-
-export function generateMemberNumber(seqCount = 0) {
-  const currentYear = new Date().getFullYear();
-  const nextSeq = (seqCount || 30) + 1;
-  return `BUDDHA-${currentYear}-${String(nextSeq).padStart(5, '0')}`;
-}
-
 /**
  * Check if a student has completed all lectures in a course (each lecture >= COURSE_COMPLETE_PROGRESS)
  */
@@ -159,107 +147,6 @@ export function checkCourseCompletion(userId, courseId, courses = [], lectures =
 
   return Boolean(lecturesDone && examPassed);
 }
-
-/**
- * Issue or retrieve existing certificate for user and course (100% Supabase / Pure state)
- */
-export function issueCertificate(user, course, certsList = [], certCount = 0) {
-  // Check if already issued
-  const existing = certsList.find(c => c.userId === user.id && c.courseId === course.id);
-  if (existing) {
-    return enrichCertificate(existing, course);
-  }
-
-  const qual = getCourseQualificationDetails(course.id, course.title, course);
-  const currentYear = new Date().getFullYear();
-  const nextSeq = (certCount || certsList.length || 0) + 1;
-  const seqStr = String(nextSeq).padStart(4, '0');
-  const certNo = `CERT-${currentYear}-${seqStr}`;
-
-  let certRegNo = '';
-  if (qual.customCertRegNo) {
-    certRegNo = qual.customCertRegNo.includes('00')
-      ? qual.customCertRegNo.replace(/(\d{4,5})(?=[^\d]*$)/, seqStr)
-      : (qual.customCertRegNo.includes('호') ? qual.customCertRegNo : `제 ${currentYear}-${qual.customCertRegNo}-${seqStr} 호`);
-  } else {
-    certRegNo = `제 ${currentYear}-${qual.certGradeCode}-${seqStr} 호`;
-  }
-
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}년 ${String(today.getMonth() + 1).padStart(2, '0')}월 ${String(today.getDate()).padStart(2, '0')}일`;
-  const isoDate = today.toISOString().split('T')[0];
-
-  const newCert = {
-    certNo,
-    certRegNo,
-    userId: user.id,
-    courseId: course.id,
-    memberNo: user.memberNo,
-    studentName: user.name,
-    dharmaName: user.dharmaName || '',
-    birthDate: user.birthDate || '1980-01-01',
-    courseTitle: course.title,
-    certType: qual.certType,
-    certGrade: qual.certGrade,
-    certTypeFull: qual.certTypeFull,
-    certEnTitle: qual.certEnTitle,
-    regOffice: qual.regOffice,
-    issuingOrg: '[사] 세화불학원',
-    representative: '이사장',
-    competency: qual.competency,
-    period: `2026년 01월 10일 ~ ${todayStr}`,
-    issuedAt: isoDate,
-    status: 'valid'
-  };
-
-  return newCert;
-}
-
-// Predefined verified demonstration qualifications (e.g. for demo / search)
-const DEMO_CERTIFICATES = [
-  {
-    certNo: 'CERT-2026-0001',
-    certRegNo: '민간자격 등록번호 제 2026- 00183호',
-    userId: 'user-bodhi',
-    courseId: 'course-ritual-8-11',
-    memberNo: 'BUDDHA-2026-00001',
-    studentName: '이보디',
-    birthDate: '1982-05-14',
-    courseTitle: '불교의례법사 과정 I (8강~11강)',
-    certType: '불교의례법사',
-    certGrade: '2급',
-    certTypeFull: '불교의례법사 2급',
-    certEnTitle: 'Buddhist Ritual Interpreter (Level 2)',
-    regOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
-    issuingOrg: '[사] 세화불학원',
-    representative: '이사장',
-    competency: '전통 불교의례(하단시식, 칠칠재 영혼식, 각 칠재의례 및 영반 실수) 해설 및 집행',
-    period: '2026년 01월 10일 ~ 2026년 03월 15일',
-    issuedAt: '2026-03-15',
-    status: 'valid'
-  },
-  {
-    certNo: 'CERT-2026-0002',
-    certRegNo: '민간자격 등록번호 제 2026- 00183호',
-    userId: 'user-wonhyo',
-    courseId: 'course-ritual-12-15',
-    memberNo: 'BUDDHA-2026-00089',
-    studentName: '김원효',
-    birthDate: '1979-11-20',
-    courseTitle: '불교의례법사 과정 II (12강~15강)',
-    certType: '불교의례법사',
-    certGrade: '1급',
-    certTypeFull: '불교의례법사 1급',
-    certEnTitle: 'Buddhist Ritual Interpreter (Level 1)',
-    regOffice: '문화체육관광부 (민간자격 등록번호: 제 2026- 00183호)',
-    issuingOrg: '[사] 세화불학원',
-    representative: '이사장',
-    competency: '심화 불교의례(칠칠재 막재, 포살의식, 생일권공의식, 영산수륙예수 작법) 집행 및 의식 해설/지도',
-    period: '2026년 01월 10일 ~ 2026년 03월 15일',
-    issuedAt: '2026-03-15',
-    status: 'valid'
-  }
-];
 
 /**
  * Public Verification function: exact match on certNo or memberNo
