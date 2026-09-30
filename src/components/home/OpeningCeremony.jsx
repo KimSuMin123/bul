@@ -294,8 +294,9 @@ export default function OpeningCeremony() {
           {/* 꽃비(天雨妙華) - 타종 후 화면 전체에 연꽃잎이 흩날림 */}
           {isCutDone && (
             <div className="flower-rain" aria-hidden="true">
-              {Array.from({ length: 48 }, (_, index) => (
-                <i key={index} style={{ '--p': index, '--x': `${(index * 37) % 100}%`, '--d': `${(index * 53) % 1600}ms` }} />
+              {/* 꽃잎 120장: 100장을 넘으면 같은 자리에 겹치지 않도록 가로 위치를 조금씩 어긋나게 둔다(떨어지는 시간대 0~1.6초는 그대로) */}
+              {Array.from({ length: 120 }, (_, index) => (
+                <i key={index} style={{ '--p': index, '--x': `${((index * 37) % 100) + Math.floor(index / 100) * 0.5}%`, '--d': `${(index * 53) % 1600}ms` }} />
               ))}
             </div>
           )}
@@ -343,7 +344,7 @@ export default function OpeningCeremony() {
 
             {/* Main Title */}
             <h1 className="ceremony-main-title">
-              세화붓다아카데미, 나모붓다야
+              나모붓다야, 세화붓다아카데미
             </h1>
             
 
