@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { BookOpen, Shield, User, LogOut, LogIn, UserPlus, Menu, X, Landmark, ChevronDown, ExternalLink } from 'lucide-react';
+import { BookOpen, Shield, User, LogOut, LogIn, UserPlus, Menu, X, Landmark, ChevronDown, ExternalLink, PenLine } from 'lucide-react';
+
+// 논문 투고: 세화불학원 공식 홈페이지(새 탭)
+const PAPER_SUBMISSION_URL = 'https://www.xn--wr3bl1e16firr29a.org';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Navbar({ currentView, onNavigate }) {
@@ -148,6 +151,19 @@ export default function Navbar({ currentView, onNavigate }) {
             <User size={16} color="var(--color-sage)" />
             <span>내 강의실</span>
           </button>
+
+          {/* 4. 논문 투고 (세화불학원 홈페이지, 새 탭) */}
+          <a
+            className="btn btn-ghost"
+            href={PAPER_SUBMISSION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: 'none' }}
+          >
+            <PenLine size={16} color="var(--color-sage)" />
+            <span>논문 투고</span>
+            <ExternalLink size={12} style={{ opacity: 0.6 }} />
+          </a>
 
           {isAdmin && (
             <button
@@ -316,6 +332,19 @@ export default function Navbar({ currentView, onNavigate }) {
                 <User size={18} color="var(--color-sage)" />
                 <span>내 강의실 바로가기</span>
               </button>
+
+              <a
+                className="btn btn-ghost"
+                href={PAPER_SUBMISSION_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ justifyContent: 'flex-start', padding: '12px 14px', fontSize: '15px', textDecoration: 'none' }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <PenLine size={18} color="var(--color-sage)" />
+                <span>논문 투고</span>
+                <ExternalLink size={14} style={{ opacity: 0.6 }} />
+              </a>
 
               {isAdmin && (
                 <button
