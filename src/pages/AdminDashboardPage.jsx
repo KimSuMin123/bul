@@ -9,6 +9,7 @@ import {
   Bell, BellOff, Download, Smartphone, Volume2, Filter
 } from 'lucide-react';
 import { useCourse } from '../context/CourseContext';
+import AdminPagination, { usePagination } from '../components/admin/AdminPagination.jsx';
 import { useAuth } from '../context/AuthContext';
 import { uploadLectureVideo, extractVideoMetadata, isStorageConfigured, uploadThumbnailImage, getLectureVideoUrl } from '../services/apiClient';
 import { parseExamText } from '../services/examService';
@@ -1520,6 +1521,16 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
     );
   }, [allDonationOverviewRecords, donationSearchQuery]);
 
+  // 긴 목록은 화면에만 20건씩 나눠 보여 준다(엑셀 내보내기는 전체 목록 사용).
+  const userPage = usePagination(filteredUsers, searchKeyword);
+  const pendingEnrollmentPage = usePagination(filteredPendingEnrollments, donationFilter);
+  const paymentRecordPage = usePagination(filteredFullPaymentRecords, donationFilter);
+  const donationReceiptPage = usePagination(filteredDonationReceipts, donationSearchQuery);
+  const unissuedDonationPage = usePagination(filteredUnissuedDonationRecords, donationSearchQuery);
+  const donationOverviewPage = usePagination(filteredAllDonationOverviewRecords, donationSearchQuery);
+  const qaPage = usePagination(filteredQAPosts, [qaCourseFilter, qaStatusFilter, qaKeyword].join('|'));
+  const certPage = usePagination(filteredCertificates, certKeyword);
+
   // Dynamic Excel Export for Donation Page
   const handleExportFilteredDonationPageExcel = () => {
     if (donationFilter === 'issued') {
@@ -1991,7 +2002,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user) => {
+                  {userPage.pageItems.map((user) => {
                     const userEnrs = enrollments.filter(e => e.userId === user.id);
 
                     return (
@@ -2077,6 +2088,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 </tbody>
               </table>
             </div>
+            <AdminPagination {...userPage} />
           </div>
         )}
 
@@ -2355,7 +2367,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredPendingEnrollments.map(enr => {
+                      {pendingEnrollmentPage.pageItems.map(enr => {
                         const student = allUsers.find(u => u.id === enr.userId);
                         const course = courses.find(c => c.id === enr.courseId);
                         const amount = course ? course.price : 50000;
@@ -2425,6 +2437,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     </tbody>
                   </table>
                 )}
+                <AdminPagination {...pendingEnrollmentPage} />
               </div>
             </div>
 
@@ -2493,7 +2506,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         </td>
                       </tr>
                     ) : (
-                      filteredFullPaymentRecords.map(pay => {
+                      paymentRecordPage.pageItems.map(pay => {
                         const student = allUsers.find(u => u.id === pay.userId);
                         const course = courses.find(c => c.id === pay.courseId);
                         const studentPhone = student?.phone || '';
@@ -2549,6 +2562,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   </tbody>
                 </table>
               </div>
+              <AdminPagination {...paymentRecordPage} />
             </div>
 
             {/* SECTION 3: 🧾 기부금 영수증 발행 대장 별도 페이지 바로가기 안내 */}
@@ -2975,7 +2989,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         </td>
                       </tr>
                     ) : (
-                      filteredDonationReceipts.map((rcpt, idx) => (
+                      donationReceiptPage.pageItems.map((rcpt, idx) => (
                         <tr
                           key={rcpt.id || rcpt.phone || idx}
                           style={{
@@ -3024,6 +3038,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     )}
                   </tbody>
                 </table>
+                <AdminPagination {...donationReceiptPage} />
               </div>
             )}
 
@@ -3058,7 +3073,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         </td>
                       </tr>
                     ) : (
-                      filteredUnissuedDonationRecords.map((item, idx) => (
+                      unissuedDonationPage.pageItems.map((item, idx) => (
                         <tr
                           key={item.id || idx}
                           style={{
@@ -3125,6 +3140,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     )}
                   </tbody>
                 </table>
+                <AdminPagination {...unissuedDonationPage} />
               </div>
             )}
 
@@ -3156,7 +3172,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                         </td>
                       </tr>
                     ) : (
-                      filteredAllDonationOverviewRecords.map((item, idx) => (
+                      donationOverviewPage.pageItems.map((item, idx) => (
                         <tr
                           key={item.id || idx}
                           style={{
@@ -3226,6 +3242,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     )}
                   </tbody>
                 </table>
+                <AdminPagination {...donationOverviewPage} />
               </div>
             )}
           </div>
@@ -3644,7 +3661,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {filteredQAPosts.map((post) => {
+                {qaPage.pageItems.map((post) => {
                   const targetCourse = courses.find(c => c.id === post.courseId);
                   const targetLec = lectures.find(l => l.id === post.lectureId);
                   const hasAnswer = post.answers && post.answers.length > 0;
@@ -3741,6 +3758,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                     </div>
                   );
                 })}
+                <AdminPagination {...qaPage} />
               </div>
             )}
           </div>
@@ -3792,7 +3810,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredCertificates.map(cert => (
+                  {certPage.pageItems.map(cert => (
                     <tr key={cert.certNo} style={{ borderBottom: '1px solid var(--color-border)' }}>
                       <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--color-charcoal)' }}>
                         <div>{cert.certRegNo || cert.certNo}</div>
@@ -3840,6 +3858,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
                 </tbody>
               </table>
             </div>
+            <AdminPagination {...certPage} />
           </div>
         )}
 
