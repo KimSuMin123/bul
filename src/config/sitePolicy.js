@@ -5,6 +5,7 @@ export const PAYMENT_ACCOUNT = '농협 301-0264-3664-41 ([사] 세화불학원)'
 export const NEXT_LECTURE_PROGRESS = 80;
 /** 모든 차시가 이 진도율 이상이면 완강으로 보고 시험 응시·자격증 발급·수료 처리 (DB lms_course_complete와 동일해야 함) */
 export const COURSE_COMPLETE_PROGRESS = 80;
+export const ENROLLMENT_FAILURE_NOTICE = '수강 신청을 처리하지 못했습니다.\n교학처(010-4702-0283)로 문의해 주세요.';
 export const CERTIFICATE_PRINT_NOTICE = `자격증은 본인이 직접 출력하여 사용합니다. 실물 자격증을 따로 받으시려면 발급비 10,000원을 ${PAYMENT_ACCOUNT}으로 입금한 뒤 교학처(010-4702-0283)에 받으실 주소를 알려 주세요. 확인 후 우편으로 발급해 드립니다.`;
 
 /** The next lesson opens at 80%. */

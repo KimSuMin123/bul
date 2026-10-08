@@ -396,6 +396,14 @@
   margin: 2px 0;
 }
 
+.alert-modal-detail {
+  margin-top: 12px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #9CA3AF;
+  word-break: break-all;
+}
+
 .alert-modal-actions {
   display: flex;
   gap: 10px;

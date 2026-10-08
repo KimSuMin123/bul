@@ -31,6 +31,7 @@ test('security migration and RLS execute in PostgreSQL', async t => {
  await db.exec(await fs.readFile(new URL('../supabase/migrations/202609230001_security.sql',import.meta.url),'utf8'));
  await db.exec(await fs.readFile(new URL('../supabase/migrations/202609230002_course_writes.sql',import.meta.url),'utf8'));
  await db.exec(await fs.readFile(new URL('../supabase/migrations/202609300003_payment_dates_kst.sql',import.meta.url),'utf8'));
+ await db.exec(await fs.readFile(new URL('../supabase/migrations/202610080001_enrollment_apply_kst.sql',import.meta.url),'utf8'));
  await db.exec(`UPDATE users SET auth_user_id=CASE id WHEN 'student' THEN '${uid}'::uuid WHEN 'other' THEN '${other}'::uuid ELSE '${admin}'::uuid END;
  INSERT INTO storage.objects(bucket_id,name) VALUES('lectures','a.mp4');`);
  const asRole = async (role,identity='') => { await db.exec(`RESET ROLE; SET ROLE ${role}; SELECT set_config('request.jwt.claim.sub','${identity}',false);`); };
@@ -50,6 +51,14 @@ test('security migration and RLS execute in PostgreSQL', async t => {
   await denied("INSERT INTO exam_attempts(id,user_id,course_id,score,passed,correct_count,total_count) VALUES('bad','student','c1',100,true,1,1)");
   await denied("SELECT issue_course_certificate('c1')");
   assert.equal((await db.query('SELECT * FROM storage.objects')).rows.length,0);
+ });
+ await t.test('student application date is checked against the Korean date (202610080001)',async()=>{
+  const apply=day=>`INSERT INTO enrollments(id,user_id,course_id,status,enrolled_at,paid_at,expire_at) VALUES('e_kst_${day}','student','c2','pending',(now() AT TIME ZONE 'Asia/Seoul')::date${day},NULL,(now() AT TIME ZONE 'Asia/Seoul')::date+90)`;
+  await denied(apply('-1'));
+  await db.query(apply(''));
+  assert.equal((await db.query("UPDATE enrollments SET status='applied',enrolled_at=(now() AT TIME ZONE 'Asia/Seoul')::date WHERE id='e_kst_'")).affectedRows,1);
+  await db.exec("RESET ROLE; DELETE FROM enrollments WHERE id='e_kst_'");
+  await asRole('authenticated',uid);
  });
  const requestId='44444444-4444-4444-8444-444444444444';
  const paymentSql=`SELECT process_course_payment('student','c1',100,'Forged name','cash','${requestId}'::uuid) AS value`;

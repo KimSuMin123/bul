@@ -84,6 +84,7 @@ export function ModalAlertProvider({ children }) {
         isOpen: true,
         title,
         message: String(message || ''),
+        detail: options.detail ? String(options.detail) : '',
         type,
         isConfirm: false,
         confirmText: options.confirmText || '확인',
@@ -327,6 +328,7 @@ export function ModalAlertProvider({ children }) {
                   {line || '\u00A0'}
                 </p>
               ))}
+              {modalState.detail && <p className="alert-modal-detail">{modalState.detail}</p>}
             </div>
 
             {/* Modal Actions */}

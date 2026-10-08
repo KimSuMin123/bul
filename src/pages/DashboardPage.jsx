@@ -10,7 +10,7 @@ import { useModalAlert } from '../context/ModalAlertContext';
 import CertificateModal from '../components/certificate/CertificateModal';
 import CourseExamModal from '../components/exam/CourseExamModal';
 import ChangePasswordModal from '../components/auth/ChangePasswordModal';
-import { APPROVAL_SCHEDULE, CERTIFICATE_PRINT_NOTICE, enrollmentConfirmation } from '../config/sitePolicy.js';
+import { APPROVAL_SCHEDULE, CERTIFICATE_PRINT_NOTICE, enrollmentConfirmation, ENROLLMENT_FAILURE_NOTICE } from '../config/sitePolicy.js';
 
 export default function DashboardPage({ onNavigate, onStartLecture }) {
   const { currentUser } = useAuth();
@@ -121,8 +121,8 @@ export default function DashboardPage({ onNavigate, onStartLecture }) {
       const course = courses.find(item => item.id === courseId);
       await showAlert(enrollmentConfirmation(course || { title: '선택한 강좌', price: 0 }), { type: 'success', title: '수강 신청 접수 완료' });
     } catch (error) {
-      await showAlert(error.message || '수강 신청을 저장하지 못했습니다. 다시 시도해 주세요.', {
-        type: 'error', title: '수강 신청 실패'
+      await showAlert(ENROLLMENT_FAILURE_NOTICE, {
+        type: 'error', title: '수강 신청 실패', detail: error.message && `오류 코드: ${error.message}`
       });
     } finally {
       applyingRef.current = false;

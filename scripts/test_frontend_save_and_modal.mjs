@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { enrollmentConfirmation, PRIVACY_POLICY_VERSION } from '../src/config/sitePolicy.js';
+import { enrollmentConfirmation, ENROLLMENT_FAILURE_NOTICE, PRIVACY_POLICY_VERSION } from '../src/config/sitePolicy.js';
 import { kstDate } from '../src/utils/kstDate.js';
 
 // Execute the actual event handlers with isolated UI/API dependencies.
@@ -45,7 +45,7 @@ test('Escape cancels a confirmation', () => {
 function applyContext(overrides = {}) {
   return {
     currentUser: { id: 'test-user' }, course: { id: 'test-course', title: 'Test' },
-    courses: [{ id: 'test-course', title: 'Test', price: 50000 }], enrollmentConfirmation,
+    courses: [{ id: 'test-course', title: 'Test', price: 50000 }], enrollmentConfirmation, ENROLLMENT_FAILURE_NOTICE,
     applyingRef: { current: false }, setApplying() {},
     enrollStudent: async () => ({}), showAlert: async () => {},
     showConfirm: async () => true, onNavigate() {}, ...overrides,
@@ -56,11 +56,13 @@ test('application failure reports an error without success or navigation', async
   const alerts = [];
   const ctx = applyContext({
     enrollStudent: async () => { throw new Error('offline'); },
-    showAlert: async (message, options) => alerts.push(options.type),
+    showAlert: async (message, options) => alerts.push([options.type, message, options.detail]),
     onNavigate: () => assert.fail('must remain on application page'),
   });
   await handler('src/pages/CourseDetailPage.jsx', 'handleApplyCourse', ctx)();
-  assert.deepEqual(alerts, ['error']);
+  // 안내는 교학처 문의, 원래 오류는 아래 작은 글씨(detail)로
+  assert.deepEqual(alerts, [['error', ENROLLMENT_FAILURE_NOTICE, '오류 코드: offline']]);
+  assert.match(ENROLLMENT_FAILURE_NOTICE, /교학처/);
   assert.equal(ctx.applyingRef.current, false);
 });
 
@@ -144,11 +146,11 @@ test('dashboard application failure reports failure and remains retryable', asyn
   const alerts = [];
   const ctx = applyContext({
     enrollStudent: async () => { throw new Error('offline'); },
-    showAlert: async (message, options) => alerts.push(options.type),
+    showAlert: async (message, options) => alerts.push([options.type, message, options.detail]),
     refreshData: () => assert.fail('must not refresh after failed save'),
   });
   await handler('src/pages/DashboardPage.jsx', 'handleApplyCourseFromDashboard', ctx)('test-course');
-  assert.deepEqual(alerts, ['error']);
+  assert.deepEqual(alerts, [['error', ENROLLMENT_FAILURE_NOTICE, '오류 코드: offline']]);
   assert.equal(ctx.applyingRef.current, false);
 });
 

@@ -6,7 +6,7 @@ import {
 import { useCourse } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
 import { useModalAlert } from '../context/ModalAlertContext';
-import { APPROVAL_SCHEDULE, PAYMENT_ACCOUNT, COURSE_COMPLETE_PROGRESS, enrollmentConfirmation } from '../config/sitePolicy.js';
+import { APPROVAL_SCHEDULE, PAYMENT_ACCOUNT, COURSE_COMPLETE_PROGRESS, enrollmentConfirmation, ENROLLMENT_FAILURE_NOTICE } from '../config/sitePolicy.js';
 
 export default function CourseDetailPage({ courseId, onNavigate, onStartLecture }) {
   const {
@@ -115,8 +115,8 @@ export default function CourseDetailPage({ courseId, onNavigate, onStartLecture 
       });
       onNavigate('dashboard');
     } catch (error) {
-      await showAlert(error.message || '수강 신청을 저장하지 못했습니다. 다시 시도해 주세요.', {
-        type: 'error', title: '수강 신청 실패'
+      await showAlert(ENROLLMENT_FAILURE_NOTICE, {
+        type: 'error', title: '수강 신청 실패', detail: error.message && `오류 코드: ${error.message}`
       });
     } finally {
       applyingRef.current = false;
