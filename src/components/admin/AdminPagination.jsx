@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
-export const ADMIN_PAGE_SIZE = 20;
+export const ADMIN_PAGE_SIZE = 15;
 
 // 목록을 페이지 단위로 자른다. 검색어·필터(resetKey)가 바뀌면 1페이지로, 목록이 줄면 마지막 페이지로 맞춘다.
 // 엑셀 내보내기 등은 원래 목록을 그대로 쓰고, 화면 표시에만 pageItems를 쓴다.
@@ -32,15 +32,15 @@ export default function AdminPagination({ page, setPage, totalPages, total, page
     cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.4 : 1
   });
   return (
-    <nav aria-label="목록 페이지" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '14px 16px' }}>
-      <span style={{ fontSize: '13px', color: '#6B7280' }}>총 {total}건 중 {from}–{to}</span>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+    <nav aria-label="목록 페이지" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 16px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px' }}>
         <button type="button" style={button(false, page === 1)} disabled={page === 1}onClick={() => setPage(page - 1)} aria-label="이전 페이지">‹ 이전</button>
         {pageNumbers(page, totalPages).map(n => typeof n === 'string'
           ? <span key={n} style={{ alignSelf: 'center', color: '#9CA3AF' }}>…</span>
           : <button key={n} type="button" style={button(n === page)} aria-current={n === page ? 'page' : undefined} onClick={() => setPage(n)}>{n}</button>)}
         <button type="button" style={button(false, page === totalPages)} disabled={page === totalPages}onClick={() => setPage(page + 1)} aria-label="다음 페이지">다음 ›</button>
       </div>
+      <span style={{ fontSize: '13px', color: '#6B7280' }}>총 {total}건 중 {from}–{to}</span>
     </nav>
   );
 }
