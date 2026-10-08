@@ -1521,7 +1521,7 @@ ${createdUserInfo.assignedCourseTitle ? `- 수강 강좌: ${createdUserInfo.assi
     );
   }, [allDonationOverviewRecords, donationSearchQuery]);
 
-  // 긴 목록은 화면에만 15건씩 나눠 보여 준다(엑셀 내보내기는 전체 목록 사용).
+  // 긴 목록은 화면에만 10건씩 나눠 보여 준다(엑셀 내보내기는 전체 목록 사용).
   const userPage = usePagination(filteredUsers, searchKeyword);
   const pendingEnrollmentPage = usePagination(filteredPendingEnrollments, donationFilter);
   const paymentRecordPage = usePagination(filteredFullPaymentRecords, donationFilter);

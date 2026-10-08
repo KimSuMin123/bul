@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
-export const ADMIN_PAGE_SIZE = 15;
+export const ADMIN_PAGE_SIZE = 10;
 
 // 목록을 페이지 단위로 자른다. 검색어·필터(resetKey)가 바뀌면 1페이지로, 목록이 줄면 마지막 페이지로 맞춘다.
 // 엑셀 내보내기 등은 원래 목록을 그대로 쓰고, 화면 표시에만 pageItems를 쓴다.
