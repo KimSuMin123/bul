@@ -439,8 +439,8 @@ test('login waits for committed auth state before navigating', async () => {
   const navigation = [];
   let targetId;
   const context = {
-    id: 'fixture-admin', password: 'fixture-only',
-    login: async () => ({ id: 'fixture-admin', role: 'admin' }),
+    id: 'fixture-admin', password: 'fixture-only', rememberLogin: true,
+    login: async (id, password, remember) => { assert.equal(remember, true); return { id: 'fixture-admin', role: 'admin' }; },
     setError() {}, setIsSubmitting() {},
     setLoginTargetUserId: value => { targetId = value; },
     onNavigate: view => navigation.push(view),

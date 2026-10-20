@@ -13,13 +13,20 @@ const expiredSession = () => ({ ...validSession(), expires_at: Math.floor(Date.n
 test('Supabase token session lifecycle (mock fetch only)', async t => {
   const originalFetch = globalThis.fetch;
   const originalStorage = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+  const originalLocal = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
   const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
   const stored = new Map();
+  const kept = new Map(); // localStorage(자동 로그인)
   const expiredEvents = [];
   Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: {
     getItem: key => stored.get(key) ?? null,
     setItem: (key, value) => stored.set(key, value),
     removeItem: key => stored.delete(key),
+  } });
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
+    getItem: key => kept.get(key) ?? null,
+    setItem: (key, value) => kept.set(key, value),
+    removeItem: key => kept.delete(key),
   } });
   Object.defineProperty(globalThis, 'window', { configurable: true, value: {
     dispatchEvent: event => expiredEvents.push(event.type),
@@ -28,12 +35,14 @@ test('Supabase token session lifecycle (mock fetch only)', async t => {
     globalThis.fetch = originalFetch;
     if (originalStorage) Object.defineProperty(globalThis, 'sessionStorage', originalStorage);
     else delete globalThis.sessionStorage;
+    if (originalLocal) Object.defineProperty(globalThis, 'localStorage', originalLocal);
+    else delete globalThis.localStorage;
     if (originalWindow) Object.defineProperty(globalThis, 'window', originalWindow);
     else delete globalThis.window;
   });
   let moduleId = 0;
   const fresh = async () => {
-    stored.clear(); expiredEvents.length = 0;
+    stored.clear(); kept.clear(); expiredEvents.length = 0;
     globalThis.fetch = () => assert.fail('Unexpected request: tests must only use explicit fetch mocks');
     return import(`../src/services/authSession.js?fixture=${++moduleId}`);
   };
@@ -180,5 +189,47 @@ test('Supabase token session lifecycle (mock fetch only)', async t => {
     await auth.callAuthAction('admin-delete', { userId: 'fixture-user' }, true);
     await auth.callAuthAction('register', { id: 'fixture-user' });
     assert.deepEqual(headers, ['Bearer fixture-access-one', 'Bearer fixture-public-key']);
+  });
+
+  await t.test('without auto-login the session lives only in sessionStorage', async () => {
+    const auth = await fresh();
+    auth.setRememberLogin(false);
+    auth.setAuthSession(validSession());
+    assert.equal(stored.has(SESSION_KEY), true);
+    assert.equal(kept.has(SESSION_KEY), false);
+  });
+
+  await t.test('auto-login keeps the session in localStorage, survives a browser restart and refreshes in place', async () => {
+    let auth = await fresh();
+    auth.setRememberLogin(true);
+    auth.setAuthSession(expiredSession());
+    assert.equal(kept.has(SESSION_KEY), true);
+    assert.equal(stored.has(SESSION_KEY), false);
+    // 브라우저를 다시 연 것처럼 새 모듈·빈 sessionStorage에서 localStorage 세션을 이어 쓴다.
+    auth = await import(`../src/services/authSession.js?fixture=${++moduleId}`);
+    const refreshed = validSession('refreshed');
+    globalThis.fetch = async () => Response.json(refreshed);
+    assert.equal(await auth.getAccessToken(), refreshed.access_token);
+    assert.equal(JSON.parse(kept.get(SESSION_KEY)).access_token, refreshed.access_token);
+    assert.equal(stored.has(SESSION_KEY), false);
+  });
+
+  await t.test('auto-login tabs pick up a token another tab already refreshed', async () => {
+    const auth = await fresh();
+    auth.setRememberLogin(true);
+    auth.setAuthSession(validSession('old'));
+    kept.set(SESSION_KEY, JSON.stringify(validSession('other-tab')));
+    assert.equal(await auth.getAccessToken(), 'fixture-access-other-tab');
+  });
+
+  await t.test('logout clears auto-login storage too', async () => {
+    const auth = await fresh();
+    auth.setRememberLogin(true);
+    auth.setAuthSession(validSession());
+    globalThis.fetch = async () => Response.json({});
+    await auth.signOutSession();
+    assert.equal(kept.has(SESSION_KEY), false);
+    assert.equal(stored.has(SESSION_KEY), false);
+    assert.equal(auth.getAuthSession(), null);
   });
 });

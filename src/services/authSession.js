@@ -6,14 +6,31 @@ const SESSION_KEY = 'buddha_lms_auth_session';
 let memorySession = null;
 let refreshing = null;
 let generation = 0;
+// 자동 로그인: 켜면 브라우저를 닫아도 남는 localStorage, 끄면 탭을 닫을 때 지워지는 sessionStorage에 보관한다.
+let persistent = false;
 
-export function getAuthSession() {
-  if (memorySession) return memorySession;
+function readStored(storage) {
   try {
-    const saved = JSON.parse(globalThis.sessionStorage?.getItem(SESSION_KEY) || 'null');
+    const saved = JSON.parse(storage?.getItem(SESSION_KEY) || 'null');
     return saved?.access_token && saved?.refresh_token ? saved : null;
   } catch { return null; }
 }
+
+export function getAuthSession() {
+  // 자동 로그인은 여러 탭이 같은 세션을 쓰므로, 다른 탭이 연장한 최신 토큰을 매번 읽는다.
+  if (persistent) {
+    const shared = readStored(globalThis.localStorage);
+    if (shared) memorySession = shared;
+  }
+  if (memorySession) return memorySession;
+  const tab = readStored(globalThis.sessionStorage);
+  if (tab) return tab;
+  const kept = readStored(globalThis.localStorage);
+  if (kept) persistent = true;
+  return kept;
+}
+
+export function setRememberLogin(remember) { persistent = remember === true; }
 
 export function beginAuthAttempt() { return ++generation; }
 
@@ -23,14 +40,18 @@ export function setAuthSession(session, expectedGeneration) {
   generation++;
   memorySession = { access_token: session.access_token, refresh_token: session.refresh_token,
     expires_at: session.expires_at || Math.floor(Date.now() / 1000) + (session.expires_in || 3600) };
-  try { globalThis.sessionStorage?.setItem(SESSION_KEY, JSON.stringify(memorySession)); } catch { /* memory session remains usable */ }
+  const [keep, drop] = persistent ? [globalThis.localStorage, globalThis.sessionStorage] : [globalThis.sessionStorage, globalThis.localStorage];
+  try { keep?.setItem(SESSION_KEY, JSON.stringify(memorySession)); } catch { /* memory session remains usable */ }
+  try { drop?.removeItem(SESSION_KEY); } catch { /* private mode */ }
   return memorySession;
 }
 
 export function clearAuthSession() {
   generation++;
   memorySession = null;
+  persistent = false;
   try { globalThis.sessionStorage?.removeItem(SESSION_KEY); } catch { /* private mode */ }
+  try { globalThis.localStorage?.removeItem(SESSION_KEY); } catch { /* private mode */ }
 }
 
 export async function authRequest(path, body, token = key, method = 'POST') {

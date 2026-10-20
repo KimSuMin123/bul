@@ -10,6 +10,7 @@ export default function LoginPage({ onNavigate }) {
 
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberLogin, setRememberLoginChecked] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginTargetUserId, setLoginTargetUserId] = useState(null);
@@ -36,7 +37,7 @@ export default function LoginPage({ onNavigate }) {
     setLoginTargetUserId(null);
     setIsSubmitting(true);
     try {
-      const user = await login(id, password);
+      const user = await login(id, password, rememberLogin);
       if (user?.id) setLoginTargetUserId(user.id);
     } catch (err) {
       setError(err.message || '아이디 또는 비밀번호가 일치하지 않습니다.');
@@ -117,6 +118,20 @@ export default function LoginPage({ onNavigate }) {
                 required
               />
             </div>
+
+            <label className="remember-login">
+              <input
+                type="checkbox"
+                checked={rememberLogin}
+                onChange={(e) => setRememberLoginChecked(e.target.checked)}
+              />
+              <span>
+                <span className="remember-login-title">자동 로그인</span>
+                <span className="remember-login-hint">
+                  브라우저를 닫아도 로그인이 유지됩니다. 공용 PC에서는 사용하지 마세요.
+                </span>
+              </span>
+            </label>
 
             <button
               type="submit"

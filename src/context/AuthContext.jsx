@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { removeStored, STORAGE_KEYS, initStorage } from '../services/storage';
 import { remoteDb } from '../services/apiClient';
-import { callAuthAction, changeOwnPassword, clearAuthSession, getAuthSession, revokeOtherSessions, signOutSession } from '../services/authSession';
+import { callAuthAction, changeOwnPassword, clearAuthSession, getAuthSession, revokeOtherSessions, setRememberLogin, signOutSession } from '../services/authSession';
 import { PRIVACY_POLICY_VERSION } from '../config/sitePolicy.js';
 
 const AuthContext = createContext(null);
@@ -62,8 +62,10 @@ export function AuthProvider({ children }) {
     else setUsers([]);
   }, [currentUser?.id, currentUser?.role, refreshUsers]);
 
-  const login = async (id, password) => {
+  // remember: 자동 로그인(브라우저를 닫아도 로그인 유지). 끄면 탭을 닫을 때 로그아웃된다.
+  const login = async (id, password, remember = false) => {
     const version = ++authVersion.current;
+    setRememberLogin(remember);
     const user = await remoteDb.authenticateUser(id.trim(), password);
     if (version !== authVersion.current) return null;
     setCurrentUser({ ...user, activeSessionToken: getAuthSession()?.access_token });
